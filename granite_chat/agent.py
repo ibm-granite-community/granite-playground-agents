@@ -15,10 +15,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MODEL_NAME = os.environ["MODEL_NAME"]
-OPENAI_URL = os.environ["OPENAI_URL"]
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-OPENAI_API_HEADERS = os.environ["OPENAI_API_HEADERS"]
+MODEL_NAME = os.environ["LLM_MODEL"]
+OPENAI_URL = os.environ["LLM_API_BASE"]
+OPENAI_API_KEY = os.environ["LLM_API_KEY"]
+
+# Allows headers to be picked up by framework
+if "LLM_API_HEADERS" in os.environ:
+    os.environ["OPENAI_API_HEADERS"] = os.environ["LLM_API_HEADERS"]
 
 MAX_TOKENS = 4096
 TEMPERATURE = 0.3
