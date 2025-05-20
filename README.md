@@ -57,3 +57,17 @@ You can also run the agent using the client.
 ```sh
 uv run granite_chat/client.py
 ```
+
+## Containerisation
+
+### Build
+
+```bash
+podman build -t beeai-platform-granite-chat:latest .
+```
+
+### Run
+
+```shell
+podman run --env-file .env --name beeai-platform-granite-chat -p 8000:8000 --rm localhost/beeai-platform-granite-chat:latest
+```
