@@ -8,7 +8,7 @@ ENV UV_LINK_MODE=copy \
 ADD . /app
 WORKDIR /app
 
-RUN uv sync --no-cache --locked --link-mode copy
+RUN uv sync --no-dev --no-cache --locked --link-mode copy
 
 FROM python:3.11-slim-bookworm
 
