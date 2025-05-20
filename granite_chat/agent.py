@@ -1,4 +1,3 @@
-# agent.py
 import os
 from collections.abc import AsyncGenerator
 
@@ -7,22 +6,20 @@ from acp_sdk.models import Message
 from acp_sdk.server import Context, Server
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelParameters
-from dotenv import load_dotenv
+from config import settings
 
 from granite_chat import utils
 
-load_dotenv()
-
-MODEL_NAME = os.environ["LLM_MODEL"]
-OPENAI_URL = os.environ["LLM_API_BASE"]
-OPENAI_API_KEY = os.environ["LLM_API_KEY"]
+MODEL_NAME = settings.LLM_MODEL
+OPENAI_URL = settings.LLM_API_BASE
+OPENAI_API_KEY = settings.LLM_API_KEY
 
 # Allows headers to be picked up by framework
-if "LLM_API_HEADERS" in os.environ:
-    os.environ["OPENAI_API_HEADERS"] = os.environ["LLM_API_HEADERS"]
+if settings.LLM_API_HEADERS:
+    os.environ["OPENAI_API_HEADERS"] = settings.LLM_API_HEADERS
 
-MAX_TOKENS = 4096
-TEMPERATURE = 0.3
+MAX_TOKENS = settings.max_tokens
+TEMPERATURE = settings.temperature
 
 server = Server()
 
@@ -49,4 +46,4 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                 yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
 
-server.run(host="0.0.0.0", port=8000)
+server.run(host=settings.host, port=settings.port)
