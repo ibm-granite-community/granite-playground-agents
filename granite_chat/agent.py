@@ -49,4 +49,4 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                 yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
 
-server.run()
+server.run(host="0.0.0.0", port=8000)
