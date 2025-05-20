@@ -1,17 +1,15 @@
 # agent.py
 import os
-
 from collections.abc import AsyncGenerator
 
 from acp_sdk import MessagePart, Metadata
 from acp_sdk.models import Message
 from acp_sdk.server import Context, Server
-
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelParameters
+from dotenv import load_dotenv
 
 from granite_chat import utils
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -35,7 +33,6 @@ server = Server()
     metadata=Metadata(ui={"type": "chat"}),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-
     model = OpenAIChatModel(
         model_id=MODEL_NAME,
         api_key=OPENAI_API_KEY,

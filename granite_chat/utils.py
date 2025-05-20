@@ -1,9 +1,9 @@
 from acp_sdk import Message as ACPMessage
-from beeai_framework.backend import UserMessage, AssistantMessage, Message as FrameworkMessage
+from beeai_framework.backend import AssistantMessage, UserMessage
+from beeai_framework.backend import Message as FrameworkMessage
 
 
-def to_beeai_framework(messages: list[ACPMessage]):
-
+def to_beeai_framework(messages: list[ACPMessage]) -> list[FrameworkMessage]:
     fw_messages: list[FrameworkMessage] = []
 
     for msg in messages:

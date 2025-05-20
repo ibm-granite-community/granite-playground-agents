@@ -1,7 +1,6 @@
 # client.py
 import asyncio
 
-from acp_sdk import AnyUrl, Artifact
 from acp_sdk.client import Client
 from acp_sdk.models import Message, MessagePart
 

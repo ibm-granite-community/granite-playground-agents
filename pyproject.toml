@@ -9,3 +9,41 @@ dependencies = [
     "beeai-framework>=0.1.21",
     "python-dotenv>=1.1.0",
 ]
+
+[tool.ruff]
+lint.select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "UP",    # pyupgrade
+    "I",     # isort
+    "B",     # bugbear
+    "ANN",   # annotations
+    "N",     # pep8-naming
+    "C4",    # Comprehensions
+    "DTZ",   # DatetimeZ
+    "Q",     # Quotes
+    "SIM",   # Simplify
+    "RUF",   # Ruff
+    "TID",   # tidy-imports
+    "ASYNC", # async
+]
+lint.ignore = ["ANN401"]
+lint.fixable = ["ALL"]
+lint.unfixable = []
+force-exclude = true
+line-length = 120
+extend-exclude = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow all relative imports, "parents" | "all"
+ban-relative-imports = "all"
+
+[tool.uv.sources]
+detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
+
+[dependency-groups]
+dev = ["detect-secrets", "pre-commit>=4.2.0", "ruff>=0.11.10"]
