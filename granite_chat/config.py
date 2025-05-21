@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 
 
@@ -10,6 +12,7 @@ class Settings(BaseSettings):
     LLM_API_HEADERS: str | None = None
     max_tokens: int = 4096
     temperature: float = 0.3
+    log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
 
     class Config:
         env_file = ".env"

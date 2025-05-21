@@ -6,9 +6,13 @@ from acp_sdk.models import Message
 from acp_sdk.server import Context, Server
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelParameters
+from beeai_framework.logger import Logger
 from config import settings
 
 from granite_chat import utils
+
+logger = Logger("agent", level=settings.log_level)
+logger.info(settings)
 
 MODEL_NAME = settings.LLM_MODEL
 OPENAI_URL = settings.LLM_API_BASE
@@ -46,4 +50,4 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                 yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
 
-server.run(host=settings.host, port=settings.port)
+server.run(host=settings.host, port=settings.port, log_level=settings.log_level)

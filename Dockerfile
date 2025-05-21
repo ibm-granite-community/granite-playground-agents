@@ -2,26 +2,26 @@ FROM python:3.11-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.6.16 /uv /bin/
 
-ENV UV_LINK_MODE=copy \
-    PRODUCTION_MODE=true
-
-ADD . /app
 WORKDIR /app
+COPY . /app
 
 RUN uv sync --no-dev --no-cache --locked --link-mode copy
 
 FROM python:3.11-slim-bookworm
 
 ENV LLM_MODEL=ibm-granite/granite-3.3-8b-instruct
-ENV LLM_API_BASE=http://localhost:8333/api/v1/llm
+ENV LLM_API_BASE=unused
+ENV LLM_API_KEY=unused
 
-ENV PRODUCTION_MODE=True \
-    PATH="/app/.venv/bin:$PATH"
+ENV PRODUCTION_MODE=True
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy application code
+RUN useradd -m appuser
+USER appuser
+
+COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app /app
 
-# Set working directory
 WORKDIR /app
 
 CMD ["python", "granite_chat/agent.py"]
