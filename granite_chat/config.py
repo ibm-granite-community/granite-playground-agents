@@ -6,12 +6,22 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     port: int = 8000
     host: str = "0.0.0.0"
-    LLM_MODEL: str = None
-    LLM_API_BASE: str = None
-    LLM_API_KEY: str = None
+    LLM_MODEL: str | None = None
+    LLM_API_BASE: str | None = None
+    LLM_API_KEY: str | None = None
     LLM_API_HEADERS: str | None = None
+
+    RETRIEVER: str | None = None
+    GOOGLE_API_KEY: str | None = None
+    GOOGLE_CX_KEY: str | None = None
+
+    OLLAMA_BASE_URL: str | None = None
+    EMBEDDING: str | None = None
+
     max_tokens: int = 4096
-    temperature: float = 0.3
+    temperature: float = 0.2
+    search: bool = True
+
     log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
 
     class Config:

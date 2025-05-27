@@ -7,9 +7,10 @@ def to_beeai_framework(messages: list[ACPMessage]) -> list[FrameworkMessage]:
     fw_messages: list[FrameworkMessage] = []
 
     for msg in messages:
-        if "role" in msg.parts[0].model_dump():
-            fw_messages.append(AssistantMessage(content=str(msg)))
-        else:
+        msg_dict = msg.parts[0].model_dump()
+        if "role" in msg_dict and msg_dict["role"] == "user":
             fw_messages.append(UserMessage(content=str(msg)))
+        else:
+            fw_messages.append(AssistantMessage(content=str(msg)))
 
     return fw_messages
