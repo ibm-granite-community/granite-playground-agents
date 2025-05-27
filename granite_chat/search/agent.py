@@ -1,5 +1,6 @@
 import ast
 import asyncio
+import logging
 
 from beeai_framework.backend import Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
@@ -8,17 +9,17 @@ from gpt_researcher.actions.web_scraping import scrape_urls  # type: ignore
 from gpt_researcher.config.config import Config  # type: ignore
 from gpt_researcher.memory.embeddings import Memory  # type: ignore
 from gpt_researcher.prompts import PromptFamily  # type: ignore
-from gpt_researcher.utils.logger import get_formatted_logger  # type: ignore
 from gpt_researcher.utils.workers import WorkerPool  # type: ignore
 from gpt_researcher.vector_store import VectorStoreWrapper  # type: ignore
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import BaseModel
 
+from granite_chat.logger import get_formatted_logger
 from granite_chat.search.compressor import CustomVectorstoreCompressor
 from granite_chat.search.prompts import SearchPrompts
 
-logger = get_formatted_logger()
+logger = get_formatted_logger(__name__, logging.INFO)
 
 
 class SearchResult(BaseModel):

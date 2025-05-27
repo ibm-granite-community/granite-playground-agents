@@ -1,7 +1,7 @@
+import logging
 import os
 import traceback
 from collections.abc import AsyncGenerator
-from logging import Logger
 
 from acp_sdk import Author, MessagePart, Metadata
 from acp_sdk.models import Message
@@ -20,11 +20,11 @@ from config import settings  # type: ignore
 from langchain_core.documents import Document
 
 from granite_chat import utils
+from granite_chat.logger import get_formatted_logger
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.prompts import SearchPrompts
 
-logger = Logger("agent", level=settings.log_level)
-logger.info(settings)
+logger = get_formatted_logger(__name__, logging.INFO)
 
 MODEL_NAME = settings.LLM_MODEL
 OPENAI_URL = settings.LLM_API_BASE
