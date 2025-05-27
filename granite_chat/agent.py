@@ -3,7 +3,7 @@ import traceback
 from collections.abc import AsyncGenerator
 from logging import Logger
 
-from acp_sdk import MessagePart, Metadata
+from acp_sdk import Author, MessagePart, Metadata
 from acp_sdk.models import Message
 from acp_sdk.server import Context, Server
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -42,9 +42,15 @@ server = Server()
 
 
 @server.agent(
-    name="granite-chat",
-    description="Granite Chat",
-    metadata=Metadata(ui={"type": "chat"}),  # type: ignore[call-arg]
+    name="Granite Chat",
+    description="This agent leverages the Granite 3.3 large language model to deliver fast, accurate, and context-aware conversations. Designed for natural, human-like interaction, the agent can handle complex queries, provide insightful responses, and adapt to a wide range of topics.",  # noqa: E501
+    metadata=Metadata(
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Chat! How can I help you?"},  # type: ignore[call-arg]
+        framework="BeeAI",
+        programming_language="Python",
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        author=Author(name="IBM Research"),
+    ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
 
