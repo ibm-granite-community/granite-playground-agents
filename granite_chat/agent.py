@@ -23,6 +23,7 @@ from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.prompts import SearchPrompts
+from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
@@ -38,6 +39,7 @@ if settings.LLM_API_HEADERS:
 MAX_TOKENS = settings.max_tokens
 TEMPERATURE = settings.temperature
 SEARCH = settings.search
+THINKING = settings.thinking
 
 server = Server()
 worker_pool = WorkerPool()
@@ -70,6 +72,28 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         messages = [
             *messages,
         ]
+
+        if THINKING:
+            # Prepend a thinking prompt to set the LLM into thinking mode
+            messages_with_thinking = [SystemMessage(content=ThinkingPrompts.thinking_system_prompt()), *messages]
+            thought_process: list[str] = []
+
+            # Yield thought indicator
+            yield MessagePart(content_type="text/plain", content="**🤔 Here is my thought process:**\n\n")
+
+            # Yield thought
+            async for data, event in model.create(messages=messages_with_thinking, stream=True):
+                match (data, event.name):
+                    case (ChatModelNewTokenEvent(), "new_token"):
+                        token = data.value.get_text_content()
+                        thought_process.append(token)
+                        yield MessagePart(content_type="text/plain", content=token, role="assistant")  # type: ignore[call-arg]
+
+            # Add thought to message history
+            messages = [CustomMessage(role="thoughts", content="".join(thought_process)), *messages]
+
+            # Yield response indicator, yielding response happens as normal
+            yield MessagePart(content_type="text/plain", content="\n\n**😁 Here is my response:**\n\n")
 
         if SEARCH:
             search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)

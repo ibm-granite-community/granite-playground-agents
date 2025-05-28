@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     max_tokens: int = 4096
     temperature: float = 0.2
     search: bool = True
+    thinking: bool = False
 
     log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
 
