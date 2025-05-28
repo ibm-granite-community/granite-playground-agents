@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 
 from beeai_framework.backend import Message
 
+from granite_chat.search.types import SearchResult
+
 
 class SearchPrompts:
 
@@ -12,16 +14,18 @@ class SearchPrompts:
     def search_system_prompt() -> str:
         return f"""You are Granite, developed by IBM.
 
-You are a helpful assistant tasked with generating an informative, accurate, and easy-to-read response based on the information contained in the following documents. 
+You are a helpful assistant tasked with generating an informative, accurate, and easy-to-read response.
+You have access to a set of documents that may contain relevant information. Use these documents to help formulate your response to the user query.
+
 Your response should:
 - Be clear, concise, and comprehensive, suitable for a general audience.
 - Use plain language without jargon, or explain terms where necessary.
 - Stay aligned with the content and facts of the source documents whenever possible.
 - Avoid making assumptions or adding information that is not supported by the documents.
-- Not reference or mention the documents or their existence.
+- Not reference or mention the documents or their existence in any way.
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
-If the information needed is not available in the documents, inform the user that the question cannot be answered based on the available data.
+If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
 """  # noqa: E501
 
@@ -61,4 +65,22 @@ Conversation:
 Generate exactly {max_queries} search queries that reflect the intent of the user's last message.
 You must respond with a list of strings in the following format: [{dynamic_example}].
 The response should contain ONLY the list.
+"""  # noqa: E501
+
+    @staticmethod
+    def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
+
+        return f"""
+Given a user query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the user's query.
+
+Here is the user's query: {query}
+
+Here is the search result:
+- URL: {search_result.url}
+- Title: {search_result.title}
+- A snippet from the page: {search_result.body}
+
+Respond with one of the following labels only:
+- RELEVANT: if the page likely contains meaningful information answering or directly related to the query.
+- IRRELEVANT: if the page is unlikely to contain information useful for the query.
 """  # noqa: E501

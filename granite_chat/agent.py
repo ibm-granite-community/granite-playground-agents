@@ -23,6 +23,7 @@ from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.prompts import SearchPrompts
+from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
@@ -39,6 +40,7 @@ TEMPERATURE = settings.temperature
 SEARCH = settings.search
 
 server = Server()
+worker_pool = WorkerPool()
 
 
 @server.agent(
@@ -70,7 +72,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         ]
 
         if SEARCH:
-            search_agent = SearchAgent(chat_model=model)
+            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
             docs: list[Document] = await search_agent.search(messages)
 
             # TODO: Quality control on docs
