@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from beeai_framework.backend import Message
+from langchain_core.documents import Document
 
 from granite_chat.search.types import SearchResult
 
@@ -11,7 +12,10 @@ class SearchPrompts:
         pass
 
     @staticmethod
-    def search_system_prompt() -> str:
+    def search_system_prompt(docs: list[Document]) -> str:
+
+        doc_str = "".join(f"""Document {i+1!s}\n{d.page_content}\n""" for i, d in enumerate(docs))
+
         return f"""You are Granite, developed by IBM.
 
 You are a helpful assistant tasked with generating an informative, accurate, and easy-to-read response.
@@ -27,6 +31,9 @@ Your response should:
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
+
+Here are the documents:
+{doc_str}
 """  # noqa: E501
 
     @staticmethod

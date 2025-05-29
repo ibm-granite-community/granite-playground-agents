@@ -96,7 +96,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             thought_process: list[str] = []
 
             # Yield thought indicator
-            yield MessagePart(content_type="text/plain", content="**🤔 Here is my thought process:**\n\n")
+            yield MessagePart(content_type="thinking", content="**🤔 Thought process:**\n\n")
 
             # Yield thought
             async for data, event in model.create(messages=messages_with_thinking, stream=True):
@@ -104,22 +104,42 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                     case (ChatModelNewTokenEvent(), "new_token"):
                         token = data.value.get_text_content()
                         thought_process.append(token)
-                        yield MessagePart(content_type="text/plain", content=token, role="assistant")  # type: ignore[call-arg]
+                        yield MessagePart(content_type="thinking", content=token, role="assistant")  # type: ignore[call-arg]
 
             # Add thought to message history
-            messages = [CustomMessage(role="thoughts", content="".join(thought_process)), *messages]
+            messages = [
+                SystemMessage(content=ThinkingPrompts.responding_system_prompt(thoughts="".join(thought_process))),
+                *messages,
+            ]
 
             # Yield response indicator, yielding response happens as normal
-            yield MessagePart(content_type="text/plain", content="\n\n**😁 Here is my response:**\n\n")
+            yield MessagePart(content_type="thinking", content="\n\n**👩‍💻 Response:**\n\n")
+
+        if SEARCH:
+            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
+            docs: list[Document] = await search_agent.search(messages)
+
+            # TODO: Quality control on docs
+            # TODO: Better fallback when no good docs found
+            if len(docs) > 0:
+                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
+
+                # for i, d in enumerate(docs):
+                #     role = "document " + str({"document_id": str(i + 1)})
+                #     logger.info(f"{role} => {d.page_content}")
+                #     doc_messages.append(CustomMessage(role=role, content=d.page_content))
+
+                # Prepend document prompt and documents
+                messages = doc_messages + messages
+
+        async for data, event in model.create(messages=messages, stream=True):
+            match (data, event.name):
+                case (ChatModelNewTokenEvent(), "new_token"):
+                    yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
     except Exception as e:
         traceback.print_exc()
         raise e
-
-    async for data, event in model.create(messages=messages, stream=True):
-        match (data, event.name):
-            case (ChatModelNewTokenEvent(), "new_token"):
-                yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
 
 server.run(host=settings.host, port=settings.port, log_level=settings.log_level.lower())
