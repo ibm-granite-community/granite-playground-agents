@@ -10,7 +10,6 @@ from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
     ChatModelParameters,
-    CustomMessage,
     SystemMessage,
 )
 from beeai_framework.backend import (
@@ -18,6 +17,7 @@ from beeai_framework.backend import (
 )
 from config import settings  # type: ignore
 from langchain_core.documents import Document
+from pydantic import BaseModel
 
 from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
@@ -43,6 +43,14 @@ THINKING = settings.thinking
 
 server = Server()
 worker_pool = WorkerPool()
+
+
+class Source(BaseModel):
+    url: str
+    title: str
+
+    class Config:
+        frozen = True  # makes it immutable and hashable
 
 
 @server.agent(
@@ -114,12 +122,21 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             # Yield response indicator, yielding response happens as normal
             yield MessagePart(content_type="thinking", content="\n\n**👩‍💻 Response:**\n\n")
 
+        # Yield agent response
         async for data, event in model.create(messages=messages, stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
                     yield MessagePart(
                         content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                     )  # type: ignore[call-arg]
+
+        # Yield sources
+        if SEARCH and len(docs) > 0:
+            sources = {Source(url=doc.metadata["url"], title=doc.metadata["title"]) for doc in docs}
+            yield MessagePart(content_type="source", content="\n\n**Sources:**\n", role="assistant")  # type: ignore[call-arg]
+            for i, source in enumerate(sources):
+                doc_str = f"{i+1!s}. {source.title} {source.url}\n"
+                yield MessagePart(content_type="source", content=doc_str, role="assistant")  # type: ignore[call-arg]
 
     except Exception as e:
         traceback.print_exc()

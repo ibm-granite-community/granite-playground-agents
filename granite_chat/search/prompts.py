@@ -13,7 +13,12 @@ class SearchPrompts:
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
 
-        doc_str = "".join(f"""Document {i + 1!s}\n{d.page_content}\n""" for i, d in enumerate(docs))
+        doc_str = "".join(
+            f"""Document: {i+1!s}
+Title: {d.metadata["title"]}
+Content: {d.page_content}\n\n"""
+            for i, d in enumerate(docs)
+        )
 
         return f"""You are Granite, developed by IBM.
 
