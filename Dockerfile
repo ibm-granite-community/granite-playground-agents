@@ -1,27 +1,17 @@
-FROM python:3.11-slim AS builder
-
+FROM registry.access.redhat.com/ubi9/python-311 AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.6.16 /uv /bin/
 
 WORKDIR /app
-COPY . /app
+USER root
+
+COPY . /app/
 
 RUN uv sync --no-dev --no-cache --locked --link-mode copy
 
-FROM python:3.11-slim-bookworm
+RUN chown 1001:1001 -R /app
 
-ENV LLM_MODEL=ibm-granite/granite-3.3-8b-instruct
-ENV LLM_API_BASE=unused
-ENV LLM_API_KEY=unused
+USER default
 
-ENV PRODUCTION_MODE=True
 ENV PATH="/app/.venv/bin:$PATH"
 
-RUN useradd -m appuser
-USER appuser
-
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app /app
-
-WORKDIR /app
-
-CMD ["python", "granite_chat/agent.py"]
+CMD ["uv", "run", "granite_chat/agent.py"]
