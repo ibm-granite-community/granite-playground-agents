@@ -46,7 +46,7 @@ worker_pool = WorkerPool()
 
 
 @server.agent(
-    name="Granite Chat",
+    name=settings.agent_name,
     description="This agent leverages the Granite 3.3 large language model to deliver fast, accurate, and context-aware conversations. Designed for natural, human-like interaction, the agent can handle complex queries, provide insightful responses, and adapt to a wide range of topics.",  # noqa: E501
     metadata=Metadata(
         ui={"type": "chat", "user_greeting": "Hi, I'm Granite Chat! How can I help you?"},  # type: ignore[call-arg]
@@ -73,7 +73,24 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             *messages,
         ]
 
-        if THINKING:
+        if SEARCH:
+            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
+            docs: list[Document] = await search_agent.search(messages)
+
+            # TODO: Quality control on docs
+            # TODO: Better fallback when no good docs found
+            if len(docs) > 0:
+                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt())]
+
+                for i, d in enumerate(docs):
+                    role = "document " + str({"document_id": str(i + 1)})
+                    logger.info(f"{role} => {d.page_content}")
+                    doc_messages.append(CustomMessage(role=role, content=d.page_content))
+
+                # Prepend document prompt and documents
+                messages = doc_messages + messages
+
+        elif THINKING:
             # Prepend a thinking prompt to set the LLM into thinking mode
             messages_with_thinking = [SystemMessage(content=ThinkingPrompts.thinking_system_prompt()), *messages]
             thought_process: list[str] = []
@@ -94,23 +111,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
             # Yield response indicator, yielding response happens as normal
             yield MessagePart(content_type="text/plain", content="\n\n**😁 Here is my response:**\n\n")
-
-        if SEARCH:
-            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
-            docs: list[Document] = await search_agent.search(messages)
-
-            # TODO: Quality control on docs
-            # TODO: Better fallback when no good docs found
-            if len(docs) > 0:
-                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt())]
-
-                for i, d in enumerate(docs):
-                    role = "document " + str({"document_id": str(i + 1)})
-                    logger.info(f"{role} => {d.page_content}")
-                    doc_messages.append(CustomMessage(role=role, content=d.page_content))
-
-                # Prepend document prompt and documents
-                messages = doc_messages + messages
 
     except Exception as e:
         traceback.print_exc()
