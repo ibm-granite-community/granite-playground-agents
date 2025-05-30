@@ -4,7 +4,6 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-
     agent_name: str = "Granite Chat"
 
     port: int = 8000

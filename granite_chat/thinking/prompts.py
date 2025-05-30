@@ -1,21 +1,22 @@
-from datetime import UTC, datetime
-
-
 class ThinkingPrompts:
-
     def __init__(self) -> None:
         pass
 
     @staticmethod
     def thinking_system_prompt() -> str:
-        return f"""Knowledge Cutoff Date: April 2024.
-You are Granite, developed by IBM.
+        return """
+Write down your thoughts and reasoning process as if you're thinking out loud before responding.
+Do not provide a response, you will do that later. For not just think through the response.
+"""
 
-You are an expert at thinking and reasoning.
+    @staticmethod
+    def responding_system_prompt(thoughts: str) -> str:
+        return f"""
+Respond in a comprehensive and detailed way.
+Use your thoughts to guide and inform your response.
 
-Write down your thoughts and reasoning process. In the thought process, engage in a comprehensive cycle of analysis, summarization, exploration, reassessment, reflection, backtracing, and iteration to develop well-considered thinking process.
+Here are your thoughts:
+{thoughts}
 
-Do not provide a response, you will do that later. Just think.
 
-Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
-"""  # noqa: E501
+"""

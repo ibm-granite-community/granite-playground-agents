@@ -24,7 +24,6 @@ logger = get_formatted_logger(__name__, logging.INFO)
 
 
 class SearchAgent:
-
     def __init__(self, chat_model: ChatModel, worker_pool: WorkerPool) -> None:
         self.chat_model = chat_model
         self.worker_pool = worker_pool
@@ -83,20 +82,17 @@ class SearchAgent:
         return scraped_content
 
     async def generate_search_queries(self, messages: list[Message]) -> list[str]:
-
         search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
         response = await self.chat_model.create(messages=[UserMessage(content=search_query_prompt)])
         queries = ast.literal_eval(response.get_text_content().strip())
         return queries
 
     async def filter_search_results(self, query: str, search_results: SearchResults) -> SearchResults:
-
         filtered_results = await asyncio.gather(*(self.filter_search_result(query, r) for r in search_results.results))
         res = [r for r in filtered_results if r is not None]
         return SearchResults(results=res)
 
     async def filter_search_result(self, query: str, search_result: SearchResult) -> SearchResult | None:
-
         async with self.worker_pool.throttle():
             try:
                 search_filter_prompt = SearchPrompts.filter_search_result_prompt(
