@@ -79,12 +79,12 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             # TODO: Quality control on docs
             # TODO: Better fallback when no good docs found
             if len(docs) > 0:
-                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt())]
+                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
 
-                for i, d in enumerate(docs):
-                    role = "document " + str({"document_id": str(i + 1)})
-                    logger.info(f"{role} => {d.page_content}")
-                    doc_messages.append(CustomMessage(role=role, content=d.page_content))
+                # for i, d in enumerate(docs):
+                #     role = "document " + str({"document_id": str(i + 1)})
+                #     logger.info(f"{role} => {d.page_content}")
+                #     doc_messages.append(CustomMessage(role=role, content=d.page_content))
 
                 # Prepend document prompt and documents
                 messages = doc_messages + messages
@@ -113,23 +113,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
             # Yield response indicator, yielding response happens as normal
             yield MessagePart(content_type="thinking", content="\n\n**👩‍💻 Response:**\n\n")
-
-        if SEARCH:
-            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
-            docs: list[Document] = await search_agent.search(messages)
-
-            # TODO: Quality control on docs
-            # TODO: Better fallback when no good docs found
-            if len(docs) > 0:
-                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
-
-                # for i, d in enumerate(docs):
-                #     role = "document " + str({"document_id": str(i + 1)})
-                #     logger.info(f"{role} => {d.page_content}")
-                #     doc_messages.append(CustomMessage(role=role, content=d.page_content))
-
-                # Prepend document prompt and documents
-                messages = doc_messages + messages
 
         async for data, event in model.create(messages=messages, stream=True):
             match (data, event.name):
