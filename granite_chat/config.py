@@ -4,8 +4,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+
+    agent_name: str = "Granite Chat"
+
     port: int = 8000
     host: str = "0.0.0.0"
+
     LLM_MODEL: str | None = None
     LLM_API_BASE: str | None = None
     LLM_API_KEY: str | None = None
