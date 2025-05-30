@@ -57,7 +57,6 @@ worker_pool = WorkerPool()
     ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-
     try:
         # TODO: Manage context window
         messages = utils.to_beeai_framework(messages=input)
@@ -135,7 +134,9 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         async for data, event in model.create(messages=messages, stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
-                    yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
+                    yield MessagePart(
+                        content_type="text/plain", content=data.value.get_text_content(), role="assistant"
+                    )  # type: ignore[call-arg]
 
     except Exception as e:
         traceback.print_exc()

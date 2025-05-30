@@ -7,14 +7,12 @@ from granite_chat.search.types import SearchResult
 
 
 class SearchPrompts:
-
     def __init__(self) -> None:
         pass
 
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
-
-        doc_str = "".join(f"""Document {i+1!s}\n{d.page_content}\n""" for i, d in enumerate(docs))
+        doc_str = "".join(f"""Document {i + 1!s}\n{d.page_content}\n""" for i, d in enumerate(docs))
 
         return f"""You are Granite, developed by IBM.
 
@@ -30,7 +28,7 @@ Your response should:
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
-Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
+Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Here are the documents:
 {doc_str}
@@ -38,7 +36,6 @@ Here are the documents:
 
     @staticmethod
     def generate_search_queries_prompt(messages: list[Message], max_queries: int = 3) -> str:
-
         conversation: list[str] = []
 
         for m in messages:
@@ -48,16 +45,16 @@ Here are the documents:
                 conversation.append("Assistant: " + m.text)
 
         conversation_str = "\n".join(conversation)
-        dynamic_example = ", ".join([f'"query {i+1}"' for i in range(max_queries)])
+        dynamic_example = ", ".join([f'"query {i + 1}"' for i in range(max_queries)])
 
         return f"""
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
 The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings.
-Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
+Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Here is an example:
 Conversation:
-User: I’m getting a weird error when deploying my React app to Vercel.
+User: I'm getting a weird error when deploying my React app to Vercel.
 Assistant: What does the error say?
 User: It says “Module not found: Can't resolve './App'”.
 
@@ -76,7 +73,6 @@ The response should contain ONLY the list.
 
     @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
-
         return f"""
 Given a user query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the user's query.
 

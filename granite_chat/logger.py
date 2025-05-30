@@ -55,22 +55,21 @@ class ColourizedFormatter(logging.Formatter):
       for formatting the output, instead of the plain text message.
     """
 
-    level_name_colors = {
-        TRACE_LOG_LEVEL: lambda level_name: click.style(str(level_name), fg="blue"),
-        logging.DEBUG: lambda level_name: click.style(str(level_name), fg="cyan"),
-        logging.INFO: lambda level_name: click.style(str(level_name), fg="green"),
-        logging.WARNING: lambda level_name: click.style(str(level_name), fg="yellow"),
-        logging.ERROR: lambda level_name: click.style(str(level_name), fg="red"),
-        logging.CRITICAL: lambda level_name: click.style(str(level_name), fg="bright_red"),
-    }
-
     def __init__(
         self,
         fmt: str | None = None,
         datefmt: str | None = None,
         style: Literal["%", "{", "$"] = "%",
         use_colors: bool | None = None,
-    ):
+    ) -> None:
+        self.level_name_colors = {
+            TRACE_LOG_LEVEL: lambda level_name: click.style(str(level_name), fg="blue"),
+            logging.DEBUG: lambda level_name: click.style(str(level_name), fg="cyan"),
+            logging.INFO: lambda level_name: click.style(str(level_name), fg="green"),
+            logging.WARNING: lambda level_name: click.style(str(level_name), fg="yellow"),
+            logging.ERROR: lambda level_name: click.style(str(level_name), fg="red"),
+            logging.CRITICAL: lambda level_name: click.style(str(level_name), fg="bright_red"),
+        }
         if use_colors in (True, False):
             self.use_colors = use_colors
         else:
@@ -87,7 +86,7 @@ class ColourizedFormatter(logging.Formatter):
     def should_use_colors(self) -> bool:
         return True  # pragma: no cover
 
-    def formatMessage(self, record: logging.LogRecord) -> str:
+    def formatMessage(self, record: logging.LogRecord) -> str:  # noqa: N802
         recordcopy = copy(record)
         levelname = recordcopy.levelname
         seperator = " " * (8 - len(recordcopy.levelname))
