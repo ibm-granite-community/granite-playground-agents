@@ -71,7 +71,9 @@ class SearchAgent:
         # Add title from search results to docs
         url_to_result: dict[str, SearchResult] = {result.url: result for result in search_results.results}
 
+        # Add search engine metadata
         for d in docs:
+            d.metadata["url"] = url_to_result[d.metadata["source"]].url
             d.metadata["title"] = url_to_result[d.metadata["source"]].title
             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
 

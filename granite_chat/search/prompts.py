@@ -12,7 +12,13 @@ class SearchPrompts:
 
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
-        doc_str = "".join(f"""Document {i + 1!s}\n{d.page_content}\n""" for i, d in enumerate(docs))
+
+        doc_str = "".join(
+            f"""Document: {i+1!s}
+Title: {d.metadata["title"]}
+Content: {d.page_content}\n\n"""
+            for i, d in enumerate(docs)
+        )
 
         return f"""You are Granite, developed by IBM.
 
@@ -28,7 +34,7 @@ Your response should:
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
-Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
 
 Here are the documents:
 {doc_str}
