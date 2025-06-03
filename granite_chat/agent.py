@@ -88,13 +88,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             # TODO: Better fallback when no good docs found
             if len(docs) > 0:
                 doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
-
-                # for i, d in enumerate(docs):
-                #     role = "document " + str({"document_id": str(i + 1)})
-                #     logger.info(f"{role} => {d.page_content}")
-                #     doc_messages.append(CustomMessage(role=role, content=d.page_content))
-
-                # Prepend document prompt and documents
+                # Prepend document prompt
                 messages = doc_messages + messages
 
         elif THINKING:
@@ -134,8 +128,9 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         if SEARCH and len(docs) > 0:
             sources = {Source(url=doc.metadata["url"], title=doc.metadata["title"]) for doc in docs}
             yield MessagePart(content_type="source", content="\n\n**Sources:**\n", role="assistant")  # type: ignore[call-arg]
+
             for i, source in enumerate(sources):
-                doc_str = f"{i+1!s}. {source.title} {source.url}\n"
+                doc_str = f"{i+1!s}. [{source.title}]({source.url})\n"
                 yield MessagePart(content_type="source", content=doc_str, role="assistant")  # type: ignore[call-arg]
 
     except Exception as e:

@@ -14,23 +14,22 @@ class SearchPrompts:
     def search_system_prompt(docs: list[Document]) -> str:
 
         doc_str = "".join(
-            f"""Document: {i+1!s}
-Title: {d.metadata["title"]}
+            f"""Title: {d.metadata["title"]}
 Content: {d.page_content}\n\n"""
             for i, d in enumerate(docs)
         )
 
         return f"""You are Granite, developed by IBM.
 
-You are a helpful assistant tasked with generating an informative, accurate, and easy-to-read response.
-You have access to a set of documents that may contain relevant information. Use these documents to help formulate your response to the user query.
+You are a helpful assistant tasked with generating a comprehensive, informative, accurate, and easy-to-read response.
+You have access to a set of documents that may contain relevant information. You can use these documents to help formulate your response to the user query.
 
 Your response should:
-- Be clear, concise, and comprehensive, suitable for a general audience.
+- Be clear and comprehensive, suitable for a general audience.
 - Use plain language without jargon, or explain terms where necessary.
 - Stay aligned with the content and facts of the source documents whenever possible.
 - Avoid making assumptions or adding information that is not supported by the documents.
-- Not reference or mention the documents or their existence in any way.
+- Not make any reference or mention of "documents" or their existence in any way.
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
@@ -58,6 +57,10 @@ Given the following conversation between a user and an assistant, analyze the us
 The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings.
 Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
+Tips:
+- Do not assume or introduce information that is not directly mentioned in the conversation.
+- Use the date to augment queries if the user is asking of recent or latest information.
+
 Here is an example:
 Conversation:
 User: I'm getting a weird error when deploying my React app to Vercel.
@@ -78,6 +81,40 @@ The response should contain ONLY the list.
 """  # noqa: E501
 
     @staticmethod
+    def generate_standalone_message(messages: list[Message]) -> str:
+        conversation: list[str] = []
+
+        for m in messages:
+            if m.role == "user":
+                conversation.append("User: " + m.text)
+            elif m.role == "assistant":
+                conversation.append("Assistant: " + m.text)
+
+        conversation_str = "\n".join(conversation)
+
+        return f"""
+Given the following conversation between a user and an assistant, generate a single, standalone message that clearly and concisely reflects the user's intent, preserving the necessary context so it can be understood independently of the original dialogue.
+
+Here is an example:
+Conversation:
+User: I'm trying to extract keywords from text.
+Assistant: What programming language are you using?
+User: Python.
+Assistant: You can use libraries like spaCy or sklearn.
+User: I want the output in a JSON format with relevance scores.
+
+Standalone Message:
+Im trying to extract keywords from text using Python and output the results in a JSON format with relevance scores.
+
+Now here is your task:
+
+Conversation:
+{conversation_str}
+
+Generate a standalone message that clearly and concisely reflects the user's intent. Output only the message.
+"""  # noqa: E501
+
+    @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
 Given a user query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the user's query.
@@ -92,4 +129,28 @@ Here is the search result:
 Respond with one of the following labels only:
 - RELEVANT: if the page likely contains meaningful information answering or directly related to the query.
 - IRRELEVANT: if the page is unlikely to contain information useful for the query.
+"""  # noqa: E501
+
+    @staticmethod
+    def filter_doc_prompt(query: str, doc: Document) -> str:
+
+        url = doc.metadata["url"]
+        title = doc.metadata["title"]
+        content = doc.page_content
+
+        return f"""
+You are a classifier evaluating the relevance of a given document to a search query.
+Given a search query and a document, decide whether the document contains information that answers the query or is highly relevant to it.
+Use the url, title and content of the document to make a decision. Reject documents if they are too short or not interesting.
+
+Here is the search query: {query}
+
+Here is the document:
+URL: {url}
+Title: {title}
+Content: {content}
+
+Respond with one of the following labels only:
+- RELEVANT: if the document contains relevant information answering or directly related to the query.
+- IRRELEVANT: if the document does not contain information useful for the query.
 """  # noqa: E501
