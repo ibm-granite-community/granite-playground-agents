@@ -126,8 +126,16 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             generator: CitationGenerator
 
             if settings.GRANITE_IO_OPENAI_URL and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+                extra_headers = (
+                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_HEADERS.split(","))
+                    if settings.GRANITE_IO_OPENAI_HEADERS
+                    else None
+                )
+
                 generator = GraniteIOCitationGenerator(
-                    openai_base_url=settings.GRANITE_IO_OPENAI_URL, model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID
+                    openai_base_url=settings.GRANITE_IO_OPENAI_URL,
+                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                    extra_headers=extra_headers,
                 )
             else:
                 generator = DefaultCitationGenerator()

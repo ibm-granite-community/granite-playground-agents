@@ -43,10 +43,11 @@ class DefaultCitationGenerator(CitationGenerator):
 class GraniteIOCitationGenerator(CitationGenerator):
     """Simple sources listed in markdown."""
 
-    def __init__(self, openai_base_url: str, model_id: str) -> None:
+    def __init__(self, openai_base_url: str, model_id: str, extra_headers: dict[str, str] | None = None) -> None:
         super().__init__()
         self.openai_base_url = openai_base_url
         self.model_id = model_id
+        self.extra_headers = extra_headers
 
     async def generate(
         self, messages: list[Message], docs: list[Document], response: str
@@ -73,7 +74,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
                     messages=granite_io_messages,
                     documents=granite_io_documents,
                     controls={"citations": True},
-                    generate_inputs=GenerateInputs(temperature=0.0),
+                    generate_inputs=GenerateInputs(temperature=0.0, extra_headers=self.extra_headers),
                 )
             )
 
@@ -86,6 +87,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
                 citation = Citation(
                     citation_id=gio_citation.citation_id,
+                    document_id=gio_citation.doc_id,
                     source=original_doc.metadata["url"],
                     source_title=original_doc.metadata["title"],
                     context_text=gio_citation.context_text,
