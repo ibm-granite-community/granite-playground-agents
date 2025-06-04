@@ -80,7 +80,7 @@ The response should contain ONLY the list.
 """  # noqa: E501
 
     @staticmethod
-    def generate_standalone_message(messages: list[Message]) -> str:
+    def generate_standalone_query(messages: list[Message]) -> str:
         conversation: list[str] = []
 
         for m in messages:
@@ -92,7 +92,8 @@ The response should contain ONLY the list.
         conversation_str = "\n".join(conversation)
 
         return f"""
-Given the following conversation between a user and an assistant, analyze the user's last message and generate a single, standalone message that clearly and concisely reflects the user's intent, preserving the necessary context so it can be understood independently.
+Given the following conversation between a user and an assistant, analyze the user's last message and generate a single, standalone query that clearly and concisely reflects the user's intent, preserving the necessary context so it can be understood independently.
+The query will be used to look up information.
 
 Here is an example:
 Conversation:
@@ -102,15 +103,15 @@ User: Python.
 Assistant: You can use libraries like spaCy or sklearn.
 User: I want the output in a JSON format with relevance scores.
 
-Standalone Message:
-I want to extract keywords from text using Python and output the results in a JSON format with relevance scores.
+Standalone Query:
+How to extract keywords from text using Python and output the results in a JSON format with relevance scores.
 
 Now here is your task:
 
 Conversation:
 {conversation_str}
 
-Generate a standalone message that clearly and concisely reflects the user's intent. Output only the standalone message.
+Generate a standalone query that clearly and concisely reflects the user's intent. Output only the standalone query.
 """  # noqa: E501
 
     @staticmethod

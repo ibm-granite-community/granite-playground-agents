@@ -93,7 +93,7 @@ class SearchAgent:
         return queries
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
-        standalone_prompt = SearchPrompts.generate_standalone_message(messages)
+        standalone_prompt = SearchPrompts.generate_standalone_query(messages)
         response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
         return response.get_text_content()
 
