@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str | None = None
     EMBEDDING: str | None = None
 
+    GRANITE_IO_OPENAI_URL: str | None = None
+    GRANITE_IO_CITATIONS_MODEL_ID: str | None = None
+
     max_tokens: int = 4096
     temperature: float = 0.2
     search: bool = True
