@@ -31,13 +31,12 @@ class DefaultCitationGenerator(CitationGenerator):
     async def generate(
         self, messages: list[Message], docs: list[Document], response: str
     ) -> AsyncGenerator[MessagePart, None]:
-
         sources = {Source(url=doc.metadata["url"], title=doc.metadata["title"]) for doc in docs}
 
         yield MessagePart(content_type="source", content="\n\n**Sources:**\n", role="assistant")  # type: ignore[call-arg]
 
         for i, source in enumerate(sources):
-            doc_str = f"{i+1!s}. [{source.title}]({source.url})\n"
+            doc_str = f"{i + 1!s}. [{source.title}]({source.url})\n"
             yield MessagePart(content_type="source", content=doc_str, role="assistant")  # type: ignore[call-arg]
 
 
@@ -52,7 +51,6 @@ class GraniteIOCitationGenerator(CitationGenerator):
     async def generate(
         self, messages: list[Message], docs: list[Document], response: str
     ) -> AsyncGenerator[MessagePart, None]:
-
         citations_io_processor = CitationsIOProcessor(
             backend=make_backend(
                 "openai",

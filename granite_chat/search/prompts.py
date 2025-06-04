@@ -12,7 +12,6 @@ class SearchPrompts:
 
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
-
         doc_str = "".join(
             f"""Title: {d.metadata["title"]}
 Content: {d.page_content}\n\n"""
@@ -33,7 +32,7 @@ Your response should:
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
-Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
+Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Here are the documents:
 {doc_str}
@@ -134,7 +133,6 @@ Respond with one of the following labels only:
 
     @staticmethod
     def filter_doc_prompt(query: str, doc: Document) -> str:
-
         url = doc.metadata["url"]
         title = doc.metadata["title"]
         content = doc.page_content

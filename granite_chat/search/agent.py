@@ -39,7 +39,6 @@ class SearchAgent:
         self.retriever = get_retrievers({}, self.cfg)[0]
 
     async def search(self, messages: list[Message]) -> list[Document]:
-
         # Generate contextualized search queries
         # TODO: parallelize these
         search_queries = await self._generate_search_queries(messages)

@@ -123,7 +123,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
         # Yield sources/citation
         if SEARCH and len(docs) > 0:
-
             generator: CitationGenerator
 
             if settings.GRANITE_IO_OPENAI_URL and settings.GRANITE_IO_CITATIONS_MODEL_ID:

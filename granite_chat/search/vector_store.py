@@ -10,7 +10,6 @@ from langchain.vectorstores import VectorStore
 
 
 class GraniteVectorStoreWrapper(VectorStoreWrapper):
-
     def __init__(self, vector_store: VectorStore, chunk_size: int = 1000, chunk_overlap: int = 200) -> None:
         super().__init__(vector_store)
         self.chunk_size = chunk_size
