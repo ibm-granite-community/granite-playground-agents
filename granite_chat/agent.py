@@ -84,6 +84,8 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         )
 
         if SEARCH:
+            yield MessagePart(content_type="log", content="**Searching the web...**\n\n")
+
             search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
             docs: list[Document] = await search_agent.search(messages)
 
