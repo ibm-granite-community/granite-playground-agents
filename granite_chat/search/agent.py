@@ -49,7 +49,7 @@ class SearchAgent:
             tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDING_HF_TOKENIZER)
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store,
-                chunk_size=settings.CHUNK_SIZE,
+                chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
                 chunk_overlap=int(settings.CHUNK_OVERLAP),
                 tokenizer=tokenizer,
             )
