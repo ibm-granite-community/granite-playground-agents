@@ -12,7 +12,6 @@ class SearchPrompts:
 
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
-
         doc_str = "".join(
             f"""Title: {d.metadata["title"]}
 Content: {d.page_content}\n\n"""
@@ -33,7 +32,7 @@ Your response should:
 
 If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
-Assume the current date is {datetime.now(UTC).strftime('%B %d, %Y')} if required.
+Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Here are the documents:
 {doc_str}
@@ -94,6 +93,7 @@ The response should contain ONLY the list.
 
         return f"""
 Given the following conversation between a user and an assistant, generate a single, standalone message that clearly and concisely reflects the user's intent, preserving the necessary context so it can be understood independently of the original dialogue.
+Include all necessary keywords.
 
 Here is an example:
 Conversation:
@@ -104,7 +104,7 @@ Assistant: You can use libraries like spaCy or sklearn.
 User: I want the output in a JSON format with relevance scores.
 
 Standalone Message:
-Im trying to extract keywords from text using Python and output the results in a JSON format with relevance scores.
+Extract keywords from text using Python and output the results in a JSON format with relevance scores.
 
 Now here is your task:
 
@@ -133,15 +133,16 @@ Respond with one of the following labels only:
 
     @staticmethod
     def filter_doc_prompt(query: str, doc: Document) -> str:
-
         url = doc.metadata["url"]
         title = doc.metadata["title"]
         content = doc.page_content
 
         return f"""
 You are a classifier evaluating the relevance of a given document to a search query.
+
 Given a search query and a document, decide whether the document contains information that answers the query or is highly relevant to it.
-Use the url, title and content of the document to make a decision. Reject documents if they are too short or not interesting.
+Use the url, title and content of the document to make a decision, but focus primarily on content.
+Reject documents if they are too short, incoherent or not interesting.
 
 Here is the search query: {query}
 
@@ -151,6 +152,6 @@ Title: {title}
 Content: {content}
 
 Respond with one of the following labels only:
-- RELEVANT: if the document contains relevant information answering or directly related to the query.
-- IRRELEVANT: if the document does not contain information useful for the query.
+- RELEVANT: if the document is coherent, contains relevant information answering or directly related to the query.
+- IRRELEVANT: if the document is incoherent or does not contain information useful for the query.
 """  # noqa: E501

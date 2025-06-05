@@ -8,6 +8,15 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "absl-py"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/15/18693af986560a5c3cc0b84a8046b536ffb2cdb536e03cce897f2759e284/absl_py-2.3.0.tar.gz", hash = "sha256:d96fda5c884f1b22178852f30ffa85766d50b99e00775ea626c23304f582fc4f", size = 116400, upload-time = "2025-05-27T09:15:50.143Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/87/04/9d75e1d3bb4ab8ec67ff10919476ccdee06c098bcfcf3a352da5f985171d/absl_py-2.3.0-py3-none-any.whl", hash = "sha256:9824a48b654a306168f63e0d97714665f8490b8d89ec7bf2efc24bf67cf579b3", size = 135657, upload-time = "2025-05-27T09:15:48.742Z" },
+]
+
+[[package]]
 name = "acp-sdk"
 version = "0.8.4"
 source = { registry = "https://pypi.org/simple" }
@@ -122,6 +131,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ba/b5/6d55e80f6d8a08ce22b982eafa278d823b541c925f11ee774b0b9c43473d/aiosignal-1.3.2.tar.gz", hash = "sha256:a8c255c66fafb1e499c9351d0bf32ff2d8a0321595ebac3b93713656d2436f54", size = 19424, upload-time = "2024-12-13T17:10:40.86Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/6a/bc7e17a3e87a2985d3e8f4da4cd0f481060eb78fb08596c42be62c90a4d9/aiosignal-1.3.2-py2.py3-none-any.whl", hash = "sha256:45cde58e409a301715980c2b01d0c28bdde3770d8290b5eb2173759d9acb31a5", size = 7597, upload-time = "2024-12-13T17:10:38.469Z" },
+]
+
+[[package]]
+name = "alchemy-config"
+version = "1.1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/30/02/718317d82c8db8846f072fb121bc90ebe3c0aca92e9893d644cc7cc75271/alchemy-config-1.1.3.tar.gz", hash = "sha256:526aeb77cd0c27c7b112ffb67e5af135c414e32dfbb4aa6dff45b5ca248e256d", size = 10658, upload-time = "2024-01-30T17:57:36.392Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/fc/3fbc6f626ac76e2e1f8fbe6c36057451184a133cdcb4d509569b08f2e1a8/alchemy_config-1.1.3-py3-none-any.whl", hash = "sha256:60dfccd442533f3683428487de1b4650c2cb60f27e349186e5c88dd5ca204577", size = 7335, upload-time = "2024-01-30T17:57:34.971Z" },
 ]
 
 [[package]]
@@ -887,6 +908,7 @@ dependencies = [
     { name = "acp-sdk" },
     { name = "beeai-framework" },
     { name = "gpt-researcher" },
+    { name = "granite-io" },
     { name = "langchain-ollama" },
     { name = "python-dotenv" },
 ]
@@ -903,6 +925,7 @@ requires-dist = [
     { name = "acp-sdk", specifier = ">=0.8.4" },
     { name = "beeai-framework", specifier = ">=0.1.21" },
     { name = "gpt-researcher", specifier = ">=0.13.3" },
+    { name = "granite-io", git = "https://github.com/ibm-granite/granite-io/" },
     { name = "langchain-ollama", specifier = ">=0.3.3" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
 ]
@@ -912,6 +935,18 @@ dev = [
     { name = "detect-secrets", git = "https://github.com/ibm/detect-secrets.git?rev=master" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "ruff", specifier = ">=0.11.10" },
+]
+
+[[package]]
+name = "granite-io"
+version = "0.4.1.dev18"
+source = { git = "https://github.com/ibm-granite/granite-io/#a6c898f4ced63a37a4921770c2f2e3a1c2d975c8" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "alchemy-config" },
+    { name = "jsonschema" },
+    { name = "pydantic" },
+    { name = "rouge-score" },
 ]
 
 [[package]]
@@ -2670,6 +2705,18 @@ sdist = { url = "https://files.pythonhosted.org/packages/f6/31/b6d055f291a660a7b
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2e/3c/7a824c0514e87c61000583ac22c8321da6dc8e58a93d5f56e583482a2ee0/rich_toolkit-0.14.6-py3-none-any.whl", hash = "sha256:764f3a5f9e4b539ce805596863299e8982599514906dc5e3ccc2d390ef74c301", size = 24815, upload-time = "2025-05-12T19:19:13.713Z" },
 ]
+
+[[package]]
+name = "rouge-score"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "absl-py" },
+    { name = "nltk" },
+    { name = "numpy" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e2/c5/9136736c37022a6ad27fea38f3111eb8f02fe75d067f9a985cc358653102/rouge_score-0.1.2.tar.gz", hash = "sha256:c7d4da2683e68c9abf0135ef915d63a46643666f848e558a1b9f7ead17ff0f04", size = 17400, upload-time = "2022-07-22T22:46:22.909Z" }
 
 [[package]]
 name = "rpds-py"

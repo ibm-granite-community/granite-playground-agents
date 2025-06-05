@@ -10,6 +10,7 @@ dependencies = [
     "gpt-researcher>=0.13.3",
     "langchain-ollama>=0.3.3",
     "python-dotenv>=1.1.0",
+    "granite-io@git+https://github.com/ibm-granite/granite-io/",
 ]
 
 [tool.ruff]

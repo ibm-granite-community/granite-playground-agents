@@ -17,11 +17,15 @@ from beeai_framework.backend import (
 )
 from config import settings  # type: ignore
 from langchain_core.documents import Document
-from pydantic import BaseModel
 
 from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.agent import SearchAgent
+from granite_chat.search.citations import (
+    CitationGenerator,
+    DefaultCitationGenerator,
+    GraniteIOCitationGenerator,
+)
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.workers import WorkerPool
@@ -43,14 +47,6 @@ THINKING = settings.thinking
 
 server = Server()
 worker_pool = WorkerPool()
-
-
-class Source(BaseModel):
-    url: str
-    title: str
-
-    class Config:
-        frozen = True  # makes it immutable and hashable
 
 
 @server.agent(
@@ -84,8 +80,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
             docs: list[Document] = await search_agent.search(messages)
 
-            # TODO: Quality control on docs
-            # TODO: Better fallback when no good docs found
             if len(docs) > 0:
                 doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
                 # Prepend document prompt
@@ -116,22 +110,38 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             # Yield response indicator, yielding response happens as normal
             yield MessagePart(content_type="thinking", content="\n\n**👩‍💻 Response:**\n\n")
 
+        response: list[str] = []
+
         # Yield agent response
         async for data, event in model.create(messages=messages, stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
+                    response.append(data.value.get_text_content())
                     yield MessagePart(
                         content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                     )  # type: ignore[call-arg]
 
-        # Yield sources
+        # Yield sources/citation
         if SEARCH and len(docs) > 0:
-            sources = {Source(url=doc.metadata["url"], title=doc.metadata["title"]) for doc in docs}
-            yield MessagePart(content_type="source", content="\n\n**Sources:**\n", role="assistant")  # type: ignore[call-arg]
+            generator: CitationGenerator
 
-            for i, source in enumerate(sources):
-                doc_str = f"{i+1!s}. [{source.title}]({source.url})\n"
-                yield MessagePart(content_type="source", content=doc_str, role="assistant")  # type: ignore[call-arg]
+            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+                extra_headers = (
+                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.split(","))
+                    if settings.GRANITE_IO_OPENAI_API_HEADERS
+                    else None
+                )
+
+                generator = GraniteIOCitationGenerator(
+                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
+                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                    extra_headers=extra_headers,
+                )
+            else:
+                generator = DefaultCitationGenerator()
+
+            async for message_part in generator.generate(messages=input, docs=docs, response="".join(response)):
+                yield message_part
 
     except Exception as e:
         traceback.print_exc()
