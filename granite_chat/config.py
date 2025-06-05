@@ -27,6 +27,17 @@ class Settings(BaseSettings):
     GRANITE_IO_CITATIONS_MODEL_ID: str | None = None
     GRANITE_IO_OPENAI_API_HEADERS: str | None = None
 
+    # WATSONX EMBEDDINGS
+    WATSONX_EMBEDDING_MODEL: str | None = None
+    WATSONX_API_BASE: str | None = None
+    WATSONX_PROJECT_ID: str | None = None
+    WATSONX_REGION: str | None = None
+    WATSONX_API_KEY: str | None = None
+
+    EMBEDDING_HF_TOKENIZER: str | None = None
+    CHUNK_SIZE: int = 2048
+    CHUNK_OVERLAP: int = 200
+
     max_tokens: int = 4096
     temperature: float = 0.2
     search: bool = True

@@ -6,11 +6,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "acp-sdk>=0.8.4",
-    "beeai-framework>=0.1.21",
+    "beeai-framework@git+https://github.com/i-am-bee/beeai-framework.git#subdirectory=python",
     "gpt-researcher>=0.13.3",
     "langchain-ollama>=0.3.3",
     "python-dotenv>=1.1.0",
     "granite-io@git+https://github.com/ibm-granite/granite-io/",
+    "transformers>=4.52.4",
 ]
 
 [tool.ruff]
