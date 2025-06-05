@@ -20,6 +20,7 @@ from langchain_core.documents import Document
 
 from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
+from granite_chat.memory import estimate_tokens
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.citations import (
     CitationGenerator,
@@ -65,16 +66,22 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         # TODO: Manage context window
         messages = utils.to_beeai_framework(messages=input)
 
+        token_count = estimate_tokens(messages)
+
+        if token_count >= settings.CHAT_TOKEN_LIMIT:
+            yield MessagePart(
+                content_type="limit",
+                content="Your message will exceed the length limit for this chat.",
+                role="system",
+            )  # type: ignore[call-arg]
+            return
+
         model = OpenAIChatModel(
             model_id=MODEL_NAME,
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_URL,
             parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
         )
-
-        messages = [
-            *messages,
-        ]
 
         if SEARCH:
             search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)

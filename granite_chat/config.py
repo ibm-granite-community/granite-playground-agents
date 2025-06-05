@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     temperature: float = 0.2
     search: bool = True
     thinking: bool = False
+    CHAT_TOKEN_LIMIT: int = 10000
 
     log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
 
