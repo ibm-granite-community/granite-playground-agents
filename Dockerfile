@@ -6,6 +6,8 @@ USER root
 
 COPY . /app/
 
+ENV PRODUCTION_MODE=True
+
 RUN uv sync --no-dev --no-cache --locked --link-mode copy
 
 RUN chown 1001:1001 -R /app

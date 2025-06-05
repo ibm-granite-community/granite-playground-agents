@@ -59,6 +59,13 @@ worker_pool = WorkerPool()
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
+        env=[
+            {"name": "RETRIEVER", "description": "XXX"},
+            {"name": "OLLAMA_BASE_URL", "description": "XXX"},
+            {"name": "EMBEDDING", "description": "XXX"},
+            {"name": "GOOGLE_API_KEY", "description": "XXX"},
+            {"name": "GOOGLE_CX_KEY", "description": "XXX"},
+        ],
     ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
