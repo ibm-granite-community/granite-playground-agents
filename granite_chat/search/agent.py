@@ -13,12 +13,15 @@ from gpt_researcher.prompts import PromptFamily  # type: ignore
 from gpt_researcher.utils.workers import WorkerPool  # type: ignore
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
+from transformers import AutoTokenizer
 
+from granite_chat.config import settings
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.compressor import CustomVectorstoreCompressor
+from granite_chat.search.embeddings import WatsonxEmbeddings
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.types import SearchResult, SearchResults
-from granite_chat.search.vector_store import GraniteVectorStoreWrapper
+from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
@@ -28,13 +31,33 @@ class SearchAgent:
         self.chat_model = chat_model
         self.worker_pool = worker_pool
 
+        # GPT Researcher config
         self.cfg = Config()
-        memory = Memory(embedding_provider=self.cfg.embedding_provider, model=self.cfg.embedding_model)
 
-        # TODO: WatsonX embeddings
-        vector_store = InMemoryVectorStore(embedding=memory.get_embeddings())
-        # 1 token ≈ 4 characters (English text)
-        self.vector_store = GraniteVectorStoreWrapper(vector_store, chunk_size=512 * 4, chunk_overlap=200)
+        # Watsonx is handled separately because gpt-researcher does not support it
+        # TODO: PR support for watsonx embeddings to gpt-researcher
+        if settings.WATSONX_EMBEDDING_MODEL:
+            embedding = WatsonxEmbeddings(model_id=settings.WATSONX_EMBEDDING_MODEL)
+        else:
+            embedding = Memory(
+                embedding_provider=self.cfg.embedding_provider, model=self.cfg.embedding_model
+            ).get_embeddings()
+
+        vector_store = InMemoryVectorStore(embedding=embedding)
+
+        if settings.EMBEDDING_HF_TOKENIZER:
+            tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDING_HF_TOKENIZER)
+            self.vector_store = ConfigurableVectorStoreWrapper(
+                vector_store,
+                chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
+                chunk_overlap=int(settings.CHUNK_OVERLAP),
+                tokenizer=tokenizer,
+            )
+        else:
+            # TODO: Config character chunk size
+            self.vector_store = ConfigurableVectorStoreWrapper(
+                vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
+            )
 
         self.retriever = get_retrievers({}, self.cfg)[0]
 
