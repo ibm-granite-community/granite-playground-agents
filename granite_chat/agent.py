@@ -41,10 +41,10 @@ OPENAI_API_KEY = settings.LLM_API_KEY
 if settings.LLM_API_HEADERS:
     os.environ["OPENAI_API_HEADERS"] = settings.LLM_API_HEADERS
 
-MAX_TOKENS = settings.max_tokens
-TEMPERATURE = settings.temperature
-SEARCH = settings.search
-THINKING = settings.thinking
+MAX_TOKENS = settings.MAX_TOKENS
+TEMPERATURE = settings.TEMPERATURE
+SEARCH = settings.SEARCH
+THINKING = settings.THINKING
 
 server = Server()
 worker_pool = WorkerPool()
@@ -59,6 +59,14 @@ worker_pool = WorkerPool()
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
+        env=[
+            {"name": "GOOGLE_API_KEY", "description": "Google search API Key"},
+            {"name": "GOOGLE_CX_KEY", "description": "Google search engine ID"},
+            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
+            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
+            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
+            {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
+        ],
     ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
@@ -136,7 +144,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
             if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
                 extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.split(","))
+                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
                     if settings.GRANITE_IO_OPENAI_API_HEADERS
                     else None
                 )

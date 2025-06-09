@@ -31,22 +31,20 @@ class SearchAgent:
         self.chat_model = chat_model
         self.worker_pool = worker_pool
 
-        # GPT Researcher config
-        self.cfg = Config()
-
-        # Watsonx is handled separately because gpt-researcher does not support it
         # TODO: PR support for watsonx embeddings to gpt-researcher
-        if settings.WATSONX_EMBEDDING_MODEL:
-            embedding = WatsonxEmbeddings(model_id=settings.WATSONX_EMBEDDING_MODEL)
-        else:
+        if settings.EMBEDDINGS_PROVIDER == "watsonx":
+            embedding = WatsonxEmbeddings(model_id=settings.EMBEDDINGS_MODEL)
+        elif settings.EMBEDDINGS_PROVIDER == "ollama":
             embedding = Memory(
-                embedding_provider=self.cfg.embedding_provider, model=self.cfg.embedding_model
+                embedding_provider=settings.EMBEDDINGS_PROVIDER, model=settings.EMBEDDINGS_MODEL
             ).get_embeddings()
+        else:
+            raise Exception(f"Unsupported embeddings provider {settings.EMBEDDINGS_PROVIDER}")
 
         vector_store = InMemoryVectorStore(embedding=embedding)
 
-        if settings.EMBEDDING_HF_TOKENIZER:
-            tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDING_HF_TOKENIZER)
+        if settings.EMBEDDINGS_HF_TOKENIZER:
+            tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDINGS_HF_TOKENIZER)
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
@@ -54,11 +52,13 @@ class SearchAgent:
                 tokenizer=tokenizer,
             )
         else:
-            # TODO: Config character chunk size
+            # Fall back on character chunks
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
             )
 
+        # GPT Researcher config
+        self.cfg = Config()
         self.retriever = get_retrievers({}, self.cfg)[0]
 
     async def search(self, messages: list[Message]) -> list[Document]:
