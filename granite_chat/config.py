@@ -21,8 +21,9 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     EMBEDDINGS_PROVIDER: str = "watsonx"
-    EMBEDDINGS_MODEL: str = "ibm/granite-embedding-278m-multilingual"
-    EMBEDDINGS_HF_TOKENIZER: str = "ibm-granite/granite-embedding-278m-multilingual"
+
+    EMBEDDINGS_MODEL: str = "ibm/slate-125m-english-rtrvr-v2"
+    EMBEDDINGS_HF_TOKENIZER: str = "FacebookAI/roberta-base"
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 20
 
@@ -38,6 +39,11 @@ class Settings(BaseSettings):
     WATSONX_PROJECT_ID: str | None = None
     WATSONX_REGION: str | None = None
     WATSONX_API_KEY: str | None = None
+
+    # openai embeddings
+    EMBEDDINGS_OPENAI_API_KEY: str | None = None
+    EMBEDDINGS_OPENAI_API_BASE: str | None = None
+    EMBEDDINGS_OPENAI_API_HEADERS: str | None = None
 
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.2
