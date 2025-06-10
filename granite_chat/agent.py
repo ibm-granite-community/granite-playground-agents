@@ -18,7 +18,7 @@ from langchain_core.documents import Document
 
 from granite_chat import utils
 from granite_chat.logger import get_formatted_logger
-from granite_chat.memory import estimate_tokens
+from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.citations import (
     CitationGenerator,
@@ -42,44 +42,173 @@ if settings.LLM_API_HEADERS:
 
 MAX_TOKENS = settings.MAX_TOKENS
 TEMPERATURE = settings.TEMPERATURE
-SEARCH = settings.SEARCH
-THINKING = settings.THINKING
 
 server = Server()
 worker_pool = WorkerPool()
 
 
 @server.agent(
-    name=settings.agent_name,
-    description="This agent leverages the Granite 3.3 large language model to deliver fast, accurate, and context-aware conversations. Designed for natural, human-like interaction, the agent can handle complex queries, provide insightful responses, and adapt to a wide range of topics.",  # noqa: E501
+    name="Granite Chat",
+    description="This agent leverages the Granite 3.3 large language model for general chat.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Chat! How can I help you?"},  # type: ignore[call-arg]
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
         framework="BeeAI",
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
         env=[
-            {"name": "GOOGLE_API_KEY", "description": "Google search API Key"},
-            {"name": "GOOGLE_CX_KEY", "description": "Google search engine ID"},
-            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
-            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
-            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
-            {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
+            {
+                "name": "LLM_MODEL",
+                "description": "Language model name",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_BASE",
+                "description": "Base URL of an OpenAI endpoint where the language model is available",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_KEY",
+                "description": "API Key used to access the OpenAI endpoint",
+                "required": True,
+            },
         ],
     ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-    try:
-        # TODO: Manage context window
-        messages = utils.to_beeai_framework(messages=input)
-        token_count = estimate_tokens(messages)
+    messages = utils.to_beeai_framework(messages=input)
 
-        if token_count >= settings.CHAT_TOKEN_LIMIT:
-            yield MessagePart(
-                content_type="limit",
-                content="Your message will exceed the length limit for this chat.",
-                role="system",
-            )  # type: ignore[call-arg]
+    if exceeds_token_limit(messages):
+        yield token_limit_message_part()
+        return
+
+    model = OpenAIChatModel(
+        model_id=MODEL_NAME,
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_URL,
+        parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
+    )
+
+    async for data, event in model.create(messages=messages, stream=True):
+        match (data, event.name):
+            case (ChatModelNewTokenEvent(), "new_token"):
+                yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
+
+
+@server.agent(
+    name="Granite Thinking",
+    description="This agent leverages the Granite 3.3 large language model for general chat with reasoning.",
+    metadata=Metadata(
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
+        framework="BeeAI",
+        programming_language="Python",
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        author=Author(name="IBM Research"),
+        env=[
+            {
+                "name": "LLM_MODEL",
+                "description": "Language model name",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_BASE",
+                "description": "Base URL of an OpenAI endpoint where the language model is available",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_KEY",
+                "description": "API Key used to access the OpenAI endpoint",
+                "required": True,
+            },
+        ],
+    ),
+)
+async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
+    messages = utils.to_beeai_framework(messages=input)
+
+    if exceeds_token_limit(messages):
+        yield token_limit_message_part()
+        return
+
+    model = OpenAIChatModel(
+        model_id=MODEL_NAME,
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_URL,
+        parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
+    )
+
+    messages = [
+        SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
+        *messages,
+    ]
+
+    handler = ThinkingStreamHandler(tags=["think", "response"])
+
+    async for data, event in model.create(messages=messages, stream=True):
+        match (data, event.name):
+            case (ChatModelNewTokenEvent(), "new_token"):
+                token = data.value.get_text_content()
+                for output in handler.on_token(token=token):
+                    if isinstance(output, TokenEvent):
+                        content_type = "text/thinking" if output.tag == "think" else "text/plain"
+                        yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
+                    elif isinstance(output, TagStartEvent):
+                        if output.tag == "think":
+                            yield MessagePart(
+                                content_type="text/thinking", content="**🤔 Thinking:**\n\n", role="assistant"
+                            )  # type: ignore[call-arg]
+                        elif output.tag == "response":
+                            yield MessagePart(
+                                content_type="text/thinking",
+                                content="\n\n**😎 Response:**\n\n",
+                                role="assistant",
+                            )  # type: ignore[call-arg]
+
+
+@server.agent(
+    name="Granite Search",
+    description="This agent leverages the Granite 3.3 large language model to chat and search the web.",
+    metadata=Metadata(
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
+        framework="BeeAI",
+        programming_language="Python",
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        author=Author(name="IBM Research"),
+        env=[
+            {
+                "name": "LLM_MODEL",
+                "description": "Language model name",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_BASE",
+                "description": "Base URL of an OpenAI endpoint where the language model is available",
+                "required": True,
+            },
+            {
+                "name": "LLM_API_KEY",
+                "description": "API Key used to access the OpenAI endpoint",
+                "required": True,
+            },
+            {
+                "name": "GOOGLE_API_KEY",
+                "description": "Google search API Key",
+                "required": True,
+            },
+            {"name": "GOOGLE_CX_KEY", "description": "Google search engine ID", "required": True},
+            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url", "required": True},
+            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id", "required": True},
+            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south", "required": True},
+            {"name": "WATSONX_API_KEY", "description": "Watsonx api key", "required": True},
+        ],
+    ),
+)
+async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
+    try:
+        messages = utils.to_beeai_framework(messages=input)
+
+        if exceeds_token_limit(messages):
+            yield token_limit_message_part()
             return
 
         model = OpenAIChatModel(
@@ -89,84 +218,47 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
         )
 
-        if SEARCH:
-            yield MessagePart(content_type="log", content="**Searching the web...**\n\n")
+        yield MessagePart(content_type="log", content="**Searching the web...**\n\n")
 
-            search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
-            docs: list[Document] = await search_agent.search(messages)
+        search_agent = SearchAgent(chat_model=model, worker_pool=worker_pool)
+        docs: list[Document] = await search_agent.search(messages)
 
-            if len(docs) > 0:
-                doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
-                # Prepend document prompt
-                messages = doc_messages + messages
+        if len(docs) > 0:
+            doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
+            # Prepend document prompt
+            messages = doc_messages + messages
 
-            response: str = ""
-            async for data, event in model.create(messages=messages, stream=True):
-                match (data, event.name):
-                    case (ChatModelNewTokenEvent(), "new_token"):
-                        response += data.value.get_text_content()
-                        yield MessagePart(
-                            content_type="text/plain", content=data.value.get_text_content(), role="assistant"
-                        )  # type: ignore[call-arg]
+        response: str = ""
 
-            # Yield sources/citation
-            if len(docs) > 0:
-                generator: CitationGenerator
+        async for data, event in model.create(messages=messages, stream=True):
+            match (data, event.name):
+                case (ChatModelNewTokenEvent(), "new_token"):
+                    response += data.value.get_text_content()
+                    yield MessagePart(
+                        content_type="text/plain", content=data.value.get_text_content(), role="assistant"
+                    )  # type: ignore[call-arg]
 
-                if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                    extra_headers = (
-                        dict(
-                            pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(",")
-                        )
-                        if settings.GRANITE_IO_OPENAI_API_HEADERS
-                        else None
-                    )
+        # Yield sources/citation
+        if len(docs) > 0:
+            generator: CitationGenerator
 
-                    generator = GraniteIOCitationGenerator(
-                        openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
-                        model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
-                        extra_headers=extra_headers,
-                    )
-                else:
-                    generator = DefaultCitationGenerator()
+            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+                extra_headers = (
+                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
+                    if settings.GRANITE_IO_OPENAI_API_HEADERS
+                    else None
+                )
 
-                async for message_part in generator.generate(messages=input, docs=docs, response=response):
-                    yield message_part
+                generator = GraniteIOCitationGenerator(
+                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
+                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                    extra_headers=extra_headers,
+                )
+            else:
+                generator = DefaultCitationGenerator()
 
-        elif THINKING:
-            # Prepend a thinking prompt to set the LLM into thinking mode
-            messages = [
-                SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
-                *messages,
-            ]
-
-            handler = ThinkingStreamHandler(tags=["think", "response"])
-
-            async for data, event in model.create(messages=messages, stream=True):
-                match (data, event.name):
-                    case (ChatModelNewTokenEvent(), "new_token"):
-                        token = data.value.get_text_content()
-                        for output in handler.on_token(token=token):
-                            if isinstance(output, TokenEvent):
-                                content_type = "text/thinking" if output.tag == "think" else "text/plain"
-                                yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
-                            elif isinstance(output, TagStartEvent):
-                                if output.tag == "think":
-                                    yield MessagePart(
-                                        content_type="text/thinking", content="**🤔 Thinking:**\n\n", role="assistant"
-                                    )  # type: ignore[call-arg]
-                                elif output.tag == "response":
-                                    yield MessagePart(
-                                        content_type="text/thinking",
-                                        content="\n\n**😎 Response:**\n\n",
-                                        role="assistant",
-                                    )  # type: ignore[call-arg]
-        else:
-            async for data, event in model.create(messages=messages, stream=True):
-                match (data, event.name):
-                    case (ChatModelNewTokenEvent(), "new_token"):
-                        token = data.value.get_text_content()
-                        yield MessagePart(content_type="text/plain", content=token, role="assistant")  # type: ignore[call-arg]
+            async for message_part in generator.generate(messages=input, docs=docs, response=response):
+                yield message_part
 
     except Exception as e:
         traceback.print_exc()

@@ -6,8 +6,6 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    agent_name: str = "Granite Chat"
-
     port: int = 8000
     host: str = "0.0.0.0"
 
@@ -43,8 +41,6 @@ class Settings(BaseSettings):
 
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.2
-    SEARCH: bool = True
-    THINKING: bool = False
     CHAT_TOKEN_LIMIT: int = 10000
 
     log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
