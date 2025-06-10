@@ -12,9 +12,7 @@ from beeai_framework.backend import (
     ChatModelParameters,
     SystemMessage,
 )
-from beeai_framework.backend import (
-    Message as FrameworkMessage,
-)
+from beeai_framework.backend import Message as FrameworkMessage
 from config import settings  # type: ignore
 from langchain_core.documents import Document
 
@@ -29,6 +27,7 @@ from granite_chat.search.citations import (
 )
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
+from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
@@ -73,7 +72,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     try:
         # TODO: Manage context window
         messages = utils.to_beeai_framework(messages=input)
-
         token_count = estimate_tokens(messages)
 
         if token_count >= settings.CHAT_TOKEN_LIMIT:
@@ -102,63 +100,73 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                 # Prepend document prompt
                 messages = doc_messages + messages
 
-        elif THINKING:
-            # Prepend a thinking prompt to set the LLM into thinking mode
-            messages_with_thinking = [SystemMessage(content=ThinkingPrompts.thinking_system_prompt()), *messages]
-            thought_process: list[str] = []
-
-            # Yield thought indicator
-            yield MessagePart(content_type="thinking", content="**🤔 Thought process:**\n\n")
-
-            # Yield thought
-            async for data, event in model.create(messages=messages_with_thinking, stream=True):
+            response: str = ""
+            async for data, event in model.create(messages=messages, stream=True):
                 match (data, event.name):
                     case (ChatModelNewTokenEvent(), "new_token"):
-                        token = data.value.get_text_content()
-                        thought_process.append(token)
-                        yield MessagePart(content_type="thinking", content=token, role="assistant")  # type: ignore[call-arg]
+                        response += data.value.get_text_content()
+                        yield MessagePart(
+                            content_type="text/plain", content=data.value.get_text_content(), role="assistant"
+                        )  # type: ignore[call-arg]
 
-            # Add thought to message history
+            # Yield sources/citation
+            if len(docs) > 0:
+                generator: CitationGenerator
+
+                if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+                    extra_headers = (
+                        dict(
+                            pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(",")
+                        )
+                        if settings.GRANITE_IO_OPENAI_API_HEADERS
+                        else None
+                    )
+
+                    generator = GraniteIOCitationGenerator(
+                        openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
+                        model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                        extra_headers=extra_headers,
+                    )
+                else:
+                    generator = DefaultCitationGenerator()
+
+                async for message_part in generator.generate(messages=input, docs=docs, response=response):
+                    yield message_part
+
+        elif THINKING:
+            # Prepend a thinking prompt to set the LLM into thinking mode
             messages = [
-                SystemMessage(content=ThinkingPrompts.responding_system_prompt(thoughts="".join(thought_process))),
+                SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
                 *messages,
             ]
 
-            # Yield response indicator, yielding response happens as normal
-            yield MessagePart(content_type="thinking", content="\n\n**👩‍💻 Response:**\n\n")
+            handler = ThinkingStreamHandler(tags=["think", "response"])
 
-        response: list[str] = []
-
-        # Yield agent response
-        async for data, event in model.create(messages=messages, stream=True):
-            match (data, event.name):
-                case (ChatModelNewTokenEvent(), "new_token"):
-                    response.append(data.value.get_text_content())
-                    yield MessagePart(
-                        content_type="text/plain", content=data.value.get_text_content(), role="assistant"
-                    )  # type: ignore[call-arg]
-
-        # Yield sources/citation
-        if SEARCH and len(docs) > 0:
-            generator: CitationGenerator
-
-            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                    if settings.GRANITE_IO_OPENAI_API_HEADERS
-                    else None
-                )
-
-                generator = GraniteIOCitationGenerator(
-                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
-                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
-                    extra_headers=extra_headers,
-                )
-            else:
-                generator = DefaultCitationGenerator()
-
-            async for message_part in generator.generate(messages=input, docs=docs, response="".join(response)):
-                yield message_part
+            async for data, event in model.create(messages=messages, stream=True):
+                match (data, event.name):
+                    case (ChatModelNewTokenEvent(), "new_token"):
+                        token = data.value.get_text_content()
+                        for output in handler.on_token(token=token):
+                            if isinstance(output, TokenEvent):
+                                content_type = "text/thinking" if output.tag == "think" else "text/plain"
+                                yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
+                            elif isinstance(output, TagStartEvent):
+                                if output.tag == "think":
+                                    yield MessagePart(
+                                        content_type="text/thinking", content="**🤔 Thinking:**\n\n", role="assistant"
+                                    )  # type: ignore[call-arg]
+                                elif output.tag == "response":
+                                    yield MessagePart(
+                                        content_type="text/thinking",
+                                        content="\n\n**😎 Response:**\n\n",
+                                        role="assistant",
+                                    )  # type: ignore[call-arg]
+        else:
+            async for data, event in model.create(messages=messages, stream=True):
+                match (data, event.name):
+                    case (ChatModelNewTokenEvent(), "new_token"):
+                        token = data.value.get_text_content()
+                        yield MessagePart(content_type="text/plain", content=token, role="assistant")  # type: ignore[call-arg]
 
     except Exception as e:
         traceback.print_exc()
