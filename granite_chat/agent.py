@@ -51,7 +51,7 @@ worker_pool = WorkerPool()
     name="Granite Chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
         framework="BeeAI",
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
@@ -99,7 +99,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     name="Granite Thinking",
     description="This agent leverages the Granite 3.3 large language model for general chat with reasoning.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
         framework="BeeAI",
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
@@ -169,7 +169,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     name="Granite Search",
     description="This agent leverages the Granite 3.3 large language model to chat and search the web.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite Search! How can I help you?"},  # type: ignore[call-arg]
+        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
         framework="BeeAI",
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
