@@ -265,4 +265,4 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         raise e
 
 
-server.run(host=settings.host, port=settings.port, log_level=settings.log_level.lower())
+server.run(host=settings.host, port=settings.port, log_level=settings.log_level.lower(), access_log=settings.ACCESS_LOG)
