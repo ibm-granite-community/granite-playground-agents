@@ -52,9 +52,10 @@ Here are the documents:
         dynamic_example = ", ".join([f'"query {i + 1}"' for i in range(max_queries)])
 
         return f"""
+Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
 The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings.
-Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Tips:
 - Do not assume or introduce information that is not directly mentioned in the conversation.
