@@ -8,11 +8,14 @@ from beeai_framework.backend.chat import ChatModel
 from gpt_researcher.actions.retriever import get_retrievers  # type: ignore
 from gpt_researcher.actions.web_scraping import scrape_urls  # type: ignore
 from gpt_researcher.config.config import Config  # type: ignore
-from gpt_researcher.memory.embeddings import Memory  # type: ignore
 from gpt_researcher.prompts import PromptFamily  # type: ignore
 from gpt_researcher.utils.workers import WorkerPool  # type: ignore
 from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from pydantic import SecretStr
 from transformers import AutoTokenizer
 
 from granite_chat.config import settings
@@ -31,16 +34,7 @@ class SearchAgent:
         self.chat_model = chat_model
         self.worker_pool = worker_pool
 
-        # TODO: PR support for watsonx embeddings to gpt-researcher
-        if settings.EMBEDDINGS_PROVIDER == "watsonx":
-            embedding = WatsonxEmbeddings(model_id=settings.EMBEDDINGS_MODEL)
-        elif settings.EMBEDDINGS_PROVIDER == "ollama":
-            embedding = Memory(
-                embedding_provider=settings.EMBEDDINGS_PROVIDER, model=settings.EMBEDDINGS_MODEL
-            ).get_embeddings()
-        else:
-            raise Exception(f"Unsupported embeddings provider {settings.EMBEDDINGS_PROVIDER}")
-
+        embedding: Embeddings = self.get_embeddings()
         vector_store = InMemoryVectorStore(embedding=embedding)
 
         if settings.EMBEDDINGS_HF_TOKENIZER:
@@ -70,12 +64,8 @@ class SearchAgent:
         logger.info(f'Searching with queries => "{search_queries}"')
 
         # Perform search
-        # raw_results = await asyncio.to_thread(lambda: retriever(query=search_queries[0]).search())
         search_results = await self._perform_web_search(search_queries)
         # Scraping
-        # search_results = SearchResults(results=[SearchResult(**r) for r in raw_results])
-        # search_results = await self.filter_search_results(query, search_results)
-
         scraped_content: list[dict] = await self._browse_urls([r.href for r in search_results.results])
 
         # Load scraped context into vector store
@@ -104,6 +94,34 @@ class SearchAgent:
         docs = await self._filter_docs(standalone_msg, docs)
 
         return docs
+
+    def get_embeddings(self) -> Embeddings:
+        if settings.EMBEDDINGS_PROVIDER == "watsonx":
+            return WatsonxEmbeddings(model_id=settings.EMBEDDINGS_MODEL)
+
+        elif settings.EMBEDDINGS_PROVIDER == "openai":
+            extra_headers = (
+                dict(pair.split("=", 1) for pair in settings.EMBEDDINGS_OPENAI_API_HEADERS.strip('"').split(","))
+                if settings.EMBEDDINGS_OPENAI_API_HEADERS
+                else None
+            )
+
+            return OpenAIEmbeddings(
+                model=settings.EMBEDDINGS_MODEL,
+                api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
+                base_url=settings.EMBEDDINGS_OPENAI_API_BASE,
+                check_embedding_ctx_length=False,
+                default_headers=extra_headers,
+            )
+
+        elif settings.EMBEDDINGS_PROVIDER == "ollama":
+            return OllamaEmbeddings(
+                model=settings.EMBEDDINGS_MODEL,
+                base_url=settings.OLLAMA_BASE_URL,
+            )
+
+        else:
+            raise Exception(f"Unsupported embeddings provider {settings.EMBEDDINGS_PROVIDER}")
 
     async def _browse_urls(self, urls: list[str]) -> list[dict]:
         scraped_content, _ = await scrape_urls(urls, self.cfg, self.worker_pool)
