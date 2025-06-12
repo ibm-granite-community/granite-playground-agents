@@ -14,6 +14,7 @@ RUN chown 1001:1001 -R /app
 
 USER 1001
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+    HOME=/tmp
 
-CMD ["uv", "run", "--no-sync" ,"granite_chat/agent.py"]
+CMD ["uv", "run", "--no-sync", "granite_chat/agent.py"]
