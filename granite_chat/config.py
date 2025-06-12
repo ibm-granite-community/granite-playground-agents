@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     port: int = 8000
-    host: str = "0.0.0.0"
+
+    host: str = "127.0.0.1"
     ACCESS_LOG: bool = False
 
     LLM_MODEL: str | None = None

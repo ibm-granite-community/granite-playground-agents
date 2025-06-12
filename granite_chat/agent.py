@@ -190,16 +190,26 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                 "description": "API Key used to access the OpenAI endpoint",
                 "required": True,
             },
+            # Only support google for search at the moment
             {
                 "name": "GOOGLE_API_KEY",
                 "description": "Google search API Key",
-                "required": True,
             },
-            {"name": "GOOGLE_CX_KEY", "description": "Google search engine ID", "required": True},
-            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url", "required": True},
-            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id", "required": True},
-            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south", "required": True},
-            {"name": "WATSONX_API_KEY", "description": "Watsonx api key", "required": True},
+            {
+                "name": "GOOGLE_CX_KEY",
+                "description": "Google search engine ID",
+            },
+            # Embeddings provider
+            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
+            # For "watsonx" embedding provider
+            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
+            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
+            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
+            {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
+            # For "openai" embedding provider (RITS etc.)
+            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
+            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
+            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
         ],
     ),
 )
