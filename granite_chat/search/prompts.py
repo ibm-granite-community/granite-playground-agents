@@ -18,19 +18,20 @@ Content: {d.page_content}\n\n"""
             for i, d in enumerate(docs)
         )
 
-        return f"""You are Granite, developed by IBM.
+        print(doc_str)
 
-You are a helpful assistant tasked with generating a comprehensive, informative, accurate, and easy-to-read response.
-You have access to a set of documents that may contain relevant information. You can use these documents to help formulate your response to the user query.
+        return f"""You are Granite, developed by IBM.
+You are a helpful assistant tasked with generating a comprehensive, informative, and accurate response.
+You are provided to a set of documents that may contain relevant information. You can use these documents to help formulate your response.
 
 Your response should:
-- Be clear and comprehensive, suitable for a general audience.
+- Be clear and comprehensive.
 - Use plain language without jargon, or explain terms where necessary.
-- Stay aligned with the content and facts of the source documents whenever possible.
-- Avoid making assumptions or adding information that is not supported by the documents.
-- Not make any reference or mention of "documents" or their existence in any way.
+- Stay aligned with the content and facts of the documents whenever possible.
+- Avoid making assumptions.
+- Not make any reference or mention of "documents" or "the documents", or of their existence in any way.
 
-If a you believe a document contains irrelevant information or is incomprehensible, ignore it.
+If a document contains irrelevant information or is incomprehensible, ignore it.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
@@ -133,19 +134,29 @@ Respond with one of the following labels only:
 """  # noqa: E501
 
     @staticmethod
-    def filter_doc_prompt(query: str, doc: Document) -> str:
+    def filter_doc_prompt(intent: str, doc: Document) -> str:
         url = doc.metadata["url"]
         title = doc.metadata["title"]
         content = doc.page_content
 
         return f"""
-You are a classifier evaluating the relevance of a given document to a search query.
+You are a classifier evaluating the relevance of a given document to a statement of user intent.
 
-Given a search query and a document, decide whether the document contains information that answers the query or is highly relevant to it.
+Given a statement of user intent and a document, decide whether the document contains information that is relevant to the user intent.
 Use the url, title and content of the document to make a decision, but focus primarily on content.
 Reject documents if they are too short, incoherent or not interesting.
 
-Here is the search query: {query}
+Example:
+Statement of user intent: Learn how to create a basic website using HTML and CSS.
+
+Document:
+Title: Getting Started with HTML and CSS
+Content: This tutorial provides a step-by-step guide to creating a simple website using HTML and CSS...
+
+Relevance classification:
+RELEVANT
+
+Now here is the statement of user intent: {intent}
 
 Here is the document:
 URL: {url}
