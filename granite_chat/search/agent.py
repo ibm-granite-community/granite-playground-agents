@@ -8,7 +8,6 @@ from beeai_framework.backend.chat import ChatModel
 from gpt_researcher.actions.retriever import get_retrievers  # type: ignore
 from gpt_researcher.actions.web_scraping import scrape_urls  # type: ignore
 from gpt_researcher.config.config import Config  # type: ignore
-from gpt_researcher.prompts import PromptFamily  # type: ignore
 from gpt_researcher.utils.workers import WorkerPool  # type: ignore
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -20,7 +19,6 @@ from transformers import AutoTokenizer
 
 from granite_chat.config import settings
 from granite_chat.logger import get_formatted_logger
-from granite_chat.search.compressor import CustomVectorstoreCompressor
 from granite_chat.search.embeddings import WatsonxEmbeddings
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.types import SearchResult, SearchResults
@@ -71,16 +69,9 @@ class SearchAgent:
         # Load scraped context into vector store
         await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
 
-        # Query vector store
-        vectorstore_compressor = CustomVectorstoreCompressor(
-            self.vector_store,
-            vector_store_filter=None,
-            prompt_family=PromptFamily(config=self.cfg),
-            **{},  # kwargs
-        )
-
         logger.info(f'Searching for context => "{standalone_msg}"')
-        docs: list[Document] = await vectorstore_compressor.async_get_context_docs(query=standalone_msg, max_results=10)
+
+        docs: list[Document] = await self.vector_store.asimilarity_search(query=standalone_msg, k=10, filter=None)
 
         # Add title from search results to docs
         url_to_result: dict[str, SearchResult] = {result.url: result for result in search_results.results}
@@ -92,6 +83,7 @@ class SearchAgent:
             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
 
         docs = await self._filter_docs(standalone_msg, docs)
+        docs.sort(key=lambda x: x.metadata["index"])
 
         return docs
 
@@ -143,17 +135,20 @@ class SearchAgent:
         res = [r for r in filtered_results if r is not None]
         return SearchResults(results=res)
 
-    async def _filter_docs(self, query: str, docs: list[Document]) -> list[Document]:
-        filtered_docs = await asyncio.gather(*(self._filter_doc(query, d) for d in docs))
+    async def _filter_docs(self, intent: str, docs: list[Document]) -> list[Document]:
+        filtered_docs = await asyncio.gather(*(self._filter_doc(intent, d) for d in docs))
         docs = [d for d in filtered_docs if d is not None]
         return docs
 
-    async def _filter_doc(self, query: str, doc: Document) -> Document | None:
+    async def _filter_doc(self, intent: str, doc: Document) -> Document | None:
         async with self.worker_pool.throttle():
             try:
-                filter_context_prompt = SearchPrompts.filter_doc_prompt(query=query, doc=doc)
-                response = await self.chat_model.create(messages=[UserMessage(content=filter_context_prompt)])
+                filter_context_prompt = SearchPrompts.filter_doc_prompt(intent=intent, doc=doc)
+                response = await self.chat_model.create(
+                    messages=[UserMessage(content=filter_context_prompt)], max_tokens=len("irrelevant")
+                )
 
+                print(response.get_text_content())
                 if "irrelevant" in response.get_text_content().lower():
                     # logger.info(f"Rejected document {doc.model_dump_json()}")
                     return None

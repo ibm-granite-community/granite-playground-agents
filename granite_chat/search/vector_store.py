@@ -1,6 +1,7 @@
 """
 Wrapper for langchain vector store
 Enables configurable chunk size
+Add document index
 """
 
 from gpt_researcher.vector_store import VectorStoreWrapper  # type: ignore
@@ -22,6 +23,12 @@ class ConfigurableVectorStoreWrapper(VectorStoreWrapper):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.tokenizer = tokenizer
+
+    def _create_langchain_documents(self, data: list[dict]) -> list[Document]:
+        return [
+            Document(page_content=item["raw_content"], metadata={"source": item["url"], "index": i})
+            for i, item in enumerate(data)
+        ]
 
     def _split_documents(
         self, documents: list[Document], chunk_size: int = 1000, chunk_overlap: int = 200
