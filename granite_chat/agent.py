@@ -48,7 +48,7 @@ worker_pool = WorkerPool()
 
 
 @server.agent(
-    name="Granite Chat",
+    name="granite-chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
     metadata=Metadata(
         ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
@@ -96,7 +96,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
 
 @server.agent(
-    name="Granite Thinking",
+    name="granite-thinking",
     description="This agent leverages the Granite 3.3 large language model for general chat with reasoning.",
     metadata=Metadata(
         ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
@@ -166,7 +166,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
 
 @server.agent(
-    name="Granite Search",
+    name="granite-search",
     description="This agent leverages the Granite 3.3 large language model to chat and search the web.",
     metadata=Metadata(
         ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
