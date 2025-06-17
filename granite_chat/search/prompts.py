@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from beeai_framework.backend import Message
@@ -12,31 +13,28 @@ class SearchPrompts:
 
     @staticmethod
     def search_system_prompt(docs: list[Document]) -> str:
-        doc_str = "".join(
-            f"""Title: {d.metadata["title"]}
-Content: {d.page_content}\n\n"""
-            for i, d in enumerate(docs)
-        )
+        json_docs = [
+            {"doc_id": str(i), "title": d.metadata["title"], "content": d.page_content} for i, d in enumerate(docs)
+        ]
+
+        doc_str = json.dumps(json_docs, indent=4)
 
         print(doc_str)
 
         return f"""You are Granite, developed by IBM.
 You are a helpful assistant tasked with generating a comprehensive, informative, and accurate response.
-You are provided to a set of documents that may contain relevant information. You can use these documents to help formulate your response.
+You have a set of documents that may contain relevant information. You can use these documents to help formulate your response.
 
-Your response should:
-- Be clear and comprehensive.
-- Use plain language without jargon, or explain terms where necessary.
-- Stay aligned with the content and facts of the documents whenever possible.
-- Avoid making assumptions.
-- Not make any reference or mention of "documents" or "the documents", or of their existence in any way.
-
-If a document contains irrelevant information or is incomprehensible, ignore it.
+Your response should bee clear and comprehensive and stay aligned with the content and facts of the documents when possible.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
-Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
-Here are the documents:
+<documents>
 {doc_str}
+</documents>
+
+Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
+The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+You have access to realtime data, you do not have a knowledge cutoff.
 """  # noqa: E501
 
     @staticmethod
@@ -134,36 +132,38 @@ Respond with one of the following labels only:
 """  # noqa: E501
 
     @staticmethod
-    def filter_doc_prompt(intent: str, doc: Document) -> str:
-        url = doc.metadata["url"]
-        title = doc.metadata["title"]
-        content = doc.page_content
+    def filter_doc_prompt(query: str, doc: Document) -> str:
+        doc_str = json.dumps(
+            {"title": doc.metadata["title"], "content": doc.page_content, "url": doc.metadata["url"]}, indent=4
+        )
 
-        return f"""
-You are a classifier evaluating the relevance of a given document to a statement of user intent.
+        return f"""Given a query and a document, decide whether the document contains information relevant to the query.
+Use the title, content and url of the document to make a decision, but focus primarily on content.
 
-Given a statement of user intent and a document, decide whether the document contains information that is relevant to the user intent.
-Use the url, title and content of the document to make a decision, but focus primarily on content.
-Reject documents if they are too short, incoherent or not interesting.
+Example task:
 
-Example:
-Statement of user intent: Learn how to create a basic website using HTML and CSS.
+Query: Learn how to create a basic website using HTML and CSS.
 
-Document:
-Title: Getting Started with HTML and CSS
-Content: This tutorial provides a step-by-step guide to creating a simple website using HTML and CSS...
+<document>
+{{
+    "title": "Getting Started with HTML and CSS",
+    "content": "This tutorial provides a step-by-step guide to creating a simple website using HTML and CSS...",
+    "url": "https://html-css-tutorial.com"
+}}
+</document>
 
 Relevance classification:
 RELEVANT
 
-Now here is the statement of user intent: {intent}
+Now here is the real task:
 
-Here is the document:
-URL: {url}
-Title: {title}
-Content: {content}
+Query: {query}
 
-Respond with one of the following labels only:
-- RELEVANT: if the document is coherent, contains relevant information answering or directly related to the query.
-- IRRELEVANT: if the document is incoherent or does not contain information useful for the query.
-"""  # noqa: E501
+<document>
+{doc_str}
+</document>
+
+You must respond precisely with either RELEVANT or IRRELEVANT.
+- RELEVANT
+- IRRELEVANT
+"""
