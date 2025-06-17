@@ -155,11 +155,11 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                     elif isinstance(output, TagStartEvent):
                         if output.tag == "think":
                             yield MessagePart(
-                                content_type="text/thinking", content="**🤔 Thinking:**\n\n", role="assistant"
+                                content_type="text/delimiter", content="**🤔 Thinking:**\n\n", role="assistant"
                             )  # type: ignore[call-arg]
                         elif output.tag == "response":
                             yield MessagePart(
-                                content_type="text/thinking",
+                                content_type="text/delimiter",
                                 content="\n\n**😎 Response:**\n\n",
                                 role="assistant",
                             )  # type: ignore[call-arg]
