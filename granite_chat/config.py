@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     EMBEDDINGS_MODEL: str = "ibm/slate-125m-english-rtrvr-v2"
     EMBEDDINGS_HF_TOKENIZER: str = "FacebookAI/roberta-base"
-    CHUNK_SIZE: int = 512
+    CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 20
 
     # Populate these vars to enable lora citations via granite-io

@@ -5,13 +5,17 @@ description = "ACP Granite Chat"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "gpt-researcher>=0.13.3",
     "langchain-ollama>=0.3.3",
     "python-dotenv>=1.1.0",
     "granite-io@git+https://github.com/ibm-granite/granite-io/",
     "transformers>=4.52.4",
     "beeai-framework@git+https://github.com/i-am-bee/beeai-framework.git#subdirectory=python",
     "acp-sdk>=0.10.1",
+    "trafilatura>=2.0.0",
+    "langchain-openai>=0.3.24",
+    "langchain-community>=0.3.25",
+    "bs4>=0.0.2",
+    "colorama>=0.4.6",
 ]
 
 [tool.ruff]

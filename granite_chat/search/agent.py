@@ -5,24 +5,20 @@ import traceback
 
 from beeai_framework.backend import Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
-from gpt_researcher.actions.retriever import get_retrievers  # type: ignore
-from gpt_researcher.actions.web_scraping import scrape_urls  # type: ignore
-from gpt_researcher.config.config import Config  # type: ignore
-from gpt_researcher.utils.workers import WorkerPool  # type: ignore
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings
-from pydantic import SecretStr
 from transformers import AutoTokenizer
 
 from granite_chat.config import settings
 from granite_chat.logger import get_formatted_logger
-from granite_chat.search.embeddings import WatsonxEmbeddings
+from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.engines import get_search_engine
 from granite_chat.search.prompts import SearchPrompts
+from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult, SearchResults
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
+from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
@@ -32,8 +28,11 @@ class SearchAgent:
         self.chat_model = chat_model
         self.worker_pool = worker_pool
 
-        embedding: Embeddings = self.get_embeddings()
-        vector_store = InMemoryVectorStore(embedding=embedding)
+        embeddings: Embeddings = get_embeddings(
+            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL
+        )
+
+        vector_store = InMemoryVectorStore(embedding=embeddings)
 
         if settings.EMBEDDINGS_HF_TOKENIZER:
             tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDINGS_HF_TOKENIZER)
@@ -49,9 +48,7 @@ class SearchAgent:
                 vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
             )
 
-        # GPT Researcher config
-        self.cfg = Config()
-        self.retriever = get_retrievers({}, self.cfg)[0]
+        self.search_engine = get_search_engine(settings.RETRIEVER)
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries
@@ -82,41 +79,12 @@ class SearchAgent:
             d.metadata["title"] = url_to_result[d.metadata["source"]].title
             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
 
-        # docs = await self._filter_docs(standalone_msg, docs)
         docs.sort(key=lambda x: x.metadata["index"])
 
         return docs
 
-    def get_embeddings(self) -> Embeddings:
-        if settings.EMBEDDINGS_PROVIDER == "watsonx":
-            return WatsonxEmbeddings(model_id=settings.EMBEDDINGS_MODEL)
-
-        elif settings.EMBEDDINGS_PROVIDER == "openai":
-            extra_headers = (
-                dict(pair.split("=", 1) for pair in settings.EMBEDDINGS_OPENAI_API_HEADERS.strip('"').split(","))
-                if settings.EMBEDDINGS_OPENAI_API_HEADERS
-                else None
-            )
-
-            return OpenAIEmbeddings(
-                model=settings.EMBEDDINGS_MODEL,
-                api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
-                base_url=settings.EMBEDDINGS_OPENAI_API_BASE,
-                check_embedding_ctx_length=False,
-                default_headers=extra_headers,
-            )
-
-        elif settings.EMBEDDINGS_PROVIDER == "ollama":
-            return OllamaEmbeddings(
-                model=settings.EMBEDDINGS_MODEL,
-                base_url=settings.OLLAMA_BASE_URL,
-            )
-
-        else:
-            raise Exception(f"Unsupported embeddings provider {settings.EMBEDDINGS_PROVIDER}")
-
     async def _browse_urls(self, urls: list[str]) -> list[dict]:
-        scraped_content, _ = await scrape_urls(urls, self.cfg, self.worker_pool)
+        scraped_content, _ = await scrape_urls(urls=urls, scraper="bs", worker_pool=self.worker_pool)
         return scraped_content
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
@@ -130,54 +98,6 @@ class SearchAgent:
         response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
         return response.get_text_content()
 
-    async def _filter_search_results(self, query: str, search_results: SearchResults) -> SearchResults:
-        filtered_results = await asyncio.gather(*(self._filter_search_result(query, r) for r in search_results.results))
-        res = [r for r in filtered_results if r is not None]
-        return SearchResults(results=res)
-
-    async def _filter_docs(self, query: str, docs: list[Document]) -> list[Document]:
-        filtered_docs = await asyncio.gather(*(self._filter_doc(query, d) for d in docs))
-        docs = [d for d in filtered_docs if d is not None]
-        return docs
-
-    async def _filter_doc(self, query: str, doc: Document) -> Document | None:
-        async with self.worker_pool.throttle():
-            try:
-                filter_context_prompt = SearchPrompts.filter_doc_prompt(query=query, doc=doc)
-                response = await self.chat_model.create(
-                    messages=[UserMessage(content=filter_context_prompt)], max_tokens=len("irrelevant")
-                )
-
-                if "irrelevant" in response.get_text_content().lower():
-                    # logger.info(f"Rejected document {doc.model_dump_json()}")
-                    return None
-
-                logger.info(f"Accepted document {doc.model_dump_json()}")
-                return doc
-            except Exception:
-                traceback.print_exc()
-
-        return None
-
-    async def _filter_search_result(self, query: str, search_result: SearchResult) -> SearchResult | None:
-        async with self.worker_pool.throttle():
-            try:
-                search_filter_prompt = SearchPrompts.filter_search_result_prompt(
-                    query=query, search_result=search_result
-                )
-                response = await self.chat_model.create(messages=[UserMessage(content=search_filter_prompt)])
-
-                if "irrelevant" in response.get_text_content().lower():
-                    logger.info(f"Rejected search result {search_result.url}")
-                    return None
-
-                logger.info(f"Accepted search result {search_result.url}")
-                return search_result
-            except Exception:
-                traceback.print_exc()
-
-        return None
-
     async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> SearchResults:
         results = await asyncio.gather(*(self._search_query(q, max_results) for q in queries))
         flat = [item for sublist in results for item in (sublist or [])]
@@ -188,7 +108,8 @@ class SearchAgent:
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult] | None:
         async with self.worker_pool.throttle():
             try:
-                results = await asyncio.to_thread(lambda: self.retriever(query=query).search(max_results=max_results))
+                engine = get_search_engine(settings.RETRIEVER)
+                results = await engine.search(query=query, max_results=max_results)
                 return [SearchResult(**r) for r in results]
             except Exception:
                 traceback.print_exc()
