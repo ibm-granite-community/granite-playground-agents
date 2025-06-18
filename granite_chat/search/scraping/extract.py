@@ -43,7 +43,7 @@ class ContentExtractor:
         self.logger = logging.getLogger(__name__)
         self.worker_pool = worker_pool
 
-    async def run(self) -> None:
+    async def run(self) -> list[dict[str, Any]]:
         """
         Extracts the content from the links
         """

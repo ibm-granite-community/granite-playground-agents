@@ -11,25 +11,30 @@
 import hashlib
 import logging
 import re
-from typing import Any
+from typing import cast
 from urllib.parse import parse_qs, urljoin, urlparse
 
-import bs4
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet, Tag
+from pydantic import BaseModel
 
 
-def get_relevant_images(soup: BeautifulSoup, url: str) -> list:
+class ImageUrl(BaseModel):
+    score: float
+    url: str
+
+
+def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
     """Extract relevant images from the page"""
     image_urls = []
 
     try:
         # Find all img tags with src attribute
-        all_images = soup.find_all("img", src=True)
+        all_images: ResultSet = soup.find_all("img", src=True)
 
         for img in all_images:
             img_src = urljoin(url, img["src"])
             if img_src.startswith(("http://", "https://")):
-                score = 0
+                score: float = 0
                 # Check for relevant classes
                 if any(
                     cls in img.get("class", [])
@@ -38,8 +43,8 @@ def get_relevant_images(soup: BeautifulSoup, url: str) -> list:
                     score = 4  # Higher score
                 # Check for size attributes
                 elif img.get("width") and img.get("height"):
-                    width = parse_dimension(img["width"])
-                    height = parse_dimension(img["height"])
+                    width = parse_dimension(cast(str, img["width"]))
+                    height = parse_dimension(cast(str, img["height"]))
                     if width and height:
                         if width >= 2000 and height >= 1000:
                             score = 3  # Medium score (very large images)
@@ -52,10 +57,10 @@ def get_relevant_images(soup: BeautifulSoup, url: str) -> list:
                         else:
                             continue  # Skip small images
 
-                image_urls.append({"url": img_src, "score": score})
+                image_urls.append(ImageUrl(url=img_src, score=score))
 
         # Sort images by score (highest first)
-        sorted_images = sorted(image_urls, key=lambda x: x["score"], reverse=True)
+        sorted_images = sorted(image_urls, key=lambda x: x.score, reverse=True)
 
         return sorted_images[:10]  # Ensure we don't return more than 10 images in total
 
@@ -124,11 +129,16 @@ def clean_soup(soup: BeautifulSoup) -> BeautifulSoup:
     disallowed_class_set = {"nav", "menu", "sidebar", "footer"}
 
     # clean tags with certain classes
-    def does_tag_have_disallowed_class(elem: Any) -> bool:
-        if not isinstance(elem, bs4.Tag):
+    def does_tag_have_disallowed_class(elem: Tag) -> bool:
+        if not isinstance(elem, Tag):
             return False
 
-        return any(cls_name in disallowed_class_set for cls_name in elem.get("class", []))
+        classes = elem.get("class")
+
+        if classes:
+            return any(cls_name in disallowed_class_set for cls_name in classes)
+
+        return False
 
     for tag in soup.find_all(does_tag_have_disallowed_class):
         tag.decompose()
