@@ -79,8 +79,6 @@ class SearchAgent:
             d.metadata["title"] = url_to_result[d.metadata["source"]].title
             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
 
-        docs.sort(key=lambda x: x.metadata["index"])
-
         return docs
 
     async def _browse_urls(self, urls: list[str]) -> list[dict]:
