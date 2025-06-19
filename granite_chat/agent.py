@@ -1,4 +1,3 @@
-import logging
 import os
 import traceback
 from collections.abc import AsyncGenerator
@@ -17,7 +16,6 @@ from config import settings  # type: ignore
 from langchain_core.documents import Document
 
 from granite_chat import utils
-from granite_chat.logger import get_formatted_logger
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.research.researcher import Researcher
 from granite_chat.research.types import ResearchEvent
@@ -32,8 +30,6 @@ from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_chat.workers import WorkerPool
-
-logger = get_formatted_logger(__name__, logging.INFO)
 
 MODEL_NAME = settings.LLM_MODEL
 OPENAI_URL = settings.LLM_API_BASE
