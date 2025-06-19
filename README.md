@@ -52,12 +52,6 @@ beeai ui
 
 Go to `Agents` and look for `granite-chat`.
 
-You can also run the agent using the client.
-
-```sh
-uv run granite_chat/client.py
-```
-
 ## Containerisation
 
 ### Build
