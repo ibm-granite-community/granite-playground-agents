@@ -65,25 +65,27 @@ class Researcher:
         """Perform research investigation"""
         self.logger.info("Running Researcher")
 
-        sub_queries = await self._generate_research_plan()
+        topic = self.messages[0].text
+
+        sub_queries = await self._generate_research_plan(topic=topic)
         self.logger.debug(f"sub_queries: {sub_queries}")
 
         reports = await self._perform_research(sub_queries)
         self.logger.debug(f"reports: {reports}")
 
         self.logger.debug("Starting report writing")
-        await self._generate_final_report(reports=reports)
+        await self._generate_final_report(topic=topic, reports=reports)
 
-    async def _generate_final_report(self, reports: list[ResearchReport]) -> None:
-        prompt = ResearchPrompts.final_report_prompt(reports=reports)
+    async def _generate_final_report(self, topic: str, reports: list[ResearchReport]) -> None:
+        prompt = ResearchPrompts.final_report_prompt(topic=topic, reports=reports)
 
         async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
                     await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
 
-    async def _generate_research_plan(self) -> list[str]:
-        prompt = ResearchPrompts.research_plan_prompt(self.messages)
+    async def _generate_research_plan(self, topic: str) -> list[str]:
+        prompt = ResearchPrompts.research_plan_prompt(topic=topic)
         response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
         queries = ast.literal_eval(response.get_text_content().strip())
         return queries
@@ -117,10 +119,10 @@ class Researcher:
             # except KeyError as e:
             #     pass
 
-            research_report_prompt = ResearchPrompts.research_report_prompt(task=query, docs=docs)
+            research_report_prompt = ResearchPrompts.research_report_prompt(topic=query, docs=docs)
             response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
             report = response.get_text_content()
-            return ResearchReport(task=query, report=report)
+            return ResearchReport(topic=query, report=report)
 
         return None
 

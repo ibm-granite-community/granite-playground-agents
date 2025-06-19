@@ -9,5 +9,5 @@ class ResearchEvent(BaseModel):
 
 
 class ResearchReport(BaseModel):
-    task: str
+    topic: str
     report: str
