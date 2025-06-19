@@ -345,7 +345,10 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         )
 
         async def research_listener(event: ResearchEvent) -> None:
-            await context.yield_async(MessagePart(content=event.data))
+            if event.event_type == "token":
+                await context.yield_async(MessagePart(content=event.data))
+            elif event.event_type == "log":
+                await context.yield_async({"message": f"{event.data}\n"})
 
         researcher = Researcher(
             chat_model=model, messages=messages, listener=research_listener, worker_pool=worker_pool

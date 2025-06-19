@@ -68,6 +68,7 @@ class Researcher:
         topic = self.messages[0].text
 
         sub_queries = await self._generate_research_plan(topic=topic)
+
         self.logger.debug(f"sub_queries: {sub_queries}")
 
         reports = await self._perform_research(sub_queries)
@@ -77,6 +78,8 @@ class Researcher:
         await self._generate_final_report(topic=topic, reports=reports)
 
     async def _generate_final_report(self, topic: str, reports: list[ResearchReport]) -> None:
+        await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
+
         prompt = ResearchPrompts.final_report_prompt(topic=topic, reports=reports)
 
         async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
@@ -85,6 +88,8 @@ class Researcher:
                     await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
 
     async def _generate_research_plan(self, topic: str) -> list[str]:
+        await self.listener(ResearchEvent(event_type="log", data="📝 Creating a research plan..."))
+
         prompt = ResearchPrompts.research_plan_prompt(topic=topic)
         response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
         queries = ast.literal_eval(response.get_text_content().strip())
@@ -96,9 +101,17 @@ class Researcher:
         return filtered
 
     async def _research_topic(self, query: str) -> ResearchReport | None:
+        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching sub-topic '{query}'"))
+
         search_results = await self._search_query(query)
 
         if search_results:
+            await self.listener(
+                ResearchEvent(
+                    event_type="log", data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{query}'"
+                )
+            )
+
             scraped_content, _ = await scrape_urls(
                 urls=[r.href for r in search_results], scraper="bs", worker_pool=self.worker_pool
             )
@@ -118,6 +131,10 @@ class Researcher:
             #             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
             # except KeyError as e:
             #     pass
+
+            await self.listener(
+                ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for sub-topic '{query}'")
+            )
 
             research_report_prompt = ResearchPrompts.research_report_prompt(topic=query, docs=docs)
             response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
