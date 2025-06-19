@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.logger import Logger
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -33,6 +34,9 @@ class Researcher:
         self.messages = messages
         self.worker_pool = worker_pool
         self.listener = listener
+        self.logger = Logger("Researcher", level="DEBUG")
+
+        self.logger.debug("Initializing Researcher")
 
         embeddings: Embeddings = get_embeddings(
             provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL
@@ -50,6 +54,7 @@ class Researcher:
             )
         else:
             # Fall back on character chunks
+            self.logger.warning("Falling back to vector store without tokenizer")
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
             )
@@ -58,8 +63,15 @@ class Researcher:
 
     async def run(self) -> None:
         """Perform research investigation"""
+        self.logger.info("Running Researcher")
+
         sub_queries = await self._generate_research_plan()
+        self.logger.debug(f"sub_queries: {sub_queries}")
+
         reports = await self._perform_research(sub_queries)
+        self.logger.debug(f"reports: {reports}")
+
+        self.logger.debug("Starting report writing")
         await self._generate_final_report(reports=reports)
 
     async def _generate_final_report(self, reports: list[ResearchReport]) -> None:
