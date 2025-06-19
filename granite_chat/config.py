@@ -54,6 +54,10 @@ class Settings(BaseSettings):
 
     log_level: Literal["FATAL", "ERROR", "WARNING", "INFO", "DEBUG", "TRACE"] = "INFO"
 
+    # Research configuration
+    RESEARCH_PLAN_BREADTH: int = 5
+    RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = 3
+
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
         # We need OLLAMA_BASE_URL to be set in the event that ollama embeddings are used

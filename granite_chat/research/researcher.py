@@ -90,7 +90,7 @@ class Researcher:
     async def _generate_research_plan(self, topic: str) -> list[str]:
         await self.listener(ResearchEvent(event_type="log", data="📝 Creating a research plan..."))
 
-        prompt = ResearchPrompts.research_plan_prompt(topic=topic)
+        prompt = ResearchPrompts.research_plan_prompt(topic=topic, max_queries=settings.RESEARCH_PLAN_BREADTH)
         response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
         queries = ast.literal_eval(response.get_text_content().strip())
         return queries
@@ -103,7 +103,7 @@ class Researcher:
     async def _research_topic(self, query: str) -> ResearchReport | None:
         await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching sub-topic '{query}'"))
 
-        search_results = await self._search_query(query)
+        search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
 
         if search_results:
             await self.listener(
