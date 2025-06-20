@@ -1,5 +1,5 @@
 # Portions of this file are derived from the Apache 2.0 licensed project "gpt-researcher"
-# Original source: https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/retrievers/google/google.py
+# Original source: https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/retrievers/tavily/tavily.py
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,7 @@ class TavilySearch(SearchEngine):
 
     def __init__(self) -> None:
         """
-        Initializes the GoogleSearch object
+        Initializes the TavilySearch object
         Args:
             query:
         """
@@ -33,7 +33,7 @@ class TavilySearch(SearchEngine):
 
     def get_api_key(self) -> str:
         """
-        Gets the Google API key
+        Gets the Tavily API key
         Returns:
 
         """
