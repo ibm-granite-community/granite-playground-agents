@@ -32,6 +32,10 @@ class ConfigurableVectorStoreWrapper:
         """
         langchain_documents = self._create_langchain_documents(documents)
         splitted_documents = self._split_documents(langchain_documents)
+
+        # TODO: Watsonx embedding bails out if > 1000 embedding docs, implement a better fix here
+        splitted_documents = splitted_documents[0 : min(len(splitted_documents), 1000)]
+
         self.vector_store.add_documents(splitted_documents)
 
     def _create_langchain_documents(self, data: list[dict]) -> list[Document]:
