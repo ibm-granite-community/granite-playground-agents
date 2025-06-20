@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     RETRIEVER: str = "google"
     GOOGLE_API_KEY: str | None = None
     GOOGLE_CX_KEY: str | None = None
+    TAVILY_API_KEY: str | None = None
 
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
