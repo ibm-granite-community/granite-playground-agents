@@ -25,7 +25,7 @@ The sub-queries should:
 Here is the topic: {topic}
 
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-Generate exactly {max_queries} sub queries that will guide the research.
+Generate a maximum of {max_queries} sub queries that will guide the research.
 You must respond with a list of strings in the following format: [{dynamic_example}].
 The response should contain ONLY the list.
 """  # noqa: E501
@@ -45,8 +45,7 @@ The response should contain ONLY the list.
 
         return f"""You are a meticulous research assistant.
 You are given a topic and a set of documents that contain information pertinent to the topic.
-Your job is to produce a research report on the topic using the provided documents.
-Your report should be clear and comprehensive and stay aligned with the content and facts of the documents when possible.
+For your assigned topic, review the provided documents and produce a concise research report that summarizes key findings, insights, and relevant information. Focus on extracting the most pertinent details to support a clear understanding of the topic.
 
 Topic: {topic}
 
@@ -56,26 +55,27 @@ Topic: {topic}
 
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your report.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-You have access to realtime data, you do not have a knowledge cutoff.
 """  # noqa: E501
 
     @staticmethod
-    def final_report_prompt(topic: str, reports: list[ResearchReport]) -> str:
+    def final_report_prompt(topic: str, plan: list[str], reports: list[ResearchReport]) -> str:
         reports_str = json.dumps([r.model_dump() for r in reports], indent=4)
+        plan_str = [f"- {step}\n" for step in plan]
 
-        return f"""You are Granite, a talented researcher leading a team of research assistants.
-You are given a topic and a set of intermediate research reports provided by your assistants.
-Each assistant is reporting on a related sub topic.
-Compile a coherent report based on the intermediate research reports submitted by your research assistants."
-Your report should be comprehensive and align with the sub-reports.
+        return f"""You are Granite, a talented researcher.
+You are given a topic and a set of interim research reports provided by your assistants. Each assistant is reporting on a sub topic.
+Please review the reports submitted by the research assistants and synthesize them into a single, comprehensive final report. Ensure that overlapping information is consolidated, gaps are addressed, and the overall narrative is coherent and aligned with our research objectives.
 
 Topic: {topic}
+
+Research plan:
+{plan_str}
 
 <research_reports>
 {reports_str}
 </research_reports>
 
-Avoid referencing or mentioning "interim reports" or "the reports", or alluding to their existence in any way when formulating your response.
+Avoid referencing or mentioning "interim reports", "report" or "the reports", or alluding to their existence in any way when formulating your response.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 The title of the report should be {topic} of an appropriate variation thereof.
 Do not include references, they will be added later.
