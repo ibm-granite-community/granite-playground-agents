@@ -25,6 +25,7 @@ from granite_chat.search.citations import (
     DefaultCitationGenerator,
     GraniteIOCitationGenerator,
 )
+from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
@@ -42,6 +43,9 @@ if settings.LLM_API_HEADERS:
 
 MAX_TOKENS = settings.MAX_TOKENS
 TEMPERATURE = settings.TEMPERATURE
+
+# This will preload the embeddings tokenizer if set
+EmbeddingsTokenizer.get_instance()
 
 server = Server()
 worker_pool = WorkerPool()

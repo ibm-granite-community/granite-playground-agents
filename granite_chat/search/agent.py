@@ -8,11 +8,11 @@ from beeai_framework.backend.chat import ChatModel
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
-from transformers import AutoTokenizer
 
 from granite_chat.config import settings
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
@@ -34,8 +34,7 @@ class SearchAgent:
 
         vector_store = InMemoryVectorStore(embedding=embeddings)
 
-        if settings.EMBEDDINGS_HF_TOKENIZER:
-            tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDINGS_HF_TOKENIZER)
+        if settings.EMBEDDINGS_HF_TOKENIZER and (tokenizer := EmbeddingsTokenizer.get_instance().get_tokenizer()):
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
