@@ -12,22 +12,18 @@ class ResearchPrompts:
 
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
-        dynamic_example = ", ".join([f'"sub query {i + 1}"' for i in range(max_queries)])
-
         return f"""You are a research planner.
-Given a user-defined topic, you will generate a list of specific, actionable sub-queries that will serve as the foundation for investigating the topic.
+Given a user-defined topic, you will generate a list of specific, actionable sub-queries/research questions that will serve as the foundation for investigating the topic.
 
 The sub-queries should:
 - Cover the key aspects required to fully understand and research the topic.
-- Be phrased naturally as search engine queries or research questions.
+- Be phrased naturally as queries or research questions.
 - Be diverse, non-redundant, and ordered logically (e.g. from foundational to advanced)
 
 Here is the topic: {topic}
 
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-Generate a maximum of {max_queries} sub queries that will guide the research.
-You must respond with a list of strings in the following format: [{dynamic_example}].
-The response should contain ONLY the list.
+Generate a maximum of {max_queries} queries/research questions that will serve as a research plan for the topic.
 """  # noqa: E501
 
     @staticmethod

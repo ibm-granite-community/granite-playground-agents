@@ -1,4 +1,3 @@
-import ast
 import asyncio
 import traceback
 from collections.abc import Awaitable, Callable
@@ -13,7 +12,7 @@ from transformers import AutoTokenizer
 
 from granite_chat.config import settings
 from granite_chat.research.prompts import ResearchPrompts
-from granite_chat.research.types import ResearchEvent, ResearchReport
+from granite_chat.research.types import ResearchEvent, ResearchPlanSchema, ResearchReport
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.scraping.web_scraping import scrape_urls
@@ -144,9 +143,10 @@ class Researcher:
         prompt = ResearchPrompts.research_plan_prompt(
             topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
         )
-        response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
-        queries = ast.literal_eval(response.get_text_content().strip())
-        return queries
+        response = await self.chat_model.create_structure(
+            schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
+        )
+        return response.object["plan"]
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
