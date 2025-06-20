@@ -18,7 +18,7 @@ from granite_chat.search.engines.engine import SearchEngine
 
 class TavilySearch(SearchEngine):
     """
-    Google API Retriever
+    Tavily API Retriever
     """
 
     def __init__(self) -> None:
