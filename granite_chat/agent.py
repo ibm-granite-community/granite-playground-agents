@@ -199,6 +199,10 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                 "name": "GOOGLE_CX_KEY",
                 "description": "Google search engine ID",
             },
+            {
+                "name": "TAVILY_API_KEY",
+                "description": "Tavily search API key",
+            },
             # Embeddings provider
             {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
             # For "watsonx" embedding provider
