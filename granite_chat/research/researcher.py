@@ -146,7 +146,11 @@ class Researcher:
         response = await self.chat_model.create_structure(
             schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
         )
-        return response.object["plan"]
+
+        if "plan" in response.object:
+            return response.object["plan"]
+        else:
+            raise ValueError("Failed to generate a valid research plan!")
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
