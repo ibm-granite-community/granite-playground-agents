@@ -61,54 +61,48 @@ class Researcher:
 
         self.search_engine = get_search_engine(settings.RETRIEVER)
 
+        self.research_topic: str | None = None
+        self.research_plan: list[str] = []
+        self.interim_reports: list[ResearchReport] = []
+
     async def run(self) -> None:
         """Perform research investigation"""
         self.logger.info("Running Researcher")
 
-        topic = self.messages[0].text
+        self.research_topic = await self._generate_research_topic()
+        self.research_plan = await self._generate_research_plan()
 
-        sub_queries = await self._generate_research_plan(topic=topic)
+        self.logger.debug(f"Research plan: {self.research_plan}")
 
-        self.logger.debug(f"sub_queries: {sub_queries}")
+        await self._gather_sources()
+        await self._perform_research()
 
-        reports = await self._perform_research(sub_queries)
-        self.logger.debug(f"reports: {reports}")
+        self.logger.debug(f"reports: {self.interim_reports}")
 
         self.logger.debug("Starting report writing")
-        await self._generate_final_report(topic=topic, reports=reports)
+        await self._generate_final_report()
 
-    async def _generate_final_report(self, topic: str, reports: list[ResearchReport]) -> None:
-        await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
+    async def _generate_research_topic(self) -> str:
+        """Generate/extract the research topic"""
+        return self.messages[0].text
 
-        prompt = ResearchPrompts.final_report_prompt(topic=topic, reports=reports)
+    async def _gather_sources(self) -> None:
+        """Gather all information sources for the research plan"""
 
-        async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
-            match (data, event.name):
-                case (ChatModelNewTokenEvent(), "new_token"):
-                    await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
+        if self.research_plan is None or len(self.research_plan) == 0:
+            raise ValueError("No research plan has been set!")
 
-    async def _generate_research_plan(self, topic: str) -> list[str]:
-        await self.listener(ResearchEvent(event_type="log", data="📝 Creating a research plan..."))
+        await asyncio.gather(*(self._gather_sources_for_step(step) for step in self.research_plan))
 
-        prompt = ResearchPrompts.research_plan_prompt(topic=topic, max_queries=settings.RESEARCH_PLAN_BREADTH)
-        response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
-        queries = ast.literal_eval(response.get_text_content().strip())
-        return queries
+    async def _gather_sources_for_step(self, plan_step: str) -> None:
+        """Gather information for a single research plan step"""
+        search_results = await self._search_query(plan_step, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
 
-    async def _perform_research(self, queries: list[str]) -> list[ResearchReport]:
-        results = await asyncio.gather(*(self._research_topic(q) for q in queries))
-        filtered = [x for x in results if x is not None]
-        return filtered
-
-    async def _research_topic(self, query: str) -> ResearchReport | None:
-        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching sub-topic '{query}'"))
-
-        search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
-
-        if search_results:
+        if search_results and len(search_results) > 0:
             await self.listener(
                 ResearchEvent(
-                    event_type="log", data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{query}'"
+                    event_type="log",
+                    data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{plan_step}'",
                 )
             )
 
@@ -116,32 +110,65 @@ class Researcher:
                 urls=[r.href for r in search_results], scraper="bs", worker_pool=self.worker_pool
             )
 
-            # TODO: Should store be shared like this?
-            await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+            if scraped_content and len(scraped_content) > 0:
+                await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
 
-            docs: list[Document] = await self.vector_store.asimilarity_search(query=query, k=10)
+    async def _generate_final_report(self) -> None:
+        if self.research_topic is None:
+            raise ValueError("No research topic set!")
 
-            # url_to_result: dict[str, SearchResult] = {result.url: result for result in search_results}
+        if self.research_plan is None:
+            raise ValueError("No research plan set!")
 
-            # try:
-            #     for d in docs:
-            #         if d.metadata["source"] in url_to_result:
-            #             d.metadata["url"] = url_to_result[d.metadata["source"]].url
-            #             d.metadata["title"] = url_to_result[d.metadata["source"]].title
-            #             d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
-            # except KeyError as e:
-            #     pass
+        if len(self.interim_reports) == 0:
+            raise ValueError("No interim reports available!")
 
-            await self.listener(
-                ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for sub-topic '{query}'")
-            )
+        await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
 
-            research_report_prompt = ResearchPrompts.research_report_prompt(topic=query, docs=docs)
-            response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
-            report = response.get_text_content()
-            return ResearchReport(topic=query, report=report)
+        prompt = ResearchPrompts.final_report_prompt(
+            topic=self.research_topic, plan=self.research_plan, reports=self.interim_reports
+        )
 
-        return None
+        # Final report is streamed
+        async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
+            match (data, event.name):
+                case (ChatModelNewTokenEvent(), "new_token"):
+                    await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
+
+    async def _generate_research_plan(self) -> list[str]:
+        if self.research_topic is None:
+            raise ValueError("Research topic has not been set!")
+
+        await self.listener(ResearchEvent(event_type="log", data="📝 Creating a research plan..."))
+
+        prompt = ResearchPrompts.research_plan_prompt(
+            topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
+        )
+        response = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+        queries = ast.literal_eval(response.get_text_content().strip())
+        return queries
+
+    async def _perform_research(self) -> None:
+        if self.research_plan is None or len(self.research_plan) == 0:
+            raise ValueError("No research plan has been set!")
+
+        await asyncio.gather(*(self._research_step(step) for step in self.research_plan))
+
+    async def _research_step(self, step: str) -> None:
+        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching plan step '{step}'"))
+
+        docs: list[Document] = await self.vector_store.asimilarity_search(
+            query=step, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+        )
+
+        await self.listener(
+            ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
+        )
+
+        research_report_prompt = ResearchPrompts.research_report_prompt(topic=step, docs=docs)
+        response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
+        report = response.get_text_content()
+        self.interim_reports.append(ResearchReport(topic=step, report=report))
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult] | None:
         async with self.worker_pool.throttle():

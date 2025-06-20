@@ -56,7 +56,8 @@ class Settings(BaseSettings):
 
     # Research configuration
     RESEARCH_PLAN_BREADTH: int = 5
-    RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = 3
+    RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = 5
+    RESEARCH_MAX_DOCS_PER_STEP: int = 10
 
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
