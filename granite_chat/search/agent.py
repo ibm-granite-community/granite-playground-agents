@@ -1,4 +1,3 @@
-import ast
 import asyncio
 import logging
 import traceback
@@ -16,7 +15,7 @@ from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import SearchResult, SearchResults
+from granite_chat.search.types import SearchQueriesSchema, SearchResult, SearchResults
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
@@ -86,9 +85,13 @@ class SearchAgent:
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
         search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
-        response = await self.chat_model.create(messages=[UserMessage(content=search_query_prompt)])
-        queries = ast.literal_eval(response.get_text_content().strip())
-        return queries
+        response = await self.chat_model.create_structure(
+            schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+        )
+        if "search_queries" in response.object:
+            return response.object["search_queries"]
+        else:
+            raise ValueError("Failed to generate valid search queries!")
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
         standalone_prompt = SearchPrompts.generate_standalone_query(messages)

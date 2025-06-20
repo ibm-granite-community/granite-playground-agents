@@ -48,7 +48,6 @@ You have access to realtime data, you do not have a knowledge cutoff.
                 conversation.append("Assistant: " + m.text)
 
         conversation_str = "\n".join(conversation)
-        dynamic_example = ", ".join([f'"query {i + 1}"' for i in range(max_queries)])
 
         return f"""
 Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
@@ -75,8 +74,6 @@ Conversation:
 {conversation_str}
 
 Generate exactly {max_queries} search queries that reflect the intent of the user's last message.
-You must respond with a list of strings in the following format: [{dynamic_example}].
-The response should contain ONLY the list.
 """  # noqa: E501
 
     @staticmethod

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SearchResult(BaseModel):
@@ -34,3 +34,7 @@ class Citation(BaseModel):
     response_text: str
     response_begin: int
     response_end: int
+
+
+class SearchQueriesSchema(BaseModel):
+    search_queries: list[str] = Field(description="The list of search queries.")
