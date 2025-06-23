@@ -42,13 +42,14 @@ class PyMuPDFScraper(AsyncScraper):
         """
         try:
             if self.is_url(link):
-                async with client, client.stream("GET", link, timeout=5) as response:
+                # Download PDF
+                async with client.stream("GET", link, timeout=5) as response:
                     response.raise_for_status()
 
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-                    temp_filename = temp_file.name  # Get the temporary file name
-                    async for chunk in response.aiter_bytes(chunk_size=8192):
-                        temp_file.write(chunk)  # Write the downloaded content to the temporary file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                        temp_filename = temp_file.name
+                        async for chunk in response.aiter_bytes(chunk_size=8192):
+                            temp_file.write(chunk)
 
                 loader = PyMuPDFLoader(temp_filename)
                 doc = loader.load()
@@ -57,14 +58,13 @@ class PyMuPDFScraper(AsyncScraper):
                 loader = PyMuPDFLoader(link)
                 doc = loader.load()
 
-            # Extract the content, image (if any), and title from the document.
             image: list[str] = []
-            # Retrieve the content of the first page to minimize embedding costs.
-            return doc[0].page_content, image, doc[0].metadata["title"]
+            return doc[0].page_content, image, doc[0].metadata.get("title", "")
 
         except TimeoutException:
-            print(f"Download timed out. Please check the link : {link}")
+            print(f"Download timed out. Please check the link: {link}")
             return "", [], ""
+
         except Exception as e:
-            print(f"Error loading PDF : {link} {e}")
+            print(f"Error loading PDF: {link} {e}")
             return "", [], ""
