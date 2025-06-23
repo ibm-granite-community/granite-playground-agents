@@ -2,6 +2,7 @@ import asyncio
 import traceback
 from collections.abc import Awaitable, Callable
 
+from acp_sdk import Message as AcpMessage, MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.logger import Logger
@@ -13,6 +14,11 @@ from transformers import AutoTokenizer
 from granite_chat.config import settings
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchEvent, ResearchPlanSchema, ResearchReport
+from granite_chat.search.citations import (
+    CitationGenerator,
+    DefaultCitationGenerator,
+    GraniteIOCitationGenerator,
+)
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.scraping.web_scraping import scrape_urls
@@ -63,6 +69,9 @@ class Researcher:
         self.research_topic: str | None = None
         self.research_plan: list[str] = []
         self.interim_reports: list[ResearchReport] = []
+        self.search_docs_index: dict[str, str] = {}
+        self.final_report_docs: list[Document] = []
+        self.final_report: str | None = None
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -79,7 +88,14 @@ class Researcher:
         self.logger.debug(f"reports: {self.interim_reports}")
 
         self.logger.debug("Starting report writing")
-        await self._generate_final_report()
+        self.final_report = await self._generate_final_report()
+
+        self.logger.debug("Generating citations")
+        results = []
+        async for message_part in self._generate_citations():
+            print(message_part)
+            results.append(message_part)
+        return results
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
@@ -104,13 +120,17 @@ class Researcher:
                     data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{plan_step}'",
                 )
             )
-
+        
             scraped_content, _ = await scrape_urls(
                 urls=[r.href for r in search_results], scraper="bs", worker_pool=self.worker_pool
             )
 
             if scraped_content and len(scraped_content) > 0:
                 await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+
+            search_doc_metadata: dict[str, dict] = {result.url: {"title": result.title, 
+                                                                 "body": scraped_content} for result in search_results}
+            self.search_docs_index.update(search_doc_metadata)
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -128,11 +148,16 @@ class Researcher:
             topic=self.research_topic, plan=self.research_plan, reports=self.interim_reports
         )
 
+        response: str = ""
+
         # Final report is streamed
         async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
+                    response += data.value.get_text_content()
                     await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
+        
+        return response
 
     async def _generate_research_plan(self) -> list[str]:
         if self.research_topic is None:
@@ -165,6 +190,15 @@ class Researcher:
             query=step, k=settings.RESEARCH_MAX_DOCS_PER_STEP
         )
 
+        # Add search engine metadata
+        for d in docs:
+            source_doc = self.search_docs_index[d.metadata["source"]]
+            d.metadata["url"] = d.metadata["source"]
+            d.metadata["title"] = source_doc["title"]
+            d.metadata["snippet"] = source_doc["body"]
+
+        self.final_report_docs += docs
+
         await self.listener(
             ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
         )
@@ -183,3 +217,29 @@ class Researcher:
             except Exception:
                 traceback.print_exc()
         return None
+    
+    async def _generate_citations(self):
+        await self.listener(ResearchEvent(event_type="log", data=f"📖 Generating citations..."))
+
+        if len(self.final_report_docs) > 0:
+            input = [AcpMessage(parts=[MessagePart(name="User", content=self.research_topic)])]
+
+            generator: CitationGenerator
+
+            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+                extra_headers = (
+                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
+                    if settings.GRANITE_IO_OPENAI_API_HEADERS
+                    else None
+                )
+
+                generator = GraniteIOCitationGenerator(
+                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
+                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                    extra_headers=extra_headers,
+                )
+            else:
+                generator = DefaultCitationGenerator()
+
+            async for message_part in generator.generate(messages=input, docs=self.final_report_docs, response=self.final_report):
+                yield message_part
