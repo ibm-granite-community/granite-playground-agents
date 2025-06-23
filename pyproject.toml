@@ -17,7 +17,8 @@ dependencies = [
     "bs4>=0.0.2",
     "colorama>=0.4.6",
     "arxiv>=2.2.0",
-    "tavily-python>=0.7.7"
+    "tavily-python>=0.7.7",
+    "pymupdf>=1.26.1",
 ]
 
 [tool.ruff]
