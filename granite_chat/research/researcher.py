@@ -88,14 +88,10 @@ class Researcher:
         self.logger.debug(f"reports: {self.interim_reports}")
 
         self.logger.debug("Starting report writing")
-        self.final_report = await self._generate_final_report()
+        await self._generate_final_report()
 
         self.logger.debug("Generating citations")
-        results = []
-        async for message_part in self._generate_citations():
-            print(message_part)
-            results.append(message_part)
-        return results
+        await self._generate_citations()
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
@@ -157,7 +153,7 @@ class Researcher:
                     response += data.value.get_text_content()
                     await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
         
-        return response
+        self.final_report = response
 
     async def _generate_research_plan(self) -> list[str]:
         if self.research_topic is None:
@@ -242,4 +238,5 @@ class Researcher:
                 generator = DefaultCitationGenerator()
 
             async for message_part in generator.generate(messages=input, docs=self.final_report_docs, response=self.final_report):
-                yield message_part
+                await self.listener(ResearchEvent(event_type="token",
+                                                  data=message_part.content))
