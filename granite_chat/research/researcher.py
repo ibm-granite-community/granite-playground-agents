@@ -23,7 +23,7 @@ from granite_chat.search.citations import (
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import SearchResult, SearchResults
+from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
@@ -109,11 +109,11 @@ class Researcher:
         """Gather information for a single research plan step"""
         search_results = await self._search_query(plan_step, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
 
-        if search_results and len(search_results.results) > 0:
+        if len(search_results) > 0:
             await self.listener(
                 ResearchEvent(
                     event_type="log",
-                    data=f"🌐 Found {len(search_results.results)!s} search results for sub-topic '{plan_step}'",
+                    data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{plan_step}'",
                 )
             )
 
@@ -193,15 +193,15 @@ class Researcher:
         report = response.get_text_content()
         self.interim_reports.append(ResearchReport(topic=step, report=report))
 
-    async def _search_query(self, query: str, max_results: int = 3) -> SearchResults | None:
+    async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         async with self.worker_pool.throttle():
             try:
                 engine = get_search_engine(settings.RETRIEVER)
                 results = await engine.search(query=query, max_results=max_results)
-                return SearchResults(results=[SearchResult(**r) for r in results])
+                return [SearchResult(**r) for r in results]
             except Exception:
                 traceback.print_exc()
-        return None
+        return []
 
     async def _generate_citations(self) -> None:
         await self.listener(ResearchEvent(event_type="log", data="📖 Generating citations..."))
@@ -227,6 +227,6 @@ class Researcher:
                 generator = DefaultCitationGenerator()
 
             async for message_part in generator.generate(
-                messages=input, docs=self.final_report_docs, response=self.final_report
+                messages=input, docs=self.final_report_docs, response=self.final_report or ""
             ):
-                await self.listener(ResearchEvent(event_type="token", data=message_part.content))
+                await self.listener(ResearchEvent(event_type="token", data=message_part.content or ""))

@@ -15,12 +15,8 @@ from typing import cast
 from urllib.parse import parse_qs, urljoin, urlparse
 
 from bs4 import BeautifulSoup, ResultSet, Tag
-from pydantic import BaseModel
 
-
-class ImageUrl(BaseModel):
-    score: float
-    url: str
+from granite_chat.search.types import ImageUrl
 
 
 def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
