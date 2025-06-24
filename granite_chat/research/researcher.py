@@ -2,7 +2,8 @@ import asyncio
 import traceback
 from collections.abc import Awaitable, Callable
 
-from acp_sdk import Message as AcpMessage, MessagePart
+from acp_sdk import Message as AcpMessage
+from acp_sdk import MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.logger import Logger
@@ -22,7 +23,7 @@ from granite_chat.search.citations import (
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import SearchResult
+from granite_chat.search.types import SearchResult, SearchResults
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
@@ -69,7 +70,6 @@ class Researcher:
         self.research_topic: str | None = None
         self.research_plan: list[str] = []
         self.interim_reports: list[ResearchReport] = []
-        self.search_docs_index: dict[str, str] = {}
         self.final_report_docs: list[Document] = []
         self.final_report: str | None = None
 
@@ -109,24 +109,20 @@ class Researcher:
         """Gather information for a single research plan step"""
         search_results = await self._search_query(plan_step, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
 
-        if search_results and len(search_results) > 0:
+        if search_results and len(search_results.results) > 0:
             await self.listener(
                 ResearchEvent(
                     event_type="log",
-                    data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{plan_step}'",
+                    data=f"🌐 Found {len(search_results.results)!s} search results for sub-topic '{plan_step}'",
                 )
             )
-        
+
             scraped_content, _ = await scrape_urls(
-                urls=[r.href for r in search_results], scraper="bs", worker_pool=self.worker_pool
+                search_results=search_results, scraper="bs", worker_pool=self.worker_pool
             )
 
             if scraped_content and len(scraped_content) > 0:
                 await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
-
-            search_doc_metadata: dict[str, dict] = {result.url: {"title": result.title, 
-                                                                 "body": scraped_content} for result in search_results}
-            self.search_docs_index.update(search_doc_metadata)
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -152,7 +148,7 @@ class Researcher:
                 case (ChatModelNewTokenEvent(), "new_token"):
                     response += data.value.get_text_content()
                     await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
-        
+
         self.final_report = response
 
     async def _generate_research_plan(self) -> list[str]:
@@ -186,13 +182,6 @@ class Researcher:
             query=step, k=settings.RESEARCH_MAX_DOCS_PER_STEP
         )
 
-        # Add search engine metadata
-        for d in docs:
-            source_doc = self.search_docs_index[d.metadata["source"]]
-            d.metadata["url"] = d.metadata["source"]
-            d.metadata["title"] = source_doc["title"]
-            d.metadata["snippet"] = source_doc["body"]
-
         self.final_report_docs += docs
 
         await self.listener(
@@ -204,18 +193,18 @@ class Researcher:
         report = response.get_text_content()
         self.interim_reports.append(ResearchReport(topic=step, report=report))
 
-    async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult] | None:
+    async def _search_query(self, query: str, max_results: int = 3) -> SearchResults | None:
         async with self.worker_pool.throttle():
             try:
                 engine = get_search_engine(settings.RETRIEVER)
                 results = await engine.search(query=query, max_results=max_results)
-                return [SearchResult(**r) for r in results]
+                return SearchResults(results=[SearchResult(**r) for r in results])
             except Exception:
                 traceback.print_exc()
         return None
-    
-    async def _generate_citations(self):
-        await self.listener(ResearchEvent(event_type="log", data=f"📖 Generating citations..."))
+
+    async def _generate_citations(self) -> None:
+        await self.listener(ResearchEvent(event_type="log", data="📖 Generating citations..."))
 
         if len(self.final_report_docs) > 0:
             input = [AcpMessage(parts=[MessagePart(name="User", content=self.research_topic)])]
@@ -237,6 +226,7 @@ class Researcher:
             else:
                 generator = DefaultCitationGenerator()
 
-            async for message_part in generator.generate(messages=input, docs=self.final_report_docs, response=self.final_report):
-                await self.listener(ResearchEvent(event_type="token",
-                                                  data=message_part.content))
+            async for message_part in generator.generate(
+                messages=input, docs=self.final_report_docs, response=self.final_report
+            ):
+                await self.listener(ResearchEvent(event_type="token", data=message_part.content))

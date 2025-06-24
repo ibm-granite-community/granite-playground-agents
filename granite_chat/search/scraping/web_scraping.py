@@ -15,13 +15,14 @@ from colorama import Fore, Style  # type: ignore
 
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.scraping.extract import ContentExtractor
+from granite_chat.search.types import SearchResults
 from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
 
 async def scrape_urls(
-    urls: list[str], scraper: str, worker_pool: WorkerPool
+    search_results: SearchResults, scraper: str, worker_pool: WorkerPool
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """
     Scrapes the urls
@@ -38,7 +39,9 @@ async def scrape_urls(
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
 
     try:
-        extractor = ContentExtractor(urls, user_agent, scraper, worker_pool=worker_pool)
+        extractor = ContentExtractor(
+            [r.url for r in search_results.results], user_agent, scraper, worker_pool=worker_pool
+        )
         scraped_data = await extractor.run()
         for item in scraped_data:
             if "image_urls" in item:

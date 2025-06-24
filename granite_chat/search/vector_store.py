@@ -40,7 +40,10 @@ class ConfigurableVectorStoreWrapper:
 
     def _create_langchain_documents(self, data: list[dict]) -> list[Document]:
         return [
-            Document(page_content=item["raw_content"], metadata={"source": item["url"], "index": i})
+            Document(
+                page_content=item["raw_content"],
+                metadata={"source": item["url"], "index": i, "title": item["title"], "url": item["url"]},
+            )
             for i, item in enumerate(data)
         ]
 
