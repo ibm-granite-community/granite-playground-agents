@@ -18,6 +18,8 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 
 from granite_chat.search.types import ImageUrl
 
+logger = logging.getLogger(__name__)
+
 
 def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
     """Extract relevant images from the page"""
@@ -61,7 +63,7 @@ def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
         return sorted_images[:10]  # Ensure we don't return more than 10 images in total
 
     except Exception as e:
-        logging.error(f"Error in get_relevant_images: {e}")
+        logger.error(f"Error in get_relevant_images: {e}")
         return []
 
 
@@ -99,7 +101,7 @@ def get_image_hash(image_url: str) -> str | None:
         # Calculate hash
         return hashlib.md5(image_identifier.encode()).hexdigest()
     except Exception as e:
-        logging.error(f"Error calculating image hash for {image_url}: {e}")
+        logger.error(f"Error calculating image hash for {image_url}: {e}")
         return None
 
 

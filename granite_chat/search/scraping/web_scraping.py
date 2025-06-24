@@ -13,12 +13,11 @@ from typing import Any
 
 from colorama import Fore, Style  # type: ignore
 
-from granite_chat.logger import get_formatted_logger
 from granite_chat.search.scraping.extract import ContentExtractor
 from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
-logger = get_formatted_logger(__name__, logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 async def scrape_urls(
