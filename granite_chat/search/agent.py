@@ -59,7 +59,7 @@ class SearchAgent:
         # Perform search
         search_results = await self._perform_web_search(search_queries)
         # Scraping
-        scraped_content: list[dict] = await self._browse_urls([r.href for r in search_results.results])
+        scraped_content: list[dict] = await self._browse_urls(search_results)
 
         # Load scraped context into vector store
         await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
@@ -79,8 +79,10 @@ class SearchAgent:
 
         return docs
 
-    async def _browse_urls(self, urls: list[str]) -> list[dict]:
-        scraped_content, _ = await scrape_urls(urls=urls, scraper="bs", worker_pool=self.worker_pool)
+    async def _browse_urls(self, search_resutls: SearchResults) -> list[dict]:
+        scraped_content, _ = await scrape_urls(
+            search_results=search_resutls, scraper="bs", worker_pool=self.worker_pool
+        )
         return scraped_content
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
