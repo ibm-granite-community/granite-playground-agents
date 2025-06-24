@@ -95,15 +95,6 @@ class ContentExtractor:
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
 
-                if not content or len(content) < 100:
-                    self.logger.warning(f"Content too short or empty for {link}")
-                    return {
-                        "url": link,
-                        "raw_content": None,
-                        "image_urls": [],
-                        "title": title,
-                    }
-
                 return {
                     "url": link,
                     "raw_content": content,
