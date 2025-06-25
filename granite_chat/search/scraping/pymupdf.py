@@ -8,6 +8,7 @@
 #
 # Changes made:
 
+import logging
 import os
 import tempfile
 from urllib.parse import urlparse
@@ -16,6 +17,8 @@ from httpx import AsyncClient, TimeoutException
 from langchain_community.document_loaders import PyMuPDFLoader
 
 from granite_chat.search.scraping.scraper import AsyncScraper
+
+logger = logging.getLogger(__name__)
 
 
 class PyMuPDFScraper(AsyncScraper):
@@ -62,9 +65,9 @@ class PyMuPDFScraper(AsyncScraper):
             return doc[0].page_content, image, doc[0].metadata.get("title", "")
 
         except TimeoutException:
-            print(f"Download timed out. Please check the link: {link}")
+            logger.exception(f"Download timed out. Please check the link: {link}")
             return "", [], ""
 
-        except Exception as e:
-            print(f"Error loading PDF: {link} {e}")
+        except Exception:
+            logger.exception(f"Error loading PDF: {link}")
             return "", [], ""

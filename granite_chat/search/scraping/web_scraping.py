@@ -14,7 +14,7 @@ from typing import Any
 from colorama import Fore, Style  # type: ignore
 
 from granite_chat.search.scraping.extract import ContentExtractor
-from granite_chat.search.types import ScrapedContent, SearchResult
+from granite_chat.search.types import ImageUrl, ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 async def scrape_urls(
     search_results: list[SearchResult], scraper: str, worker_pool: WorkerPool
-) -> tuple[list[ScrapedContent], list[dict[str, Any]]]:
+) -> tuple[list[ScrapedContent], list[ImageUrl]]:
     """
     Scrapes the urls
     Args:
@@ -43,8 +43,8 @@ async def scrape_urls(
         for item in scraped_data:
             if len(item.image_urls) > 0:
                 images.extend(item.image_urls)
-    except Exception as e:
-        print(f"{Fore.RED}Error in scrape_urls: {e}{Style.RESET_ALL}")
+    except Exception:
+        logger.exception(f"{Fore.RED}Error in scrape_urls: {Style.RESET_ALL}")
 
     return scraped_data, images
 

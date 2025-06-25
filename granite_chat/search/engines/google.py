@@ -9,11 +9,14 @@
 # Changes made:
 
 import json
+import logging
 import os
 
 import httpx
 
 from granite_chat.search.engines.engine import SearchEngine
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleSearch(SearchEngine):
@@ -79,7 +82,7 @@ class GoogleSearch(SearchEngine):
             resp = await client.get(url)
 
             if resp.status_code < 200 or resp.status_code >= 300:
-                print("Google search: unexpected response status: ", resp.status_code)
+                logger.warning("Google search: unexpected response status: ", resp.status_code)
 
             if resp is None:
                 return [{}]
