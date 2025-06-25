@@ -11,10 +11,6 @@ class SearchResult(BaseModel):
         return self.href
 
 
-class SearchResults(BaseModel):
-    results: list[SearchResult] = []
-
-
 class Source(BaseModel):
     url: str
     title: str
@@ -38,3 +34,16 @@ class Citation(BaseModel):
 
 class SearchQueriesSchema(BaseModel):
     search_queries: list[str] = Field(description="The list of search queries.")
+
+
+class ImageUrl(BaseModel):
+    score: float
+    url: str
+
+
+class ScrapedContent(BaseModel):
+    search_result: SearchResult
+    url: str
+    title: str | None = None
+    raw_content: str | None = None
+    image_urls: list[ImageUrl] = []

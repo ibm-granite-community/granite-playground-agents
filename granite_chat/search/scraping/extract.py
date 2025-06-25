@@ -10,7 +10,7 @@
 
 import asyncio
 import logging
-from typing import Any, cast
+from typing import cast
 
 from httpx import AsyncClient, Client
 
@@ -18,6 +18,7 @@ from granite_chat.search.scraping import BeautifulSoupScraper
 from granite_chat.search.scraping.arxiv import ArxivScraper
 from granite_chat.search.scraping.pymupdf import PyMuPDFScraper
 from granite_chat.search.scraping.scraper import AsyncScraper, SyncScraper
+from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
 
@@ -26,13 +27,15 @@ class ContentExtractor:
     Scraper class to extract the content from the links
     """
 
-    def __init__(self, urls: list[str], user_agent: str, scraper_key: str, worker_pool: WorkerPool) -> None:
+    def __init__(
+        self, search_results: list[SearchResult], user_agent: str, scraper_key: str, worker_pool: WorkerPool
+    ) -> None:
         """
         Initialize the Scraper class.
         Args:
             urls:
         """
-        self.urls = urls
+        self.search_results = search_results
 
         self.async_client = AsyncClient()
         self.client = Client()
@@ -43,20 +46,21 @@ class ContentExtractor:
         self.logger = logging.getLogger(__name__)
         self.worker_pool = worker_pool
 
-    async def run(self) -> list[dict[str, Any]]:
+    async def run(self) -> list[ScrapedContent]:
         """
         Extracts the content from the links
         """
-        contents = await asyncio.gather(*(self.extract_data_from_url(url) for url in self.urls))
-        res = [content for content in contents if content["raw_content"] is not None]
+        contents = await asyncio.gather(*(self.extract_data_from_url(s) for s in self.search_results))
+        res = [content for content in contents if content.raw_content is not None]
         return res
 
-    async def extract_data_from_url(self, link: str) -> dict[str, Any]:
+    async def extract_data_from_url(self, search_result: SearchResult) -> ScrapedContent:
         """
         Extracts the data from the link with logging
         """
         async with self.worker_pool.throttle():
             try:
+                link = search_result.url
                 scraper_cls: type[AsyncScraper] | type[SyncScraper] = self.get_scraper(link)
                 scraper = scraper_cls()
 
@@ -81,12 +85,13 @@ class ContentExtractor:
 
                 if len(content) < 200:
                     self.logger.warning(f"Content too short or empty for {link}")
-                    return {
-                        "url": link,
-                        "raw_content": None,
-                        "image_urls": [],
-                        "title": title,
-                    }
+                    return ScrapedContent(
+                        search_result=search_result,
+                        url=link,
+                        raw_content=None,
+                        image_urls=[],
+                        title=title,
+                    )
 
                 # Log results
                 self.logger.info(f"\nTitle: {title}")
@@ -95,25 +100,23 @@ class ContentExtractor:
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
 
-                if not content or len(content) < 100:
-                    self.logger.warning(f"Content too short or empty for {link}")
-                    return {
-                        "url": link,
-                        "raw_content": None,
-                        "image_urls": [],
-                        "title": title,
-                    }
-
-                return {
-                    "url": link,
-                    "raw_content": content,
-                    "image_urls": image_urls,
-                    "title": title,
-                }
+                return ScrapedContent(
+                    search_result=search_result,
+                    url=link,
+                    raw_content=content,
+                    image_urls=image_urls,
+                    title=title,
+                )
 
             except Exception as e:
                 self.logger.error(f"Error processing {link}: {e!s}")
-                return {"url": link, "raw_content": None, "image_urls": [], "title": ""}
+                return ScrapedContent(
+                    search_result=search_result,
+                    url=link,
+                    raw_content=None,
+                    image_urls=[],
+                    title="",
+                )
 
     def get_scraper(
         self,

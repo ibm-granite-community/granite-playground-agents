@@ -1,10 +1,13 @@
 import json
+import logging
 from datetime import UTC, datetime
 
 from beeai_framework.backend import Message
 from langchain_core.documents import Document
 
 from granite_chat.search.types import SearchResult
+
+logger = logging.getLogger(__name__)
 
 
 class SearchPrompts:
@@ -19,7 +22,7 @@ class SearchPrompts:
 
         doc_str = json.dumps(json_docs, indent=4)
 
-        print(doc_str)
+        logger.debug(doc_str)
 
         return f"""You are Granite, developed by IBM.
 You are a helpful assistant tasked with generating a comprehensive, informative, and accurate response.

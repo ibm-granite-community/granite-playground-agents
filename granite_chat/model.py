@@ -19,7 +19,7 @@ class ChatModelFactory:
         temperature = settings.TEMPERATURE
 
         if provider == "openai":
-            base_url = settings.LLM_API_BASE
+            base_url = str(settings.LLM_API_BASE)
             api_key = settings.LLM_API_KEY
 
             return OpenAIChatModel(
@@ -29,7 +29,7 @@ class ChatModelFactory:
                 parameters=ChatModelParameters(max_tokens=max_tokens, temperature=temperature),
             )
         elif provider == "watsonx":
-            base_url = settings.WATSONX_API_BASE
+            base_url = str(settings.WATSONX_API_BASE)
             api_key = settings.WATSONX_API_KEY
             project_id = settings.WATSONX_PROJECT_ID
             region = settings.WATSONX_REGION

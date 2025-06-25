@@ -9,17 +9,16 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from granite_chat.config import settings
-from granite_chat.logger import get_formatted_logger
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import SearchQueriesSchema, SearchResult, SearchResults
+from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
-logger = get_formatted_logger(__name__, logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SearchAgent:
@@ -59,7 +58,7 @@ class SearchAgent:
         # Perform search
         search_results = await self._perform_web_search(search_queries)
         # Scraping
-        scraped_content: list[dict] = await self._browse_urls([r.href for r in search_results.results])
+        scraped_content = await self._browse_urls(search_results)
 
         # Load scraped context into vector store
         await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
@@ -68,19 +67,12 @@ class SearchAgent:
 
         docs: list[Document] = await self.vector_store.asimilarity_search(query=standalone_msg, k=10)
 
-        # Add title from search results to docs
-        url_to_result: dict[str, SearchResult] = {result.url: result for result in search_results.results}
-
-        # Add search engine metadata
-        for d in docs:
-            d.metadata["url"] = url_to_result[d.metadata["source"]].url
-            d.metadata["title"] = url_to_result[d.metadata["source"]].title
-            d.metadata["snippet"] = url_to_result[d.metadata["source"]].body
-
         return docs
 
-    async def _browse_urls(self, urls: list[str]) -> list[dict]:
-        scraped_content, _ = await scrape_urls(urls=urls, scraper="bs", worker_pool=self.worker_pool)
+    async def _browse_urls(self, search_results: list[SearchResult]) -> list[ScrapedContent]:
+        scraped_content, _ = await scrape_urls(
+            search_results=search_results, scraper="bs", worker_pool=self.worker_pool
+        )
         return scraped_content
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
@@ -98,12 +90,10 @@ class SearchAgent:
         response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
         return response.get_text_content()
 
-    async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> SearchResults:
+    async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> list[SearchResult]:
         results = await asyncio.gather(*(self._search_query(q, max_results) for q in queries))
-        flat = [item for sublist in results for item in (sublist or [])]
-
-        url_to_result: dict[str, SearchResult] = {result.url: result for result in flat}
-        return SearchResults(results=list(url_to_result.values()))
+        flat = [item for sublist in results if sublist is not None for item in sublist]
+        return flat
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult] | None:
         async with self.worker_pool.throttle():
