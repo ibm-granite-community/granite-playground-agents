@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     )
 
     CHUNK_OVERLAP: int = Field(default=20, description="The number of characters search result chunks will overlap")
+    MAX_EMBEDDINGS: int = Field(default=100, description="The max number of embeddings in a single request")
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation

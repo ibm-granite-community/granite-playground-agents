@@ -4,6 +4,7 @@ Enables configurable chunk size
 Add document index
 """
 
+import threading
 from typing import Any
 
 from langchain.docstore.document import Document
@@ -11,10 +12,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import VectorStore
 from transformers import AutoTokenizer
 
+from granite_chat.config import settings
 from granite_chat.search.types import ScrapedContent
+from granite_chat.utils import batch
 
 
 class ConfigurableVectorStoreWrapper:
+    _semaphore = threading.Semaphore(3)
+
     def __init__(
         self,
         vector_store: VectorStore,
@@ -35,10 +40,9 @@ class ConfigurableVectorStoreWrapper:
         langchain_documents = self._create_langchain_documents(content)
         splitted_documents = self._split_documents(langchain_documents)
 
-        # TODO: Watsonx embedding bails out if > 1000 embedding docs, implement a better fix here
-        splitted_documents = splitted_documents[0 : min(len(splitted_documents), 1000)]
-
-        self.vector_store.add_documents(splitted_documents)
+        with self._semaphore:
+            for b in batch(splitted_documents, settings.MAX_EMBEDDINGS):
+                self.vector_store.add_documents(b)
 
     # TODO: subclass Document for better typing support
     def _create_langchain_documents(self, scraped_content: list[ScrapedContent]) -> list[Document]:
