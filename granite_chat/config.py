@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     ACCESS_LOG: bool = False
 
+    LLM_PROVIDER: str = "openai"
+
     LLM_MODEL: str | None = None
     LLM_API_BASE: str | None = None
     LLM_API_KEY: str | None = None
@@ -63,6 +65,10 @@ class Settings(BaseSettings):
         # We need RETRIEVER to be set
         if "RETRIEVER" not in os.environ:
             os.environ["RETRIEVER"] = self.RETRIEVER
+
+        # Allows headers to be picked up by framework
+        if self.LLM_API_HEADERS:
+            os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
 
         return self
 

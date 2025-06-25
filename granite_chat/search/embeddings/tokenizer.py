@@ -1,8 +1,9 @@
 import threading
 from typing import Optional
 
-from config import settings  # type: ignore
 from transformers import AutoTokenizer
+
+from granite_chat.config import settings  # type: ignore
 
 
 class EmbeddingsTokenizer:

@@ -1,24 +1,22 @@
 import logging
-import os
 import traceback
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Author, MessagePart, Metadata
 from acp_sdk.models import Message
 from acp_sdk.server import Context, Server
-from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
-    ChatModelParameters,
     SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
-from config import settings  # type: ignore
 from langchain_core.documents import Document
 
 from granite_chat import utils
+from granite_chat.config import settings  # type: ignore
 from granite_chat.logger import get_formatted_logger
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
+from granite_chat.model import ChatModelFactory
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.citations import (
     CitationGenerator,
@@ -33,16 +31,7 @@ from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
-MODEL_NAME = settings.LLM_MODEL
-OPENAI_URL = settings.LLM_API_BASE
-OPENAI_API_KEY = settings.LLM_API_KEY
-
-# Allows headers to be picked up by framework
-if settings.LLM_API_HEADERS:
-    os.environ["OPENAI_API_HEADERS"] = settings.LLM_API_HEADERS
-
-MAX_TOKENS = settings.MAX_TOKENS
-TEMPERATURE = settings.TEMPERATURE
+LLM_PROVIDER = settings.LLM_PROVIDER
 
 # This will preload the embeddings tokenizer if set
 EmbeddingsTokenizer.get_instance()
@@ -86,12 +75,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         yield token_limit_message_part()
         return
 
-    model = OpenAIChatModel(
-        model_id=MODEL_NAME,
-        api_key=OPENAI_API_KEY,
-        base_url=OPENAI_URL,
-        parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
-    )
+    model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
     async for data, event in model.create(messages=messages, stream=True):
         match (data, event.name):
@@ -134,12 +118,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
         yield token_limit_message_part()
         return
 
-    model = OpenAIChatModel(
-        model_id=MODEL_NAME,
-        api_key=OPENAI_API_KEY,
-        base_url=OPENAI_URL,
-        parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
-    )
+    model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
     messages = [
         SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
@@ -229,12 +208,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             yield token_limit_message_part()
             return
 
-        model = OpenAIChatModel(
-            model_id=MODEL_NAME,
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_URL,
-            parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
-        )
+        model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
         yield MessagePart(content_type="log", content="**Searching the web...**\n\n")
 
