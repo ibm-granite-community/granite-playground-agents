@@ -219,8 +219,8 @@ class Researcher:
                 )
 
                 generator = GraniteIOCitationGenerator(
-                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
-                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
+                    model_id=str(settings.GRANITE_IO_CITATIONS_MODEL_ID),
                     extra_headers=extra_headers,
                 )
             else:

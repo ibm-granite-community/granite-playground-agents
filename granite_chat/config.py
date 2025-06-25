@@ -7,20 +7,20 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-
     port: int = Field(default=8000, description="HTTP Port the agent will listen on")
 
     host: str = Field(default="127.0.0.1", description="Network address the agent will bind to")
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
-    LLM_PROVIDER: str = "openai"
-      
+    LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
-    ]
-    LLM_API_KEY: str | None = Field(description="The authorization key used to access LLM_MODEL via LLM_API_BASE")
-    LLM_API_HEADERS: str | None = Field(default=None, description="Additional headers to provide to LLM_API_BASE")
+    ] = None
+    LLM_API_KEY: str | None = Field(
+        description="The authorization key used to access LLM_MODEL via LLM_API_BASE", default=None
+    )
+    LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
 
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
     GOOGLE_API_KEY: str | None = Field(description="The API key for Google Search")

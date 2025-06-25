@@ -12,12 +12,11 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
 from granite_chat import utils
+from granite_chat.config import settings  # type: ignore
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
+from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
 from granite_chat.research.types import ResearchEvent
-from granite_chat.config import settings  # type: ignore
-from granite_chat.model import ChatModelFactory
-
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.citations import (
     CitationGenerator,
@@ -241,7 +240,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                 )
 
                 generator = GraniteIOCitationGenerator(
-                    openai_base_url=settings.GRANITE_IO_OPENAI_API_BASE,
+                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
                     model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
                     extra_headers=extra_headers,
                 )
@@ -312,12 +311,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             yield token_limit_message_part()
             return
 
-        model = OpenAIChatModel(
-            model_id=MODEL_NAME,
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_URL,
-            parameters=ChatModelParameters(max_tokens=MAX_TOKENS, temperature=TEMPERATURE),
-        )
+        model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
         async def research_listener(event: ResearchEvent) -> None:
             if event.event_type == "token":

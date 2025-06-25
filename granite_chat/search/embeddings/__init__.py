@@ -24,7 +24,7 @@ def get_embeddings(provider: str, model_name: str) -> Embeddings:
         return OpenAIEmbeddings(
             model=model_name,
             api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
-            base_url=settings.EMBEDDINGS_OPENAI_API_BASE,
+            base_url=str(settings.EMBEDDINGS_OPENAI_API_BASE),
             check_embedding_ctx_length=False,
             default_headers=extra_headers,
         )
@@ -32,7 +32,7 @@ def get_embeddings(provider: str, model_name: str) -> Embeddings:
     elif provider == "ollama":
         return OllamaEmbeddings(
             model=model_name,
-            base_url=settings.OLLAMA_BASE_URL,
+            base_url=str(settings.OLLAMA_BASE_URL),
         )
 
     else:
