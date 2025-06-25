@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import traceback
 from collections.abc import Awaitable, Callable
 
@@ -6,7 +7,6 @@ from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.logger import Logger
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -40,7 +40,7 @@ class Researcher:
         self.messages = messages
         self.worker_pool = worker_pool
         self.listener = listener
-        self.logger = Logger("Researcher", level="DEBUG")
+        self.logger = logging.getLogger(__name__)
 
         self.logger.debug("Initializing Researcher")
 

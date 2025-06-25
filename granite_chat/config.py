@@ -1,7 +1,7 @@
 import os
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, TypeAdapter, model_validator
+from pydantic import AfterValidator, Field, TypeAdapter, model_validator
 from pydantic.networks import HttpUrl
 from pydantic_settings import BaseSettings
 
@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
-    LLM_API_BASE: HttpUrl | None = Field(description="The OpenAI base URL for chat completions")
+    LLM_API_BASE: Annotated[
+        HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
+    ]
     LLM_API_KEY: str | None = Field(description="The authorization key used to access LLM_MODEL via LLM_API_BASE")
     LLM_API_HEADERS: str | None = Field(default=None, description="Additional headers to provide to LLM_API_BASE")
 
@@ -22,10 +24,14 @@ class Settings(BaseSettings):
     GOOGLE_CX_KEY: str | None = Field(description="The CX key for Google Search")
     TAVILY_API_KEY: str | None = Field(default=None, description="The API key for Tavily")
 
-    OLLAMA_BASE_URL: HttpUrl = Field(
-        default_factory=lambda: TypeAdapter(HttpUrl).validate_python("http://localhost:11434"),
-        description="The OpenAI base URL for chat completions",
-    )
+    OLLAMA_BASE_URL: Annotated[
+        HttpUrl,
+        Field(
+            default_factory=lambda: TypeAdapter(HttpUrl).validate_python("http://localhost:11434"),
+            description="The OpenAI base URL for chat completions",
+        ),
+        AfterValidator(str),
+    ]
 
     EMBEDDINGS_PROVIDER: Literal["watsonx", "ollama", "openai"] = Field(
         default="watsonx", description="Which provider to use for calculating embeddings"
@@ -46,7 +52,9 @@ class Settings(BaseSettings):
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation
-    GRANITE_IO_OPENAI_API_BASE: str | None = Field(default=None, description="The OpenAI base URL for chat completions")
+    GRANITE_IO_OPENAI_API_BASE: Annotated[
+        HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
+    ]
     GRANITE_IO_CITATIONS_MODEL_ID: str | None = Field(default=None, description="The model ID for citations")
     GRANITE_IO_OPENAI_API_HEADERS: str | None = Field(
         default=None, description="Additional headers to provide to GRANITE_IO_OPENAI_API_BASE"
@@ -54,13 +62,17 @@ class Settings(BaseSettings):
 
     # WATSONX EMBEDDINGS
     # Setting WATSONX_EMBEDDING_MODEL will override default embedding settings
-    WATSONX_API_BASE: HttpUrl | None = Field(default=None, description="The OpenAI base URL for chat completions")
+    WATSONX_API_BASE: Annotated[
+        HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
+    ]
     WATSONX_PROJECT_ID: str | None = Field(default=None, description="The project ID of your Watsonx deployment")
     WATSONX_REGION: str | None = Field(default=None, description="The region of your Watsonx deployment")
     WATSONX_API_KEY: str | None = Field(default=None, description="The Cloud API Key to reach your Watsonx deployment")
 
     # openai embeddings
-    EMBEDDINGS_OPENAI_API_BASE: str | None = Field(default=None, description="The OpenAI base URL for chat completions")
+    EMBEDDINGS_OPENAI_API_BASE: Annotated[
+        HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
+    ]
     EMBEDDINGS_OPENAI_API_KEY: str | None = Field(default=None, description="The API key to reach your OpenAI endpoint")
     EMBEDDINGS_OPENAI_API_HEADERS: str | None = Field(
         default=None, description="Additional headers to provide to EMBEDDINGS_OPENAI_API_BASE"
@@ -90,11 +102,9 @@ class Settings(BaseSettings):
     RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
         default=3, description="Controls how man search results are considered for each search query", ge=1
     )
-
-    # Research configuration
-    RESEARCH_PLAN_BREADTH: int = 5
-    RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = 5
-    RESEARCH_MAX_DOCS_PER_STEP: int = 10
+    RESEARCH_MAX_DOCS_PER_STEP: int = Field(
+        default=10, description="The number of documents to return from the vector store"
+    )
 
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":

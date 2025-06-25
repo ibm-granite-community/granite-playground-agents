@@ -9,7 +9,6 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from granite_chat.config import settings
-from granite_chat.logger import get_formatted_logger
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
@@ -19,7 +18,7 @@ from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, Searc
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
-logger = get_formatted_logger(__name__, logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SearchAgent:

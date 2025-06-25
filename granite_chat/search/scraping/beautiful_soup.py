@@ -8,11 +8,15 @@
 #
 # Changes made:
 
+import logging
+
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
 
 from granite_chat.search.scraping.scraper import AsyncScraper
 from granite_chat.search.scraping.utils import clean_soup, extract_title, get_relevant_images, get_text_from_soup
+
+logger = logging.getLogger(__name__)
 
 
 class BeautifulSoupScraper(AsyncScraper):
@@ -43,5 +47,5 @@ class BeautifulSoupScraper(AsyncScraper):
             return content, image_urls, title
 
         except Exception as e:
-            print("Error! : " + str(e))
+            logger.exception("Error! : " + str(e))
             return "", [], ""
