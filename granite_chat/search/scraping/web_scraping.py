@@ -15,14 +15,15 @@ from colorama import Fore, Style  # type: ignore
 
 from granite_chat.logger import get_formatted_logger
 from granite_chat.search.scraping.extract import ContentExtractor
+from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
 logger = get_formatted_logger(__name__, logging.INFO)
 
 
 async def scrape_urls(
-    urls: list[str], scraper: str, worker_pool: WorkerPool
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    search_results: list[SearchResult], scraper: str, worker_pool: WorkerPool
+) -> tuple[list[ScrapedContent], list[dict[str, Any]]]:
     """
     Scrapes the urls
     Args:
@@ -30,7 +31,7 @@ async def scrape_urls(
         cfg: Config (optional)
 
     Returns:
-        tuple[list[dict[str, Any]], list[dict[str, Any]]]: tuple containing scraped content and images
+        tuple[list[ScrapedContent], ç]: tuple containing scraped content and images
 
     """
     scraped_data = []
@@ -38,11 +39,11 @@ async def scrape_urls(
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
 
     try:
-        extractor = ContentExtractor(urls, user_agent, scraper, worker_pool=worker_pool)
+        extractor = ContentExtractor(search_results, user_agent, scraper, worker_pool=worker_pool)
         scraped_data = await extractor.run()
         for item in scraped_data:
-            if "image_urls" in item:
-                images.extend(item["image_urls"])
+            if len(item.image_urls) > 0:
+                images.extend(item.image_urls)
     except Exception as e:
         print(f"{Fore.RED}Error in scrape_urls: {e}{Style.RESET_ALL}")
 

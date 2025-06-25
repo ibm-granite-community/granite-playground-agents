@@ -11,6 +11,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import VectorStore
 from transformers import AutoTokenizer
 
+from granite_chat.search.types import ScrapedContent
+
 
 class ConfigurableVectorStoreWrapper:
     def __init__(
@@ -25,12 +27,12 @@ class ConfigurableVectorStoreWrapper:
         self.chunk_overlap = chunk_overlap
         self.tokenizer = tokenizer
 
-    def load(self, documents: list[dict[str, str]]) -> None:
+    def load(self, content: list[ScrapedContent]) -> None:
         """
         Load the documents into vector_store
         Translate to langchain doc type, split to chunks then load
         """
-        langchain_documents = self._create_langchain_documents(documents)
+        langchain_documents = self._create_langchain_documents(content)
         splitted_documents = self._split_documents(langchain_documents)
 
         # TODO: Watsonx embedding bails out if > 1000 embedding docs, implement a better fix here
@@ -38,10 +40,20 @@ class ConfigurableVectorStoreWrapper:
 
         self.vector_store.add_documents(splitted_documents)
 
-    def _create_langchain_documents(self, data: list[dict]) -> list[Document]:
+    # TODO: subclass Document for better typing support
+    def _create_langchain_documents(self, scraped_content: list[ScrapedContent]) -> list[Document]:
         return [
-            Document(page_content=item["raw_content"], metadata={"source": item["url"], "index": i})
-            for i, item in enumerate(data)
+            Document(
+                page_content=item.raw_content if item.raw_content else "",
+                metadata={
+                    "source": item.search_result.url,
+                    "index": i,
+                    "url": item.search_result.url,
+                    "title": item.search_result.title,
+                    "snippet": item.search_result.body,
+                },
+            )
+            for i, item in enumerate(scraped_content)
         ]
 
     def _split_documents(self, documents: list[Document]) -> list[Document]:
