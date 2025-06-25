@@ -7,11 +7,14 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+
     port: int = Field(default=8000, description="HTTP Port the agent will listen on")
 
     host: str = Field(default="127.0.0.1", description="Network address the agent will bind to")
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
+    LLM_PROVIDER: str = "openai"
+      
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
@@ -120,6 +123,10 @@ class Settings(BaseSettings):
             raise ValueError("Google retriever requires GOOGLE_API_KEY and GOOGLE_CX_KEY")
         elif self.RETRIEVER == "tavily" and self.TAVILY_API_KEY is None:
             raise ValueError("Tavily retriever requires TAVILY_API_KEY")
+
+        # Allows headers to be picked up by framework
+        if self.LLM_API_HEADERS:
+            os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
 
         return self
 

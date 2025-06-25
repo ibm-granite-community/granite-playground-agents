@@ -1,6 +1,7 @@
 from acp_sdk import MessagePart
 from beeai_framework.backend import Message
-from config import settings  # type: ignore
+
+from granite_chat.config import settings  # type: ignore
 
 
 def estimate_tokens(messages: list[Message]) -> int:
