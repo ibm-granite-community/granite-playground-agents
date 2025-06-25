@@ -62,8 +62,8 @@ def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
 
         return sorted_images[:10]  # Ensure we don't return more than 10 images in total
 
-    except Exception as e:
-        logger.error(f"Error in get_relevant_images: {e}")
+    except Exception:
+        logger.exception("Error in get_relevant_images")
         return []
 
 
@@ -73,8 +73,8 @@ def parse_dimension(value: str) -> int | None:
         value = value[:-2]  # Remove 'px' suffix
     try:
         return int(value)  # Convert to float first to handle decimal values
-    except ValueError as e:
-        print(f"Error parsing dimension value {value}: {e}")
+    except ValueError:
+        logger.exception(f"Error parsing dimension value {value}")
         return None
 
 
@@ -100,8 +100,8 @@ def get_image_hash(image_url: str) -> str | None:
 
         # Calculate hash
         return hashlib.md5(image_identifier.encode()).hexdigest()
-    except Exception as e:
-        logger.error(f"Error calculating image hash for {image_url}: {e}")
+    except Exception:
+        logger.exception(f"Error calculating image hash for {image_url}")
         return None
 
 
