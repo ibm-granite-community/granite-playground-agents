@@ -13,17 +13,18 @@ class ResearchPrompts:
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
         return f"""You are a research planner.
-Given a user-defined topic, you will generate a list of specific, actionable sub-queries/research questions that will serve as the foundation for investigating the topic.
+Given a user-defined topic, generate a list of specific research questions that serve as the foundation for investigating the topic.
 
-The sub-queries should:
-- Cover the key aspects required to fully understand and research the topic.
-- Be phrased naturally as queries or research questions.
-- Be diverse, non-redundant, and ordered logically (e.g. from foundational to advanced)
+The questions should:
+- Cover the key aspects required to fully address the topic.
+- Be diverse (to prevent overlapping), non-redundant, and logically distributed (e.g. from foundational to advanced).
+- Descriptive in nature, but framed to distinguish between subcategories.
+- Clear and concise.
 
 Here is the topic: {topic}
 
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-Generate a maximum of {max_queries} queries/research questions that will serve as a research plan for the topic.
+Generate a maximum of {max_queries} research questions that will serve as a research plan for the topic.
 """  # noqa: E501
 
     @staticmethod
@@ -39,40 +40,47 @@ Generate a maximum of {max_queries} queries/research questions that will serve a
 
         doc_str = json.dumps(json_docs, indent=4)
 
-        return f"""You are a meticulous research assistant.
-You are given a topic and a set of documents that contain information pertinent to the topic.
-For your assigned topic, review the provided documents and produce a concise research report that summarizes key findings, insights, and relevant information. Focus on extracting the most pertinent details to support a clear understanding of the topic.
-
-Topic: {topic}
+        return f"""You are a research assistant.
+Your role is to review a set of documents and produce a structured report focused on a specific topic, which is provided.
+Your task is to extract only the information relevant to the topic from the documents and organize it clearly and concisely.
 
 <documents>
 {doc_str}
 </documents>
 
+Topic: {topic}
+
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your report.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+
+Identify, extract, and synthesize all content from the documents that is directly relevant to the topic. Do not include unrelated material.
 """  # noqa: E501
 
     @staticmethod
-    def final_report_prompt(topic: str, plan: list[str], reports: list[ResearchReport]) -> str:
+    def final_report_prompt(topic: str, reports: list[ResearchReport]) -> str:
         reports_str = json.dumps([r.model_dump() for r in reports], indent=4)
-        plan_str = [f"- {step}\n" for step in plan]
 
         return f"""You are Granite, a talented researcher.
-You are given a topic and a set of interim research reports provided by your assistants. Each assistant is reporting on a sub topic.
-Please review the reports submitted by the research assistants and synthesize them into a single, comprehensive final report. Ensure that overlapping information is consolidated, gaps are addressed, and the overall narrative is coherent and aligned with our research objectives.
+You are given a topic and a set of research reports provided by your assistants. Each report focuses on a different aspect of the same overarching topic.
+Your task is to review, and consolidate these aspect-specific reports into a single, comprehensive final report.
+Ensure that overlapping information is consolidated, gaps are addressed, and the overall narrative is coherent.
+
+Use a professional, analytical tone suitable for expert readers.
+
+Output Format: A structured final report including:
+- Introduction
+- Named Sections for each major aspect or theme
+- Conclusion
+
+Ensure that each section adds new insight or perspective rather than reiterating previous content.
+Do not include references or citations, they will be added later.
+The title of the report should be {topic} of an appropriate variation thereof.
+The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+Avoid referencing or mentioning "interim reports", "report" or "the reports", or alluding to their existence in any way when formulating your response.
 
 Topic: {topic}
-
-Research plan:
-{plan_str}
 
 <research_reports>
 {reports_str}
 </research_reports>
-
-Avoid referencing or mentioning "interim reports", "report" or "the reports", or alluding to their existence in any way when formulating your response.
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-The title of the report should be {topic} of an appropriate variation thereof.
-Do not include references, they will be added later.
 """  # noqa: E501
