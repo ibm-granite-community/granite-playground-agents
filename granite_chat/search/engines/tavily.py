@@ -8,7 +8,6 @@
 #
 # Changes made:
 
-import json
 import os
 
 from tavily import AsyncTavilyClient
@@ -29,7 +28,6 @@ class TavilySearch(SearchEngine):
         """
         self.api_key = self.get_api_key()
         self.tavily_client = AsyncTavilyClient(self.api_key)
-
 
     def get_api_key(self) -> str:
         """

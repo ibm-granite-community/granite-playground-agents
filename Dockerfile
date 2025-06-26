@@ -8,13 +8,12 @@ COPY . /app/
 
 ENV PRODUCTION_MODE=True
 
-RUN uv sync --no-dev --no-cache --locked --link-mode copy
-
-RUN chown 1001:1001 -R /app
+RUN uv sync --no-dev --no-cache --locked --link-mode copy && \
+    chown 1001:1001 -R /app
 
 USER 1001
 
 ENV PATH="/app/.venv/bin:$PATH" \
     HOME=/tmp
 
-CMD ["uv", "run", "--no-sync", "granite_chat/agent.py"]
+CMD ["uv", "run", "--no-sync", "-m", "granite_chat.agent.py"]
