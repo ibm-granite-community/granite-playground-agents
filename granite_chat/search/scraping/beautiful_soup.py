@@ -32,7 +32,7 @@ class BeautifulSoupScraper(AsyncScraper):
         occurs during the process, an error message is printed and an empty string is returned.
         """
         try:
-            response = await client.get(link, timeout=4)
+            response = await client.get(link, timeout=5)
             soup = BeautifulSoup(response.content, "lxml", from_encoding=response.encoding)
 
             soup = clean_soup(soup)
@@ -47,5 +47,5 @@ class BeautifulSoupScraper(AsyncScraper):
             return content, image_urls, title
 
         except Exception as e:
-            logger.exception("Error! : " + str(e))
+            logger.exception(f"Error! : {e!s} scraping link {link}")
             return "", [], ""

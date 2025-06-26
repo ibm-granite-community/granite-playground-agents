@@ -25,8 +25,6 @@ class EmbeddingsTokenizer:
     def _preload_tokenizer(self) -> None:
         tokenizer_name = settings.EMBEDDINGS_HF_TOKENIZER
         if tokenizer_name:
-            # Lazy import here to avoid overhead if no tokenizer needed
-
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         else:
             # No tokenizer used if env var unset
