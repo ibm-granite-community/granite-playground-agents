@@ -334,6 +334,5 @@ server.run(
     configure_logger=False,
     host=settings.host,
     port=settings.port,
-    log_level=settings.log_level.lower(),
     access_log=settings.ACCESS_LOG,
 )

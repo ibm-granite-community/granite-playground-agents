@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import traceback
 
 from beeai_framework.backend import Message, UserMessage
@@ -8,6 +7,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
+from granite_chat import get_logger
 from granite_chat.config import settings
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
@@ -18,7 +18,7 @@ from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, Searc
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SearchAgent:

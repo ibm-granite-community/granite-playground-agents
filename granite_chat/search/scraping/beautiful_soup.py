@@ -8,15 +8,14 @@
 #
 # Changes made:
 
-import logging
-
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
 
+from granite_chat import get_logger
 from granite_chat.search.scraping.scraper import AsyncScraper
 from granite_chat.search.scraping.utils import clean_soup, extract_title, get_relevant_images, get_text_from_soup
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BeautifulSoupScraper(AsyncScraper):

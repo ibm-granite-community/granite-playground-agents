@@ -1,9 +1,9 @@
-import logging
 import threading
 from typing import Optional
 
 from transformers import AutoTokenizer
 
+from granite_chat import get_logger
 from granite_chat.config import settings
 
 
@@ -13,7 +13,7 @@ class EmbeddingsTokenizer:
 
     def __init__(self) -> None:
         self.tokenizer = None
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
 
     @classmethod
     def get_instance(cls) -> "EmbeddingsTokenizer":

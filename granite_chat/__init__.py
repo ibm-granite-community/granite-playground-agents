@@ -15,4 +15,13 @@ handler.setFormatter(DefaultFormatter(fmt="%(levelprefix)s %(message)s (%(name)s
 
 # attach the handler and set the log level
 root_logger.addHandler(handler)
-root_logger.setLevel(settings.log_level)
+root_logger.setLevel(logging.INFO)
+
+
+def get_logger(logger_name: str) -> logging.Logger:
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(settings.log_level)
+    return logger
+
+
+__all__ = ["get_logger"]

@@ -8,7 +8,6 @@
 #
 # Changes made:
 
-import logging
 import os
 import tempfile
 from urllib.parse import urlparse
@@ -16,9 +15,10 @@ from urllib.parse import urlparse
 from httpx import AsyncClient, TimeoutException
 from langchain_community.document_loaders import PyMuPDFLoader
 
+from granite_chat import get_logger
 from granite_chat.search.scraping.scraper import AsyncScraper
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PyMuPDFScraper(AsyncScraper):

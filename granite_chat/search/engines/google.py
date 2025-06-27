@@ -9,14 +9,14 @@
 # Changes made:
 
 import json
-import logging
 import os
 
 import httpx
 
+from granite_chat import get_logger
 from granite_chat.search.engines.engine import SearchEngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GoogleSearch(SearchEngine):
