@@ -9,11 +9,11 @@
 # Changes made:
 
 import json
-import os
 
 import httpx
 
 from granite_chat import get_logger
+from granite_chat.config import settings
 from granite_chat.search.engines.engine import SearchEngine
 
 logger = get_logger(__name__)
@@ -30,40 +30,8 @@ class GoogleSearch(SearchEngine):
         Args:
             query:
         """
-        self.api_key = self.get_api_key()
-        self.cx_key = self.get_cx_key()
-
-    def get_api_key(self) -> str:
-        """
-        Gets the Google API key
-        Returns:
-
-        """
-        # Get the API key
-        try:
-            api_key = os.environ["GOOGLE_API_KEY"]
-        except Exception:
-            raise Exception(  # noqa: B904
-                "Google API key not found. Please set the GOOGLE_API_KEY environment variable. "
-                "You can get a key at https://developers.google.com/custom-search/v1/overview"
-            )
-        return api_key
-
-    def get_cx_key(self) -> str:
-        """
-        Gets the Google CX key
-        Returns:
-
-        """
-        # Get the API key
-        try:
-            api_key = os.environ["GOOGLE_CX_KEY"]
-        except Exception:
-            raise Exception(  # noqa: B904
-                "Google CX key not found. Please set the GOOGLE_CX_KEY environment variable. "
-                "You can get a key at https://developers.google.com/custom-search/v1/overview"
-            )
-        return api_key
+        self.api_key = settings.GOOGLE_API_KEY
+        self.cx_key = settings.GOOGLE_CX_KEY
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[dict[str, str]]:
         """
