@@ -8,10 +8,9 @@
 #
 # Changes made:
 
-import os
-
 from tavily import AsyncTavilyClient
 
+from granite_chat.config import settings
 from granite_chat.search.engines.engine import SearchEngine
 
 
@@ -26,24 +25,8 @@ class TavilySearch(SearchEngine):
         Args:
             query:
         """
-        self.api_key = self.get_api_key()
+        self.api_key = settings.TAVILY_API_KEY
         self.tavily_client = AsyncTavilyClient(self.api_key)
-
-    def get_api_key(self) -> str:
-        """
-        Gets the Tavily API key
-        Returns:
-
-        """
-        # Get the API key
-        try:
-            api_key = os.environ["TAVILY_API_KEY"]
-        except Exception:
-            raise Exception(  # noqa: B904
-                "Google API key not found. Please set the TAVILY_API_KEY environment variable. "
-                "You can get a key at https://apps.tavily.com"
-            )
-        return api_key
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[dict[str, str]]:
         """
