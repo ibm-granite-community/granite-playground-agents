@@ -10,11 +10,12 @@ from beeai_framework.backend.chat import ChatModel
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
+from pydantic import ValidationError
 from transformers import AutoTokenizer
 
 from granite_chat.config import settings
 from granite_chat.research.prompts import ResearchPrompts
-from granite_chat.research.types import ResearchEvent, ResearchPlanSchema, ResearchReport
+from granite_chat.research.types import ResearchEvent, ResearchPlanSchema, ResearchQuestion, ResearchReport
 from granite_chat.search.citations import (
     CitationGenerator,
     DefaultCitationGenerator,
@@ -68,7 +69,8 @@ class Researcher:
         self.search_engine = get_search_engine(settings.RETRIEVER)
 
         self.research_topic: str | None = None
-        self.research_plan: list[str] = []
+        self.search_results: list[SearchResult] = []
+        self.research_plan: list[ResearchQuestion] = []
         self.interim_reports: list[ResearchReport] = []
         self.final_report_docs: list[Document] = []
         self.final_report: str | None = None
@@ -83,6 +85,7 @@ class Researcher:
         self.logger.debug(f"Research plan: {self.research_plan}")
 
         await self._gather_sources()
+        await self._extract_sources()
         await self._perform_research()
 
         self.logger.debug(f"reports: {self.interim_reports}")
@@ -105,24 +108,23 @@ class Researcher:
 
         await asyncio.gather(*(self._gather_sources_for_step(step) for step in self.research_plan))
 
-    async def _gather_sources_for_step(self, plan_step: str) -> None:
+    async def _gather_sources_for_step(self, research_question: ResearchQuestion) -> None:
         """Gather information for a single research plan step"""
-        search_results = await self._search_query(plan_step, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
 
-        if len(search_results) > 0:
-            await self.listener(
-                ResearchEvent(
-                    event_type="log",
-                    data=f"🌐 Found {len(search_results)!s} search results for sub-topic '{plan_step}'",
-                )
-            )
+        search_results = await self._search_query(
+            research_question.search_query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
+        )
 
-            scraped_content, _ = await scrape_urls(
-                search_results=search_results, scraper="bs", worker_pool=self.worker_pool
-            )
+        self.search_results.extend(search_results)
 
-            if scraped_content and len(scraped_content) > 0:
-                await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+    async def _extract_sources(self) -> None:
+        """Extract all gathered sources"""
+        scraped_content, _ = await scrape_urls(
+            search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool
+        )
+
+        if scraped_content and len(scraped_content) > 0:
+            await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -136,9 +138,7 @@ class Researcher:
 
         await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
 
-        prompt = ResearchPrompts.final_report_prompt(
-            topic=self.research_topic, plan=self.research_plan, reports=self.interim_reports
-        )
+        prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
         response: str = ""
 
@@ -151,7 +151,7 @@ class Researcher:
 
         self.final_report = response
 
-    async def _generate_research_plan(self) -> list[str]:
+    async def _generate_research_plan(self) -> list[ResearchQuestion]:
         if self.research_topic is None:
             raise ValueError("Research topic has not been set!")
 
@@ -164,10 +164,11 @@ class Researcher:
             schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
         )
 
-        if "plan" in response.object:
-            return response.object["plan"]
-        else:
-            raise ValueError("Failed to generate a valid research plan!")
+        try:
+            plan = ResearchPlanSchema(**response.object)
+            return plan.research_questions
+        except ValidationError as e:
+            raise ValueError("Failed to generate a valid research plan!") from e
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
@@ -175,11 +176,11 @@ class Researcher:
 
         await asyncio.gather(*(self._research_step(step) for step in self.research_plan))
 
-    async def _research_step(self, step: str) -> None:
-        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching plan step '{step}'"))
+    async def _research_step(self, step: ResearchQuestion) -> None:
+        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching '{step.question}'"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=step, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            query=step.search_query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
         )
 
         self.final_report_docs += docs
@@ -188,10 +189,10 @@ class Researcher:
             ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
         )
 
-        research_report_prompt = ResearchPrompts.research_report_prompt(topic=step, docs=docs)
+        research_report_prompt = ResearchPrompts.research_report_prompt(topic=step.question, docs=docs)
         response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
         report = response.get_text_content()
-        self.interim_reports.append(ResearchReport(topic=step, report=report))
+        self.interim_reports.append(ResearchReport(topic=step.question, report=report))
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         async with self.worker_pool.throttle():
