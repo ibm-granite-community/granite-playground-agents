@@ -9,16 +9,16 @@
 # Changes made:
 
 import hashlib
-import logging
 import re
 from typing import cast
 from urllib.parse import parse_qs, urljoin, urlparse
 
 from bs4 import BeautifulSoup, ResultSet, Tag
 
+from granite_chat import get_logger
 from granite_chat.search.types import ImageUrl
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:

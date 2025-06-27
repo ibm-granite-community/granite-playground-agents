@@ -1,13 +1,13 @@
 import json
-import logging
 from datetime import UTC, datetime
 
 from beeai_framework.backend import Message
 from langchain_core.documents import Document
 
+from granite_chat import get_logger
 from granite_chat.search.types import SearchResult
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SearchPrompts:

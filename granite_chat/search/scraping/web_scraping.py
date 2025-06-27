@@ -8,16 +8,16 @@
 #
 # Changes made:
 
-import logging
 from typing import Any
 
 from colorama import Fore, Style  # type: ignore
 
+from granite_chat import get_logger
 from granite_chat.search.scraping.extract import ContentExtractor
 from granite_chat.search.types import ImageUrl, ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def scrape_urls(

@@ -9,11 +9,11 @@
 # Changes made:
 
 import asyncio
-import logging
 from typing import cast
 
 from httpx import AsyncClient, Client
 
+from granite_chat import get_logger
 from granite_chat.search.scraping import BeautifulSoupScraper
 from granite_chat.search.scraping.arxiv import ArxivScraper
 from granite_chat.search.scraping.pymupdf import PyMuPDFScraper
@@ -43,7 +43,7 @@ class ContentExtractor:
         self.client.headers.update({"User-Agent": user_agent})
 
         self.scraper_key = scraper_key
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
         self.worker_pool = worker_pool
 
     async def run(self) -> list[ScrapedContent]:
