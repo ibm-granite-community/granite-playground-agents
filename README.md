@@ -1,6 +1,10 @@
 # Granite Chat
 
-ACP agent that supports basic chat with Granite. Implemented using beeai-framework.
+Implemented using beeai-framework and ACP, providing a variety of different agents
+
+- basic chat with Granite (no external sources)
+- chat plus search (uses an external search source such as Google/Tavily)
+- deep research (uses external search with additional planning and recursion)
 
 ## Pre-requisites
 
@@ -17,34 +21,28 @@ pre-commit install
 
 ## Installation
 
-1. Install dependencies using `uv sync`
-
-2. Activate venv using `source .venv/bin/activate`
+Install dependencies using `uv sync`
 
 ## Configuration
 
-Usage or RITS is recommended through BeeAI platform. The platform will abstract away any complexity of using RITS as standard OpenAI API compatible endpoints.
+The agent is designed to use models from Watsonx directly. Copy the `.env.template` file to `.env` and fill in the missing secrets.
 
-1. Make sure you setup RITS an inference provider in the platform. (Select Other and enter RITS Model inference endpoint and RITS_API_KEY)
-2. You need to copy `.env.beeai` and rename to `.env` and as long as the platform in running on http://localhost:8333 the agent should work. Keep in mind API key is then unused as it's provided by the platform
-
-If you want to run the agent on RITS without involving beeai.
-
-1. Make a copy of `.env.rits`.
-2. Set `LLM_API_BASE` to your RITS Model inference endpoint. Include `/v1` at the end.
-3. Fill in your RITS_API_KEY in `LLM_API_KEY` and `LLM_API_HEADERS`
+```bash
+cp .env.template .env
+# then edit the file
+```
 
 ## Running the agent
 
 Run the agent locally.
 
 ```sh
-uv run granite_chat/agent.py
+uv run -m granite_chat.agent.py
 ```
 
 ## Using the agent
 
-You can chat with the agent via the beeai ui.
+You can chat with the agent via the BeeAI Platform ui using the [beeai-cli](https://docs.beeai.dev/how-to/cli-reference)
 
 ```sh
 beeai ui
