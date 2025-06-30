@@ -1,6 +1,4 @@
 import asyncio
-import logging
-import traceback
 
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
@@ -11,6 +9,7 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
+from granite_chat import get_logger
 from granite_chat.config import settings
 from granite_chat.emitter import Event, EventEmitter
 from granite_chat.research.prompts import ResearchPrompts
@@ -35,7 +34,7 @@ class Researcher(EventEmitter):
         self.chat_model = chat_model
         self.messages = messages
         self.worker_pool = worker_pool
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
 
         self.research_topic: str | None = None
         self.search_results: list[SearchResult] = []
@@ -207,8 +206,8 @@ class Researcher(EventEmitter):
                 engine = get_search_engine(settings.RETRIEVER)
                 results = await engine.search(query=query, max_results=max_results)
                 return [SearchResult(**r) for r in results]
-            except Exception:
-                traceback.print_exc()
+            except Exception as e:
+                self.logger.exception(repr(e))
         return []
 
     async def _generate_citations(self) -> None:

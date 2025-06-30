@@ -1,4 +1,3 @@
-import traceback
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Author, MessagePart, Metadata
@@ -11,7 +10,7 @@ from beeai_framework.backend import (
 from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
-from granite_chat import utils
+from granite_chat import get_logger, utils
 from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
@@ -24,6 +23,8 @@ from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_chat.workers import WorkerPool
+
+logger = get_logger(__name__)
 
 LLM_PROVIDER = settings.LLM_PROVIDER
 
@@ -209,7 +210,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                 yield message_part
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 
@@ -254,7 +255,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         await researcher.run()
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 
@@ -301,7 +302,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         await researcher.run()
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 

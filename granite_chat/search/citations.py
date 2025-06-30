@@ -1,4 +1,3 @@
-import traceback
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
@@ -10,9 +9,12 @@ from granite_io.types import ChatCompletionInputs, GenerateInputs
 from granite_io.types import Document as GraniteIODocument
 from langchain_core.documents import Document
 
+from granite_chat import get_logger
 from granite_chat.config import settings
 from granite_chat.search.types import Citation, Source
 from granite_chat.utils import to_granite_io
+
+logger = get_logger(__name__)
 
 
 class CitationGenerator(ABC):
@@ -118,5 +120,5 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
                 yield MessagePart(content_type="source/citation", content=citation.model_dump_json(), role="assistant")  # type: ignore[call-arg]
 
-        except Exception:  # Malformed citations throws error
-            traceback.print_exc()
+        except Exception as e:  # Malformed citations throws error
+            logger.exception(repr(e))
