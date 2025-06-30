@@ -1,4 +1,5 @@
 import logging
+import os
 
 from uvicorn.logging import DefaultFormatter
 
@@ -16,6 +17,8 @@ handler.setFormatter(DefaultFormatter(fmt="%(levelprefix)s %(message)s (%(name)s
 # attach the handler and set the log level
 root_logger.addHandler(handler)
 root_logger.setLevel(logging.INFO)
+
+os.environ["BEEAI_LOG_LEVEL"] = "INFO"
 
 
 def get_logger(logger_name: str) -> logging.Logger:

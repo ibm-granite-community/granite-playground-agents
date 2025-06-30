@@ -13,10 +13,10 @@ from langchain_core.documents import Document
 
 from granite_chat import utils
 from granite_chat.config import settings  # type: ignore
+from granite_chat.emitter import Event
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
-from granite_chat.research.types import ResearchEvent
 from granite_chat.search.agent import SearchAgent
 from granite_chat.search.citations import (
     CitationGenerator,
@@ -38,6 +38,47 @@ server = Server()
 worker_pool = WorkerPool()
 
 
+base_env = [
+    {
+        "name": "LLM_MODEL",
+        "description": "Language model name",
+        "required": True,
+    },
+    {
+        "name": "LLM_API_BASE",
+        "description": "Base URL of an OpenAI endpoint where the language model is available",
+        "required": True,
+    },
+    {
+        "name": "LLM_API_KEY",
+        "description": "API Key used to access the OpenAI endpoint",
+        "required": True,
+    },
+]
+
+search_env = [
+    {
+        "name": "GOOGLE_API_KEY",
+        "description": "Google search API Key",
+    },
+    {
+        "name": "GOOGLE_CX_KEY",
+        "description": "Google search engine ID",
+    },
+    {
+        "name": "TAVILY_API_KEY",
+        "description": "Tavily search API key",
+    },
+]
+
+watsonx_env = [
+    {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
+    {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
+    {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
+    {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
+]
+
+
 @server.agent(
     name="granite-chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
@@ -47,23 +88,7 @@ worker_pool = WorkerPool()
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
-        env=[
-            {
-                "name": "LLM_MODEL",
-                "description": "Language model name",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_BASE",
-                "description": "Base URL of an OpenAI endpoint where the language model is available",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_KEY",
-                "description": "API Key used to access the OpenAI endpoint",
-                "required": True,
-            },
-        ],
+        env=base_env,
     ),
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
@@ -90,23 +115,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
-        env=[
-            {
-                "name": "LLM_MODEL",
-                "description": "Language model name",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_BASE",
-                "description": "Base URL of an OpenAI endpoint where the language model is available",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_KEY",
-                "description": "API Key used to access the OpenAI endpoint",
-                "required": True,
-            },
-        ],
+        env=base_env,
     ),
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
@@ -156,42 +165,10 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
         env=[
-            {
-                "name": "LLM_MODEL",
-                "description": "Language model name",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_BASE",
-                "description": "Base URL of an OpenAI endpoint where the language model is available",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_KEY",
-                "description": "API Key used to access the OpenAI endpoint",
-                "required": True,
-            },
-            # Only support google for search at the moment
-            {
-                "name": "GOOGLE_API_KEY",
-                "description": "Google search API Key",
-            },
-            {
-                "name": "GOOGLE_CX_KEY",
-                "description": "Google search engine ID",
-            },
-            {
-                "name": "TAVILY_API_KEY",
-                "description": "Tavily search API key",
-            },
-            # Embeddings provider
+            *base_env,
+            *search_env,
             {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            # For "watsonx" embedding provider
-            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
-            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
-            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
-            {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
-            # For "openai" embedding provider (RITS etc.)
+            *watsonx_env,
             {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
@@ -259,44 +236,16 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     name="granite-research",
     description="This agent leverages the Granite 3.3 large language model to perform research.",
     metadata=Metadata(
-        ui={"type": "hands-off", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
+        ui={"type": "chat", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
         framework="BeeAI",
         programming_language="Python",
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         author=Author(name="IBM Research"),
         env=[
-            {
-                "name": "LLM_MODEL",
-                "description": "Language model name",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_BASE",
-                "description": "Base URL of an OpenAI endpoint where the language model is available",
-                "required": True,
-            },
-            {
-                "name": "LLM_API_KEY",
-                "description": "API Key used to access the OpenAI endpoint",
-                "required": True,
-            },
-            # Only support google for search at the moment
-            {
-                "name": "GOOGLE_API_KEY",
-                "description": "Google search API Key",
-            },
-            {
-                "name": "GOOGLE_CX_KEY",
-                "description": "Google search engine ID",
-            },
-            # Embeddings provider
+            *base_env,
+            *search_env,
             {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            # For "watsonx" embedding provider
-            {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
-            {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
-            {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
-            {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
-            # For "openai" embedding provider (RITS etc.)
+            *watsonx_env,
             {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
@@ -313,16 +262,61 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
 
         model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
-        async def research_listener(event: ResearchEvent) -> None:
-            if event.event_type == "token":
+        async def research_listener(event: Event) -> None:
+            if event.type == "token":
                 await context.yield_async(MessagePart(content=event.data))
-            elif event.event_type == "log":
+            elif event.type == "log":
+                await context.yield_async(MessagePart(content=f"{event.data}\n\n", content_type="text/log"))
+
+        researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
+        researcher.subscribe(handler=research_listener)
+        await researcher.run()
+
+    except Exception as e:
+        traceback.print_exc()
+        raise e
+
+
+@server.agent(
+    name="granite-research-hands-off",
+    description="This agent leverages the Granite 3.3 large language model to perform research.",
+    metadata=Metadata(
+        ui={"type": "hands-off", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
+        framework="BeeAI",
+        programming_language="Python",
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        author=Author(name="IBM Research"),
+        env=[
+            *base_env,
+            *search_env,
+            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
+            *watsonx_env,
+            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
+            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
+            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
+        ],
+    ),
+)
+async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
+    try:
+        messages = utils.to_beeai_framework(messages=input)
+
+        if exceeds_token_limit(messages):
+            yield token_limit_message_part()
+            return
+
+        model = ChatModelFactory.create(provider=LLM_PROVIDER)
+
+        async def research_listener(event: Event) -> None:
+            if event.type == "token":
+                await context.yield_async(MessagePart(content=event.data))
+            elif event.type == "log":
                 await context.yield_async({"message": f"{event.data}\n"})
 
-        researcher = Researcher(
-            chat_model=model, messages=messages, listener=research_listener, worker_pool=worker_pool
-        )
+        researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
+        researcher.subscribe(handler=research_listener)
 
+        # Research report will be yielded
         await researcher.run()
 
     except Exception as e:

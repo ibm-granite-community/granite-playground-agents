@@ -1,24 +1,15 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
 
-class ResearchEvent(BaseModel):
-    event_type: Literal["log", "token"]
-    data: str
+class ResearchQuery(BaseModel):
+    query: str = Field(description="Optimized search query addressing an aspect of the research topic.")
+    keywords: str = Field(description="List of keywords for this query")
 
 
 class ResearchReport(BaseModel):
-    topic: str
+    query: ResearchQuery
     report: str
 
 
-class ResearchQuestion(BaseModel):
-    question: str = Field(description="The research question.")
-    search_query: str = Field(description="Optimized search query corresponding to the research question.")
-
-
 class ResearchPlanSchema(BaseModel):
-    research_questions: list[ResearchQuestion] = Field(
-        description="A list of research questions that make up the research plan."
-    )
+    queries: list[ResearchQuery] = Field(description="A list of search queries that address the research topic.")

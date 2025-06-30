@@ -14,6 +14,7 @@ from typing import cast
 from httpx import AsyncClient, Client
 
 from granite_chat import get_logger
+from granite_chat.emitter import Event, EventEmitter
 from granite_chat.search.scraping import BeautifulSoupScraper
 from granite_chat.search.scraping.arxiv import ArxivScraper
 from granite_chat.search.scraping.pymupdf import PyMuPDFScraper
@@ -22,7 +23,7 @@ from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.workers import WorkerPool
 
 
-class ContentExtractor:
+class ContentExtractor(EventEmitter):
     """
     Scraper class to extract the content from the links
     """
@@ -35,8 +36,8 @@ class ContentExtractor:
         Args:
             urls:
         """
+        super().__init__()
         self.search_results = search_results
-
         self.async_client = AsyncClient()
         self.client = Client()
         self.async_client.headers.update({"User-Agent": user_agent})
@@ -66,7 +67,7 @@ class ContentExtractor:
 
                 # Get scraper name
                 scraper_name = scraper.__class__.__name__
-                self.logger.info(f"\n=== Using {scraper_name} ===")
+                self.logger.info(f"=== Using {scraper_name} ===")
 
                 # Get content
                 if isinstance(scraper, AsyncScraper):
@@ -94,11 +95,13 @@ class ContentExtractor:
                     )
 
                 # Log results
-                self.logger.info(f"\nTitle: {title}")
+                self.logger.info(f"Title: {title}")
                 self.logger.info(f"Content length: {len(content) if content else 0} characters")
                 self.logger.info(f"Number of images: {len(image_urls)}")
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
+
+                await self._emit(Event(type="log", data=f"🕷️ Scraped source {link}"))
 
                 return ScrapedContent(
                     search_result=search_result,

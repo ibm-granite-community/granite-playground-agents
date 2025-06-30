@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import traceback
-from collections.abc import Awaitable, Callable
 
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
@@ -11,17 +10,18 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
-from transformers import AutoTokenizer
 
 from granite_chat.config import settings
+from granite_chat.emitter import Event, EventEmitter
 from granite_chat.research.prompts import ResearchPrompts
-from granite_chat.research.types import ResearchEvent, ResearchPlanSchema, ResearchQuestion, ResearchReport
+from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
 from granite_chat.search.citations import (
     CitationGenerator,
     DefaultCitationGenerator,
     GraniteIOCitationGenerator,
 )
 from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
@@ -29,19 +29,20 @@ from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
 
-class Researcher:
-    def __init__(
-        self,
-        chat_model: ChatModel,
-        messages: list[Message],
-        worker_pool: WorkerPool,
-        listener: Callable[[ResearchEvent], Awaitable[None]],
-    ) -> None:
+class Researcher(EventEmitter):
+    def __init__(self, chat_model: ChatModel, messages: list[Message], worker_pool: WorkerPool) -> None:
+        super().__init__()
         self.chat_model = chat_model
         self.messages = messages
         self.worker_pool = worker_pool
-        self.listener = listener
         self.logger = logging.getLogger(__name__)
+
+        self.research_topic: str | None = None
+        self.search_results: list[SearchResult] = []
+        self.research_plan: list[ResearchQuery] = []
+        self.interim_reports: list[ResearchReport] = []
+        self.final_report_docs: list[Document] = []
+        self.final_report: str | None = None
 
         self.logger.debug("Initializing Researcher")
 
@@ -50,9 +51,9 @@ class Researcher:
         )
 
         vector_store = InMemoryVectorStore(embedding=embeddings)
+        tokenizer = EmbeddingsTokenizer.get_instance().get_tokenizer()
 
-        if settings.EMBEDDINGS_HF_TOKENIZER:
-            tokenizer = AutoTokenizer.from_pretrained(settings.EMBEDDINGS_HF_TOKENIZER)
+        if tokenizer:
             self.vector_store = ConfigurableVectorStoreWrapper(
                 vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
@@ -66,25 +67,33 @@ class Researcher:
                 vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
             )
 
-        self.search_engine = get_search_engine(settings.RETRIEVER)
-
-        self.research_topic: str | None = None
-        self.search_results: list[SearchResult] = []
-        self.research_plan: list[ResearchQuestion] = []
-        self.interim_reports: list[ResearchReport] = []
-        self.final_report_docs: list[Document] = []
-        self.final_report: str | None = None
-
     async def run(self) -> None:
         """Perform research investigation"""
         self.logger.info("Running Researcher")
 
         self.research_topic = await self._generate_research_topic()
+
+        await self._emit(Event(type="log", data=f"🚀 Starting research task for '{self.research_topic}'"))
+        await self._emit(Event(type="log", data="🤔 Planning research tasks"))
+
         self.research_plan = await self._generate_research_plan()
+
+        queries = [s.query for s in self.research_plan]
+        await self._emit(
+            Event(
+                type="log",
+                data=f"I will research {queries}",
+            )
+        )
 
         self.logger.debug(f"Research plan: {self.research_plan}")
 
         await self._gather_sources()
+
+        await asyncio.gather(
+            *[self._emit(Event(type="log", data=f"🔗 Added source {res.url}")) for res in self.search_results]
+        )
+
         await self._extract_sources()
         await self._perform_research()
 
@@ -98,7 +107,7 @@ class Researcher:
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
-        return self.messages[0].text
+        return self.messages[-1].text
 
     async def _gather_sources(self) -> None:
         """Gather all information sources for the research plan"""
@@ -108,19 +117,18 @@ class Researcher:
 
         await asyncio.gather(*(self._gather_sources_for_step(step) for step in self.research_plan))
 
-    async def _gather_sources_for_step(self, research_question: ResearchQuestion) -> None:
+    async def _gather_sources_for_step(self, query: ResearchQuery) -> None:
         """Gather information for a single research plan step"""
 
         search_results = await self._search_query(
-            research_question.search_query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
+            query.query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
         )
-
         self.search_results.extend(search_results)
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
         scraped_content, _ = await scrape_urls(
-            search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool
+            search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool, emitter=self
         )
 
         if scraped_content and len(scraped_content) > 0:
@@ -136,7 +144,7 @@ class Researcher:
         if len(self.interim_reports) == 0:
             raise ValueError("No interim reports available!")
 
-        await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
+        # await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
@@ -147,15 +155,13 @@ class Researcher:
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
                     response += data.value.get_text_content()
-                    await self.listener(ResearchEvent(event_type="token", data=data.value.get_text_content()))
+                    await self._emit(Event(type="token", data=data.value.get_text_content()))
 
         self.final_report = response
 
-    async def _generate_research_plan(self) -> list[ResearchQuestion]:
+    async def _generate_research_plan(self) -> list[ResearchQuery]:
         if self.research_topic is None:
             raise ValueError("Research topic has not been set!")
-
-        await self.listener(ResearchEvent(event_type="log", data="📝 Creating a research plan..."))
 
         prompt = ResearchPrompts.research_plan_prompt(
             topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
@@ -166,7 +172,7 @@ class Researcher:
 
         try:
             plan = ResearchPlanSchema(**response.object)
-            return plan.research_questions
+            return plan.queries
         except ValidationError as e:
             raise ValueError("Failed to generate a valid research plan!") from e
 
@@ -176,23 +182,23 @@ class Researcher:
 
         await asyncio.gather(*(self._research_step(step) for step in self.research_plan))
 
-    async def _research_step(self, step: ResearchQuestion) -> None:
-        await self.listener(ResearchEvent(event_type="log", data=f"🔍 Researching '{step.question}'"))
+    async def _research_step(self, query: ResearchQuery) -> None:
+        await self._emit(Event(type="log", data=f"🧠 Researching '{query.query}'"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=step.search_query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
         )
 
         self.final_report_docs += docs
 
-        await self.listener(
-            ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
-        )
+        # await self.listener(
+        #     ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
+        # )
 
-        research_report_prompt = ResearchPrompts.research_report_prompt(topic=step.question, docs=docs)
+        research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
         response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
         report = response.get_text_content()
-        self.interim_reports.append(ResearchReport(topic=step.question, report=report))
+        self.interim_reports.append(ResearchReport(query=query, report=report))
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         async with self.worker_pool.throttle():
@@ -205,8 +211,6 @@ class Researcher:
         return []
 
     async def _generate_citations(self) -> None:
-        await self.listener(ResearchEvent(event_type="log", data="📖 Generating citations..."))
-
         if len(self.final_report_docs) > 0:
             input = [AcpMessage(parts=[MessagePart(name="User", content=self.research_topic)])]
 
@@ -230,4 +234,4 @@ class Researcher:
             async for message_part in generator.generate(
                 messages=input, docs=self.final_report_docs, response=self.final_report or ""
             ):
-                await self.listener(ResearchEvent(event_type="token", data=message_part.content or ""))
+                await self._emit(Event(type="token", data=message_part.content or ""))
