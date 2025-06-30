@@ -9,7 +9,7 @@
 # Changes made:
 
 
-from colorama import Fore, Style  # type: ignore  # type: ignore
+from colorama import Fore, Style
 
 from granite_chat import get_logger
 from granite_chat.emitter import EventEmitter

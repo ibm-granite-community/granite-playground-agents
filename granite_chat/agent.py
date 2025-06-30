@@ -12,7 +12,7 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
 from granite_chat import utils
-from granite_chat.config import settings  # type: ignore
+from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory

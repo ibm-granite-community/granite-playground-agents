@@ -27,13 +27,11 @@ class EventEmitter:
         self._handlers.remove(handler)
 
     async def _emit(self, event: Event) -> None:
-        # Emit to all handlers concurrently
+        """Emit to all handlers concurrently"""
         await asyncio.gather(*(handler(event) for handler in self._handlers))
 
     def forward_events_from(self, other: "EventEmitter") -> None:
-        """
-        Subscribe to another emitter and forward its events to this emitter's subscribers.
-        """
+        """Subscribe to another emitter and forward its events to this emitter's subscribers"""
 
         async def _forward(event: Event) -> None:
             await self._emit(event)

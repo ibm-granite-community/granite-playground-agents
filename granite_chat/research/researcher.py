@@ -127,6 +127,7 @@ class Researcher(EventEmitter):
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
+
         scraped_content, _ = await scrape_urls(
             search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool, emitter=self
         )

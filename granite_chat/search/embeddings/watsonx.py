@@ -12,6 +12,7 @@ class WatsonxEmbeddings(Embeddings):
         self.embedding_model = EmbeddingModel.from_name("watsonx:" + model_id)
 
     async def _embed(self, texts: list[str]) -> list[list[float]]:
+        """Perform embedding."""
         response: EmbeddingModelOutput = await self.embedding_model.create(texts)
         return response.embeddings
 

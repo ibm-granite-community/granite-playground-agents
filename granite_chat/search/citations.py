@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Message, MessagePart
-from granite_io import make_backend  # type: ignore
-from granite_io.io.citations import CitationsIOProcessor  # type: ignore
-from granite_io.types import AssistantMessage as GraniteIOAssistantMessage  # type: ignore
+from granite_io import make_backend
+from granite_io.io.citations import CitationsIOProcessor
+from granite_io.types import AssistantMessage as GraniteIOAssistantMessage
 from granite_io.types import ChatCompletionInputs, GenerateInputs
 from granite_io.types import Document as GraniteIODocument
 from langchain_core.documents import Document
