@@ -10,12 +10,30 @@ from granite_io.types import ChatCompletionInputs, GenerateInputs
 from granite_io.types import Document as GraniteIODocument
 from langchain_core.documents import Document
 
+from granite_chat.config import settings
 from granite_chat.search.types import Citation, Source
 from granite_chat.utils import to_granite_io
 
 
 class CitationGenerator(ABC):
     """Factory for generating citations"""
+
+    @staticmethod
+    def create() -> "CitationGenerator":
+        if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+            extra_headers = (
+                dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
+                if settings.GRANITE_IO_OPENAI_API_HEADERS
+                else None
+            )
+
+            return GraniteIOCitationGenerator(
+                openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
+                model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                extra_headers=extra_headers,
+            )
+        else:
+            return DefaultCitationGenerator()
 
     @abstractmethod
     def generate(

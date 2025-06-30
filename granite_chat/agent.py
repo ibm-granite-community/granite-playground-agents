@@ -18,11 +18,7 @@ from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
 from granite_chat.search.agent import SearchAgent
-from granite_chat.search.citations import (
-    CitationGenerator,
-    DefaultCitationGenerator,
-    GraniteIOCitationGenerator,
-)
+from granite_chat.search.citations import CitationGenerator
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
@@ -207,22 +203,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         # Yield sources/citation
         if len(docs) > 0:
-            generator: CitationGenerator
-
-            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                    if settings.GRANITE_IO_OPENAI_API_HEADERS
-                    else None
-                )
-
-                generator = GraniteIOCitationGenerator(
-                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
-                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
-                    extra_headers=extra_headers,
-                )
-            else:
-                generator = DefaultCitationGenerator()
+            generator = CitationGenerator.create()
 
             async for message_part in generator.generate(messages=input, docs=docs, response=response):
                 yield message_part
