@@ -1,21 +1,41 @@
-import traceback
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Message, MessagePart
-from granite_io import make_backend  # type: ignore
-from granite_io.io.citations import CitationsIOProcessor  # type: ignore
-from granite_io.types import AssistantMessage as GraniteIOAssistantMessage  # type: ignore
+from granite_io import make_backend
+from granite_io.io.citations import CitationsIOProcessor
+from granite_io.types import AssistantMessage as GraniteIOAssistantMessage
 from granite_io.types import ChatCompletionInputs, GenerateInputs
 from granite_io.types import Document as GraniteIODocument
 from langchain_core.documents import Document
 
+from granite_chat import get_logger
+from granite_chat.config import settings
 from granite_chat.search.types import Citation, Source
 from granite_chat.utils import to_granite_io
+
+logger = get_logger(__name__)
 
 
 class CitationGenerator(ABC):
     """Factory for generating citations"""
+
+    @staticmethod
+    def create() -> "CitationGenerator":
+        if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+            extra_headers = (
+                dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
+                if settings.GRANITE_IO_OPENAI_API_HEADERS
+                else None
+            )
+
+            return GraniteIOCitationGenerator(
+                openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
+                model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
+                extra_headers=extra_headers,
+            )
+        else:
+            return DefaultCitationGenerator()
 
     @abstractmethod
     def generate(
@@ -100,5 +120,5 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
                 yield MessagePart(content_type="source/citation", content=citation.model_dump_json(), role="assistant")  # type: ignore[call-arg]
 
-        except Exception:  # Malformed citations throws error
-            traceback.print_exc()
+        except Exception as e:  # Malformed citations throws error
+            logger.exception(repr(e))

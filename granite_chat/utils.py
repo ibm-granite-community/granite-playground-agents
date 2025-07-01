@@ -5,7 +5,7 @@ from acp_sdk import Message as ACPMessage
 from acp_sdk import MessagePart
 from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.backend import Message as FrameworkMessage
-from granite_io.types import AssistantMessage as GraniteIOAssistantMessage  # type: ignore
+from granite_io.types import AssistantMessage as GraniteIOAssistantMessage
 from granite_io.types import UserMessage as GraniteIOUserMessage
 
 

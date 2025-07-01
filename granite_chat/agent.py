@@ -1,4 +1,3 @@
-import traceback
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Author, MessagePart, Metadata
@@ -11,23 +10,21 @@ from beeai_framework.backend import (
 from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
-from granite_chat import utils
-from granite_chat.config import settings  # type: ignore
+from granite_chat import get_logger, utils
+from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
 from granite_chat.search.agent import SearchAgent
-from granite_chat.search.citations import (
-    CitationGenerator,
-    DefaultCitationGenerator,
-    GraniteIOCitationGenerator,
-)
+from granite_chat.search.citations import CitationGenerator
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_chat.workers import WorkerPool
+
+logger = get_logger(__name__)
 
 LLM_PROVIDER = settings.LLM_PROVIDER
 
@@ -207,28 +204,13 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         # Yield sources/citation
         if len(docs) > 0:
-            generator: CitationGenerator
-
-            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                    if settings.GRANITE_IO_OPENAI_API_HEADERS
-                    else None
-                )
-
-                generator = GraniteIOCitationGenerator(
-                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
-                    model_id=settings.GRANITE_IO_CITATIONS_MODEL_ID,
-                    extra_headers=extra_headers,
-                )
-            else:
-                generator = DefaultCitationGenerator()
+            generator = CitationGenerator.create()
 
             async for message_part in generator.generate(messages=input, docs=docs, response=response):
                 yield message_part
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 
@@ -273,7 +255,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         await researcher.run()
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 
@@ -320,7 +302,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         await researcher.run()
 
     except Exception as e:
-        traceback.print_exc()
+        logger.exception(repr(e))
         raise e
 
 

@@ -1,5 +1,4 @@
 import asyncio
-import traceback
 
 from beeai_framework.backend import Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
@@ -101,6 +100,6 @@ class SearchAgent:
                 engine = get_search_engine(settings.RETRIEVER)
                 results = await engine.search(query=query, max_results=max_results)
                 return [SearchResult(**r) for r in results]
-            except Exception:
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception(repr(e))
         return None

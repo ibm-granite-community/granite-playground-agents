@@ -3,15 +3,14 @@ from beeai_framework.adapters.watsonx import WatsonxChatModel
 from beeai_framework.backend import ChatModelParameters
 from beeai_framework.backend.chat import ChatModel
 
-from granite_chat.config import settings  # type: ignore
+from granite_chat.config import settings
 
 
 class ChatModelFactory:
     """Factory for ChatModel instances."""
 
-    @classmethod
+    @staticmethod
     def create(
-        cls,
         provider: str,
     ) -> ChatModel:
         model_id = settings.LLM_MODEL
