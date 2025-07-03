@@ -1,7 +1,8 @@
 from collections.abc import AsyncGenerator
 
-from acp_sdk import Author, MessagePart, Metadata
+from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models import Message
+from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, PlatformUIType
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
@@ -80,13 +81,19 @@ watsonx_env = [
     name="granite-chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
-        framework="BeeAI",
+        annotations=Annotations(
+            beeai_ui=PlatformUIAnnotation(
+                ui_type=PlatformUIType.CHAT, user_greeting="Hi, I'm Granite! How can I help you?", display_name="Chat"
+            )
+        ),
         programming_language="Python",
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        natural_languages=["English"],
+        framework="BeeAI",
+        capabilities=[Capability(name="Chat", description="Chat with the model with no external influence")],
         author=Author(name="IBM Research"),
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         env=base_env,
-    ),
+    ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
     messages = utils.to_beeai_framework(messages=input)
@@ -107,13 +114,26 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     name="granite-thinking",
     description="This agent leverages the Granite 3.3 large language model for general chat with reasoning.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
-        framework="BeeAI",
+        annotations=Annotations(
+            beeai_ui=PlatformUIAnnotation(
+                ui_type=PlatformUIType.CHAT,
+                user_greeting="Hi, I'm Granite! How can I help you?",
+                display_name="Thinking",
+            )
+        ),
         programming_language="Python",
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        natural_languages=["English"],
+        framework="BeeAI",
+        capabilities=[
+            Capability(
+                name="Reasoning",
+                description="Usage and explanation of a thinking/reasoning process to self-reflect on generated output",
+            ),
+        ],
         author=Author(name="IBM Research"),
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         env=base_env,
-    ),
+    ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
     messages = utils.to_beeai_framework(messages=input)
@@ -156,11 +176,25 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     name="granite-search",
     description="This agent leverages the Granite 3.3 large language model to chat and search the web.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "Hi, I'm Granite! How can I help you?"},  # type: ignore[call-arg]
-        framework="BeeAI",
+        annotations=Annotations(
+            beeai_ui=PlatformUIAnnotation(
+                ui_type=PlatformUIType.CHAT,
+                user_greeting="Hi, I'm Granite! How can I help you?",
+                display_name="Search",
+                tools=[AgentToolInfo(name="Search", description="Search engine")],
+            )
+        ),
         programming_language="Python",
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        natural_languages=["English"],
+        framework="BeeAI",
+        capabilities=[
+            Capability(
+                name="Search",
+                description="Connects the model to a search engine.",
+            ),
+        ],
         author=Author(name="IBM Research"),
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         env=[
             *base_env,
             *search_env,
@@ -170,7 +204,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
         ],
-    ),
+    ),  # type: ignore[call-arg]
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
     try:
@@ -218,11 +252,25 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     name="granite-research",
     description="This agent leverages the Granite 3.3 large language model to perform research.",
     metadata=Metadata(
-        ui={"type": "chat", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
-        framework="BeeAI",
+        annotations=Annotations(
+            beeai_ui=PlatformUIAnnotation(
+                ui_type=PlatformUIType.CHAT,
+                user_greeting="What topic do you want to research?",
+                display_name="Research",
+                tools=[AgentToolInfo(name="Search", description="Search engine")],
+            )
+        ),
         programming_language="Python",
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        natural_languages=["English"],
+        framework="BeeAI",
+        capabilities=[
+            Capability(
+                name="Deep Research",
+                description="Connects the model to a search engine to perform deep research.",
+            ),
+        ],
         author=Author(name="IBM Research"),
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
         env=[
             *base_env,
             *search_env,
@@ -232,7 +280,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
         ],
-    ),
+    ),  # type: ignore[call-arg]
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
     try:
@@ -259,51 +307,51 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         raise e
 
 
-@server.agent(
-    name="granite-research-hands-off",
-    description="This agent leverages the Granite 3.3 large language model to perform research.",
-    metadata=Metadata(
-        ui={"type": "hands-off", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
-        framework="BeeAI",
-        programming_language="Python",
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        author=Author(name="IBM Research"),
-        env=[
-            *base_env,
-            *search_env,
-            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            *watsonx_env,
-            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
-            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
-            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
-        ],
-    ),
-)
-async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
-    try:
-        messages = utils.to_beeai_framework(messages=input)
+# @server.agent(
+#     name="granite-research-hands-off",
+#     description="This agent leverages the Granite 3.3 large language model to perform research.",
+#     metadata=Metadata(
+#         ui={"type": "hands-off", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
+#         framework="BeeAI",
+#         programming_language="Python",
+#         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+#         author=Author(name="IBM Research"),
+#         env=[
+#             *base_env,
+#             *search_env,
+#             {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
+#             *watsonx_env,
+#             {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
+#             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
+#             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
+#         ],
+#     ),
+# )
+# async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
+#     try:
+#         messages = utils.to_beeai_framework(messages=input)
 
-        if exceeds_token_limit(messages):
-            yield token_limit_message_part()
-            return
+#         if exceeds_token_limit(messages):
+#             yield token_limit_message_part()
+#             return
 
-        model = ChatModelFactory.create(provider=LLM_PROVIDER)
+#         model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
-        async def research_listener(event: Event) -> None:
-            if event.type == "token":
-                await context.yield_async(MessagePart(content=event.data))
-            elif event.type == "log":
-                await context.yield_async({"message": f"{event.data}\n"})
+#         async def research_listener(event: Event) -> None:
+#             if event.type == "token":
+#                 await context.yield_async(MessagePart(content=event.data))
+#             elif event.type == "log":
+#                 await context.yield_async({"message": f"{event.data}\n"})
 
-        researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
-        researcher.subscribe(handler=research_listener)
+#         researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
+#         researcher.subscribe(handler=research_listener)
 
-        # Research report will be yielded
-        await researcher.run()
+#         # Research report will be yielded
+#         await researcher.run()
 
-    except Exception as e:
-        logger.exception(repr(e))
-        raise e
+#     except Exception as e:
+#         logger.exception(repr(e))
+#         raise e
 
 
 server.run(
