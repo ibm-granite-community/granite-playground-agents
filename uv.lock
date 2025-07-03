@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "acp-sdk"
-version = "0.10.1"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -26,6 +26,7 @@ dependencies = [
     { name = "httpx" },
     { name = "httpx-sse" },
     { name = "janus" },
+    { name = "obstore" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation-fastapi" },
@@ -35,9 +36,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "redis" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c7/8d/770c69b79d23043948020f5b6e2c0f71ab8cba2456c1f165d38eb9e9013f/acp_sdk-0.10.1.tar.gz", hash = "sha256:27a8b041badea34755d28b55ef5fbc011de54f64475b8421d3bd905fa8d928d1", size = 24959, upload-time = "2025-05-28T08:18:29.192Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/27/2dc08578badd7863634bbb395a63b1539f571c3d1d2fba3c639e27603625/acp_sdk-1.0.0.tar.gz", hash = "sha256:997351cc9042eb2cf3d1bd3f53997d8d5b83afd5ae975c32c419a86de7205ad5", size = 30077, upload-time = "2025-07-01T06:08:40.172Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/85/f76a8333ca4e272f1f77744eaf8502a47e938cfacd4e1f522c525a84468d/acp_sdk-0.10.1-py3-none-any.whl", hash = "sha256:8e8c23e866f8432d7d4ba110331a88a667d3737edfdff2f0bcdf037a5000bf0f", size = 26314, upload-time = "2025-05-28T08:18:27.408Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/91/dce09af24c6f67a4df7fcaf898a565b0efd44de3d085894ee1c0a672ae9a/acp_sdk-1.0.0-py3-none-any.whl", hash = "sha256:837779e52f1f922f8c017b1e6a19181ef618fe996de971255cfd0251b9408180", size = 32253, upload-time = "2025-07-01T06:08:38.603Z" },
 ]
 
 [[package]]
@@ -783,7 +784,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "acp-sdk", specifier = ">=0.10.1" },
+    { name = "acp-sdk", specifier = ">=1.0.0" },
     { name = "arxiv", specifier = ">=2.2.0" },
     { name = "beeai-framework", git = "https://github.com/i-am-bee/beeai-framework.git?subdirectory=python" },
     { name = "bs4", specifier = ">=0.0.2" },
@@ -1638,6 +1639,55 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/76/95/bef5b37f29fc5e739947e9ce5179ad402875633308504a52d188302319c8/numpy-2.2.6-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:8e9ace4a37db23421249ed236fdcdd457d671e25146786dfc96835cd951aa7c1", size = 18385260, upload-time = "2025-05-17T21:43:05.189Z" },
     { url = "https://files.pythonhosted.org/packages/09/04/f2f83279d287407cf36a7a8053a5abe7be3622a4363337338f2585e4afda/numpy-2.2.6-cp313-cp313t-win32.whl", hash = "sha256:038613e9fb8c72b0a41f025a7e4c3f0b7a1b5d768ece4796b674c8f3fe13efff", size = 6377225, upload-time = "2025-05-17T21:43:16.254Z" },
     { url = "https://files.pythonhosted.org/packages/67/0e/35082d13c09c02c011cf21570543d202ad929d961c02a147493cb0c2bdf5/numpy-2.2.6-cp313-cp313t-win_amd64.whl", hash = "sha256:6031dd6dfecc0cf9f668681a37648373bddd6421fff6c66ec1624eed0180ee06", size = 12771374, upload-time = "2025-05-17T21:43:35.479Z" },
+]
+
+[[package]]
+name = "obstore"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/ef/a69418c4eda9ea6ce38b282892ddf222b2db4b9cc7ef02b40576ddc67206/obstore-0.7.0-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:c4b523cdb3c85e1d15066a95ab226586a3fe174b3bd19aca4b288e53d113a24b", size = 3664519, upload-time = "2025-06-25T21:08:13.74Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/dd/345536d2ea9d74895a72f8ff1a969e091c30d5fd537ecb302c675fef913e/obstore-0.7.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:86dc7eee46d400050322887de5ae88e2ef03a3f3e9c899c20d9b84dceb442f80", size = 3394173, upload-time = "2025-06-25T21:08:15.039Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/bb/93e8e37f08670d7e92a6cf759e2d170b207daffeeca29c61f880447ea30c/obstore-0.7.0-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:ae34295ad23c99ae0c778cf057a85f00601e23fd8e52ae12ec8aafd8a85722b4", size = 3548797, upload-time = "2025-06-25T21:08:16.39Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/9e/a3a7b81e9a608747dae05c6750055b0259cfdec1d3815c362a05218ecd4f/obstore-0.7.0-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:8ebadd21f43770a670c4e1e5545924f837d24f49cc2541409f10d23d46df2152", size = 3698136, upload-time = "2025-06-25T21:08:17.776Z" },
+    { url = "https://files.pythonhosted.org/packages/29/85/9387b28853be8048d5222e7e1e3169e05e3007421d9e79a7886a68604d92/obstore-0.7.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d05d2dde6fc61ddd7d572431e8ceb45abf4e8a86feec1059dd2c180a49e17b45", size = 3973536, upload-time = "2025-06-25T21:08:20.082Z" },
+    { url = "https://files.pythonhosted.org/packages/40/33/47358dc16545ccb2dc6f16792d4975391771bfe1ef13c160bfd80645b9b0/obstore-0.7.0-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:c02faf6106492814b6d160a1700a841a4c5f5784df997a179ceb81a6a77c9d49", size = 4015846, upload-time = "2025-06-25T21:08:21.411Z" },
+    { url = "https://files.pythonhosted.org/packages/00/5f/a697e290f10586fc23d4739677b9c6bef9b71ecac7b3a1bf63b14b332594/obstore-0.7.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a314cc9236012ffdf92bf86b436a74d9897b692a5f20ca0afbddd06b8a338129", size = 3797851, upload-time = "2025-06-25T21:08:23.149Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/84/afbaf6ef9fcc106d82d787bd08246f2b2e4a8fcc82741d25fcde44fc7a77/obstore-0.7.0-cp311-cp311-manylinux_2_24_aarch64.whl", hash = "sha256:65cc0e1a52c4ae9266f7cc4cd02ea31627fbd5117aa5e75666f2d287dbb84782", size = 3575516, upload-time = "2025-06-25T21:08:24.442Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/d2/a07fec0a6fec5957cf45d0ad8f61c4719894328c3cfa053514cac2e0625e/obstore-0.7.0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:b3b7760351d50727f8edd94c7b6a760076750b150509c019968c2dc7a58ec82c", size = 3741113, upload-time = "2025-06-25T21:08:25.807Z" },
+    { url = "https://files.pythonhosted.org/packages/50/b5/4654616f17d119ba55627cd2ea5923df51f0000b49f5836999cca58c25c8/obstore-0.7.0-cp311-cp311-musllinux_1_2_armv7l.whl", hash = "sha256:bd714aae726f42cf285008f3f45f73a60d43d7d41cce260546304ecf66e2eb5b", size = 3772642, upload-time = "2025-06-25T21:08:27.496Z" },
+    { url = "https://files.pythonhosted.org/packages/16/cf/1ae27073a8d6c95e970523f72b608367ce2101ab4fdbe1137c0da8b74980/obstore-0.7.0-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:29ed076f08bfdbba0bb72223c6438c0656f536e524b12f4aeffaf9e5d09d8f20", size = 3774039, upload-time = "2025-06-25T21:08:28.945Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/0d/6d2835b4c0dba6c95fd1cfb584df4eea775f688b1f0e1de558ce9c96e6b4/obstore-0.7.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:40a217030c2fd844f0cce804d9bc385d78df068882eb888e3a1d0b0c4edddc7b", size = 3970481, upload-time = "2025-06-25T21:08:30.396Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/4d/ffad2a5a186f88548fd5eda7c5ca7d947511f671f3ff0eda36a23d09df53/obstore-0.7.0-cp311-cp311-win_amd64.whl", hash = "sha256:106f281a874567f642399360e8c3ff789c0bb4a4abffaa26ba5de43ac33d7de2", size = 4035963, upload-time = "2025-06-25T21:08:32.01Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/a5/d3078d4d52b15680b9ff5eebdf55b329adac4f66f5722ad2bdf766eb50ea/obstore-0.7.0-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:e79e4ea2f539e40f3876b157e6ed580aabf23d9f1c5602c8bf2db5e17b9aaa99", size = 3660024, upload-time = "2025-06-25T21:08:33.286Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/43/7964cfdff32cd4730a96418530f8684c89c1993e1bfbb23c2842af3ca487/obstore-0.7.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b18073a7de39823a46cc02e6bd7d31383414848f5931236ab11089e42dd01e7a", size = 3385746, upload-time = "2025-06-25T21:08:34.593Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/a4/9580c24fc7dbbee60134d6f6a8ce6ab1c5631385f180b718f0be744a0f3d/obstore-0.7.0-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:4b854ff3afec1826862f2c2ac727739f3977e6be4d043c1661c833ccad921212", size = 3552339, upload-time = "2025-06-25T21:08:36.236Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/53/1a92b714787c19d7e6bb126505374d12b3275f6cbe6d78d0ee45bf222b7b/obstore-0.7.0-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f35f285938a44e38a01e7a118599e99c7a22706eb5dfccf5e87fc50a1dae8a1b", size = 3699905, upload-time = "2025-06-25T21:08:37.55Z" },
+    { url = "https://files.pythonhosted.org/packages/69/9b/3fbe6fcb797bb38a398280eb3dbf9ea96db7dacf3d75dde0b698e98fda45/obstore-0.7.0-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ecc478cc999c8da1f40a3b6a04d776829b34b267c3d93017ade555bc14a36860", size = 3970094, upload-time = "2025-06-25T21:08:38.946Z" },
+    { url = "https://files.pythonhosted.org/packages/43/46/cb95546672a06a3d58fcf1fd067b8deb5cc9a73ee2c6bf60ed6836b85d66/obstore-0.7.0-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:032fddd4d5e746a1e7730a78e352a22713ae27502121bb317c03f450246ee084", size = 4034703, upload-time = "2025-06-25T21:08:40.338Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/b5/93135bc01ede7ca127910b180ceac1b79c146bc5fbe858bf064d5d2b28f9/obstore-0.7.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:545ff9778e4a14f60b3f7efc835441a56de2fa49a451ea95ea0dfb2ac067d249", size = 3793733, upload-time = "2025-06-25T21:08:41.653Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/5f/987eeeb2e9104ff6b94ea5b9a27c6c1f2999bdb1dc9ffeacd9420ac53879/obstore-0.7.0-cp312-cp312-manylinux_2_24_aarch64.whl", hash = "sha256:9f8e43bb0c604e4ceb6f506bf5373170f410e457716f8c2e014ad5756a0a2217", size = 3570765, upload-time = "2025-06-25T21:08:42.916Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/25/90a483ce8f26f1765235e27ff269524b20f7206c4c64d0aa6d7bce41cd38/obstore-0.7.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:714cb85627723454a2b085b0b40c91d78c0764085ef15c3f1a61f20afc5a59be", size = 3736468, upload-time = "2025-06-25T21:08:44.254Z" },
+    { url = "https://files.pythonhosted.org/packages/28/2e/284a833f9303ffb3e86a68cb0cb4ac1c385b3a65ab295a6ef395d46d2b82/obstore-0.7.0-cp312-cp312-musllinux_1_2_armv7l.whl", hash = "sha256:79828846f71392f591e2a142795da11d77098e6e9120226d3969f6e5c03c8f3b", size = 3776342, upload-time = "2025-06-25T21:08:45.644Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/be/110bcd41827b494c8fc42bfb3a0459c3ef7d27a863d1fc18a2a5d0220b5b/obstore-0.7.0-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:53bbd5b26b1992569d4138a8a5ec4a8b13036414278bac33c0616c05b1cec9d2", size = 3779449, upload-time = "2025-06-25T21:08:47.393Z" },
+    { url = "https://files.pythonhosted.org/packages/12/e8/858fe601c9b6b59a4546b40feb41c43f04cfeaf086dfd2b701baaeb06136/obstore-0.7.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:c8f59e0cfa3a139346e62b58cb264946912d8d88f53027e2e836d32014f56b40", size = 3966569, upload-time = "2025-06-25T21:08:49.54Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/49/c07da5a20dd51ef6a8e0220338ba4d6f460c05645e3374a57157d5a74f7b/obstore-0.7.0-cp312-cp312-win_amd64.whl", hash = "sha256:62cfaf3d42b8d4508a542607c7602380b8fc844b6986a1d9c6ea0f8fe549e3d9", size = 4043882, upload-time = "2025-06-25T21:08:50.943Z" },
+    { url = "https://files.pythonhosted.org/packages/60/c2/3f1f764fc7d2d17d932095ab5e96524df4634ee5b0b34713ebd4d5b09ff6/obstore-0.7.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:c2743e1471e86f3184d6f536793e61c02b8210b0e1022f30285e6f5bf70af1c5", size = 3659829, upload-time = "2025-06-25T21:08:52.228Z" },
+    { url = "https://files.pythonhosted.org/packages/62/f2/0d7f126ed5bb02fc2872515c3964327c3c7c37ca42b23795207c2d088c45/obstore-0.7.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:a66c3ee0fe1f510612061a0f1a894857456e8c31154e5cf71f0252abf3cbdc89", size = 3385007, upload-time = "2025-06-25T21:08:53.978Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/a1/e0d96d3c33c4495f3b85c286b80e70c656dc464805ba74142695ca959f72/obstore-0.7.0-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:80646e080297e296a5f378cdb14ee0cc3766a3db2c25870381f93ad7367fa12e", size = 3551944, upload-time = "2025-06-25T21:08:55.477Z" },
+    { url = "https://files.pythonhosted.org/packages/73/db/c071556de119b5c4f44ff9f816a980828cdadc3afd0b61a947324320d68f/obstore-0.7.0-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:613a3d8fa19732c2da599db9d51e75a4b3b06ac77cabd0bc6041e65baa3c1182", size = 3699853, upload-time = "2025-06-25T21:08:57.184Z" },
+    { url = "https://files.pythonhosted.org/packages/95/08/028d3151ede642a6ecf19878fb2b4bcf59cd494398b11d4d4e7d3560e112/obstore-0.7.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ebf27156ab7d4abb9f63f6e2d94a92c84c9c2c157e26990212b3832cba3ed0c8", size = 3969874, upload-time = "2025-06-25T21:08:58.511Z" },
+    { url = "https://files.pythonhosted.org/packages/24/e8/44ccf2dd42be8d3ada6060ccca6e05b2905a757b9c2dd405e94c207fe6a5/obstore-0.7.0-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:752d2fc896614b8dd673d8d4b9922e669af9ec7805d200404f5af5b4ed61378b", size = 4025566, upload-time = "2025-06-25T21:08:59.889Z" },
+    { url = "https://files.pythonhosted.org/packages/12/22/7a1cca373582922b18ca102b76aee0bcacd7e073f116b48aa03d476e1929/obstore-0.7.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c220499d12b367ee153b6f42e5d55ffa4fb7cec655238d948b01099b5844bbe6", size = 3793718, upload-time = "2025-06-25T21:09:01.665Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/e0/134baf004465e8832ab5198836df74bcd57c33778466cd331df1442656a1/obstore-0.7.0-cp313-cp313-manylinux_2_24_aarch64.whl", hash = "sha256:bc34133499d72257f64c2d462d54ea469102d2f00b333948b158d1f59d321025", size = 3570357, upload-time = "2025-06-25T21:09:03.391Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/a4/e6d64f4fdee0fec3f933d9a3e3183c4883bcc8d6c127a03c86ce2e2971d4/obstore-0.7.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:5fd0de655419cd505a7c7d6512706220c5fb434ea449999027fcc0ad0ba1946b", size = 3736614, upload-time = "2025-06-25T21:09:05.182Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/a5/c6f45847d5b4ae1b441eaab9f5656d2baad4b8b8cacb72f5f79e89109c4e/obstore-0.7.0-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:f1fb0df678dbf0ae4e049660ebdb4b1551ec1ed66a98390675aa1e221b64cb18", size = 3776072, upload-time = "2025-06-25T21:09:06.571Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/bf/a40d1571755d6dc0abc44d910cd3c3ba11939a612c8ef84a074e60b3a454/obstore-0.7.0-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:1c1a8b31d820147b88f347ffec22fc44ea3b26abb21a9bd1b2e08290a5efb60a", size = 3779078, upload-time = "2025-06-25T21:09:08.229Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/27/53f8e759cf0b2361c8d4194eaff206538e8f928539d2e4554d68f783209b/obstore-0.7.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e8976a46fa857b1446b958a0293319eca25cb19f4d68bda4a8a66e4bf21fc4a4", size = 3966303, upload-time = "2025-06-25T21:09:09.69Z" },
+    { url = "https://files.pythonhosted.org/packages/84/8a/f3750ba6f69ee741e67a6b14d47676cc95c684cee028f8c96115aa2c1100/obstore-0.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:d2cfd49f846b19dffe73242dc0edc3bd8ca47af126af328ae7cbf9cb27c29d4e", size = 4043452, upload-time = "2025-06-25T21:09:11.06Z" },
 ]
 
 [[package]]

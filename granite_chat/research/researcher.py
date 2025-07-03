@@ -212,7 +212,7 @@ class Researcher(EventEmitter):
 
     async def _generate_citations(self) -> None:
         if len(self.final_report_docs) > 0:
-            input = [AcpMessage(parts=[MessagePart(name="User", content=self.research_topic)])]
+            input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
             generator: CitationGenerator
 
