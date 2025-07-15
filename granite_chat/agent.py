@@ -307,51 +307,65 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         raise e
 
 
-# @server.agent(
-#     name="granite-research-hands-off",
-#     description="This agent leverages the Granite 3.3 large language model to perform research.",
-#     metadata=Metadata(
-#         ui={"type": "hands-off", "user_greeting": "What topic do you want to research?"},  # type: ignore[call-arg]
-#         framework="BeeAI",
-#         programming_language="Python",
-#         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-#         author=Author(name="IBM Research"),
-#         env=[
-#             *base_env,
-#             *search_env,
-#             {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-#             *watsonx_env,
-#             {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
-#             {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
-#             {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
-#         ],
-#     ),
-# )
-# async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
-#     try:
-#         messages = utils.to_beeai_framework(messages=input)
+@server.agent(
+    name="granite-research-hands-off",
+    description="This agent leverages the Granite 3.3 large language model to perform research.",
+    metadata=Metadata(
+        annotations=Annotations(
+            beeai_ui=PlatformUIAnnotation(
+                ui_type=PlatformUIType.HANDSOFF,
+                user_greeting="What topic do you want to research?",
+                display_name="Granite Researcher",
+                tools=[AgentToolInfo(name="Search", description="Search engine")],
+            )
+        ),
+        programming_language="Python",
+        natural_languages=["English"],
+        framework="BeeAI",
+        capabilities=[
+            Capability(
+                name="Deep Research",
+                description="Connects the model to a search engine to perform deep research.",
+            ),
+        ],
+        author=Author(name="IBM Research"),
+        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
+        env=[
+            *base_env,
+            *search_env,
+            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
+            *watsonx_env,
+            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
+            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
+            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
+        ],
+    ),  # type: ignore[call-arg]
+)
+async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
+    try:
+        messages = utils.to_beeai_framework(messages=input)
 
-#         if exceeds_token_limit(messages):
-#             yield token_limit_message_part()
-#             return
+        if exceeds_token_limit(messages):
+            yield token_limit_message_part()
+            return
 
-#         model = ChatModelFactory.create(provider=LLM_PROVIDER)
+        model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
-#         async def research_listener(event: Event) -> None:
-#             if event.type == "token":
-#                 await context.yield_async(MessagePart(content=event.data))
-#             elif event.type == "log":
-#                 await context.yield_async({"message": f"{event.data}\n"})
+        async def research_listener(event: Event) -> None:
+            if event.type == "token":
+                await context.yield_async(MessagePart(content=event.data))
+            elif event.type == "log":
+                await context.yield_async({"message": f"{event.data}\n"})
 
-#         researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
-#         researcher.subscribe(handler=research_listener)
+        researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
+        researcher.subscribe(handler=research_listener)
 
-#         # Research report will be yielded
-#         await researcher.run()
+        # Research report will be yielded
+        await researcher.run()
 
-#     except Exception as e:
-#         logger.exception(repr(e))
-#         raise e
+    except Exception as e:
+        logger.exception(repr(e))
+        raise e
 
 
 server.run(

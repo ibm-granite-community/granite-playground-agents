@@ -102,9 +102,9 @@ class Settings(BaseSettings):
     )
 
     # Research configuration
-    RESEARCH_PLAN_BREADTH: int = Field(default=3, description="Controls how many search queries are executed", ge=1)
+    RESEARCH_PLAN_BREADTH: int = Field(default=5, description="Controls how many search queries are executed", ge=1)
     RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
-        default=2, description="Controls how man search results are considered for each search query", ge=1
+        default=5, description="Controls how man search results are considered for each search query", ge=1
     )
     RESEARCH_MAX_DOCS_PER_STEP: int = Field(
         default=10, description="The number of documents to return from the vector store"
