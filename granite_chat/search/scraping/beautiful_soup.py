@@ -32,6 +32,11 @@ class BeautifulSoupScraper(AsyncScraper):
         """
         try:
             response = await client.get(link, timeout=5)
+
+            if response.status_code == 403:
+                logger.exception(f"Error 403 when scraping link {link}")
+                return "", [], ""
+
             soup = BeautifulSoup(response.content, "lxml", from_encoding=response.encoding)
 
             soup = clean_soup(soup)
