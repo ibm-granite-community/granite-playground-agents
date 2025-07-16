@@ -186,9 +186,10 @@ class Researcher(EventEmitter):
         if self.research_plan is None or len(self.research_plan) == 0:
             raise ValueError("No research plan has been set!")
 
-        await asyncio.gather(*(self._research_step(step) for step in self.research_plan))
+        reports = await asyncio.gather(*(self._research_step(step) for step in self.research_plan))
+        self.interim_reports.extend(reports)
 
-    async def _research_step(self, query: ResearchQuery) -> None:
+    async def _research_step(self, query: ResearchQuery) -> ResearchReport:
         await self._emit(Event(type="log", data=f"🧠 Researching '{query.query}'"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
@@ -197,14 +198,10 @@ class Researcher(EventEmitter):
 
         self.final_report_docs += docs
 
-        # await self.listener(
-        #     ResearchEvent(event_type="log", data=f"🧠 Generating intermediate report for step '{step}'")
-        # )
-
         research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
         response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
         report = response.get_text_content()
-        self.interim_reports.append(ResearchReport(query=query, report=report))
+        return ResearchReport(query=query, report=report)
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         async with self.worker_pool.throttle():
