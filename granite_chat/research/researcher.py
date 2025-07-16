@@ -144,18 +144,24 @@ class Researcher(EventEmitter):
         if len(self.interim_reports) == 0:
             raise ValueError("No interim reports available!")
 
-        # await self.listener(ResearchEvent(event_type="log", data="🧠 Generating final report!"))
+        await self._emit(Event(type="log", data="🧠 Generating final report..."))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
         response: str = ""
 
-        # Final report is streamed
-        async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
-            match (data, event.name):
-                case (ChatModelNewTokenEvent(), "new_token"):
-                    response += data.value.get_text_content()
-                    await self._emit(Event(type="token", data=data.value.get_text_content()))
+        if settings.STREAMING is True:
+            # Final report is streamed
+            async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
+                match (data, event.name):
+                    case (ChatModelNewTokenEvent(), "new_token"):
+                        response += data.value.get_text_content()
+                        await self._emit(Event(type="token", data=data.value.get_text_content()))
+
+        else:
+            output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+            response += output.get_text_content()
+            await self._emit(Event(type="token", data=response))
 
         self.final_report = response
 

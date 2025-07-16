@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     host: str = Field(default="127.0.0.1", description="Network address the agent will bind to")
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
+    STREAMING: bool = Field(default=True, description="Stream user facing content")
+
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
     LLM_API_BASE: Annotated[
