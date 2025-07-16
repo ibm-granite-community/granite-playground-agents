@@ -97,7 +97,8 @@ watsonx_env = [
     ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-    messages = utils.to_beeai_framework(messages=input)
+    history = [message async for message in context.session.load_history()]
+    messages = utils.to_beeai_framework(messages=history + input)
 
     if exceeds_token_limit(messages):
         yield token_limit_message_part()
@@ -143,7 +144,8 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
-    messages = utils.to_beeai_framework(messages=input)
+    history = [message async for message in context.session.load_history()]
+    messages = utils.to_beeai_framework(messages=history + input)
 
     if exceeds_token_limit(messages):
         yield token_limit_message_part()
@@ -238,7 +240,8 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
     try:
-        messages = utils.to_beeai_framework(messages=input)
+        history = [message async for message in context.session.load_history()]
+        messages = utils.to_beeai_framework(messages=history + input)
 
         if exceeds_token_limit(messages):
             yield token_limit_message_part()
@@ -318,7 +321,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
     try:
-        messages = utils.to_beeai_framework(messages=input)
+        history = [message async for message in context.session.load_history()]
+        messages = utils.to_beeai_framework(messages=history + input)
 
         if exceeds_token_limit(messages):
             yield token_limit_message_part()
