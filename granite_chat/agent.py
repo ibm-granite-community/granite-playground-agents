@@ -1,3 +1,4 @@
+import re
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
@@ -104,10 +105,16 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
     model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
-    async for data, event in model.create(messages=messages, stream=True):
-        match (data, event.name):
-            case (ChatModelNewTokenEvent(), "new_token"):
-                yield MessagePart(content_type="text/plain", content=data.value.get_text_content(), role="assistant")  # type: ignore[call-arg]
+    if settings.STREAMING is True:
+        async for data, event in model.create(messages=messages, stream=True):
+            match (data, event.name):
+                case (ChatModelNewTokenEvent(), "new_token"):
+                    yield MessagePart(
+                        content_type="text/plain", content=data.value.get_text_content(), role="assistant"
+                    )  # type: ignore[call-arg]
+    else:
+        output = await model.create(messages=messages)
+        yield MessagePart(content_type="text/plain", content=output.get_text_content())
 
 
 @server.agent(
@@ -151,25 +158,48 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
     handler = ThinkingStreamHandler(tags=["think", "response"])
 
-    async for data, event in model.create(messages=messages, stream=True):
-        match (data, event.name):
-            case (ChatModelNewTokenEvent(), "new_token"):
-                token = data.value.get_text_content()
-                for output in handler.on_token(token=token):
-                    if isinstance(output, TokenEvent):
-                        content_type = "text/thinking" if output.tag == "think" else "text/plain"
-                        yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
-                    elif isinstance(output, TagStartEvent):
-                        if output.tag == "think":
-                            yield MessagePart(
-                                content_type="text/delimiter", content="**🤔 Thinking:**\n\n", role="assistant"
-                            )  # type: ignore[call-arg]
-                        elif output.tag == "response":
-                            yield MessagePart(
-                                content_type="text/delimiter",
-                                content="\n\n**😎 Response:**\n\n",
-                                role="assistant",
-                            )  # type: ignore[call-arg]
+    if settings.STREAMING is True:
+        async for data, event in model.create(messages=messages, stream=True):
+            match (data, event.name):
+                case (ChatModelNewTokenEvent(), "new_token"):
+                    token = data.value.get_text_content()
+                    for output in handler.on_token(token=token):
+                        if isinstance(output, TokenEvent):
+                            content_type = "text/thinking" if output.tag == "think" else "text/plain"
+                            yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
+                        elif isinstance(output, TagStartEvent):
+                            if output.tag == "think":
+                                yield MessagePart(
+                                    content_type="text/delimiter", content="**🤔 Thinking:**\n\n", role="assistant"
+                                )  # type: ignore[call-arg]
+                            elif output.tag == "response":
+                                yield MessagePart(
+                                    content_type="text/delimiter",
+                                    content="\n\n**😎 Response:**\n\n",
+                                    role="assistant",
+                                )  # type: ignore[call-arg]
+    else:
+        chat_output = await model.create(messages=messages)
+        text = chat_output.get_text_content()
+
+        think_match = re.search(r"<think>(.*?)</think>", text, re.DOTALL)
+        response_match = re.search(r"<response>(.*?)</response>", text, re.DOTALL)
+
+        think_content = think_match.group(1) if think_match else None
+        response_content = response_match.group(1) if response_match else None
+
+        if think_content is not None:
+            yield MessagePart(content_type="text/delimiter", content="**🤔 Thinking:**\n\n", role="assistant")  # type: ignore[call-arg]
+            yield MessagePart(content_type="text/thinking", content=think_content)
+
+        if response_content is not None:
+            yield MessagePart(
+                content_type="text/delimiter",
+                content="\n\n**😎 Response:**\n\n",
+                role="assistant",
+            )  # type: ignore[call-arg]
+
+            yield MessagePart(content_type="text/plain", content=response_content)
 
 
 @server.agent(
@@ -228,13 +258,17 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         response: str = ""
 
-        async for data, event in model.create(messages=messages, stream=True):
-            match (data, event.name):
-                case (ChatModelNewTokenEvent(), "new_token"):
-                    response += data.value.get_text_content()
-                    yield MessagePart(
-                        content_type="text/plain", content=data.value.get_text_content(), role="assistant"
-                    )  # type: ignore[call-arg]
+        if settings.STREAMING is True:
+            async for data, event in model.create(messages=messages, stream=True):
+                match (data, event.name):
+                    case (ChatModelNewTokenEvent(), "new_token"):
+                        response += data.value.get_text_content()
+                        yield MessagePart(
+                            content_type="text/plain", content=data.value.get_text_content(), role="assistant"
+                        )  # type: ignore[call-arg]
+        else:
+            output = await model.create(messages=messages)
+            yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
 
         # Yield sources/citation
         if len(docs) > 0:
