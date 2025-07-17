@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models import Message
+from acp_sdk.models.models import TrajectoryMetadata
 from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, PlatformUIType
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
@@ -393,7 +394,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
             if event.type == "token":
                 await context.yield_async(MessagePart(content=event.data))
             elif event.type == "log":
-                await context.yield_async({"message": f"{event.data}\n"})
+                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.data)))
 
         researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
         researcher.subscribe(handler=research_listener)
