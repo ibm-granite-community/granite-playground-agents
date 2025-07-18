@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncGenerator
-from typing import Literal
+from typing import Literal, Optional
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models import Message
@@ -12,6 +12,7 @@ from beeai_framework.backend import (
     ChatModelSuccessEvent,
 )
 from beeai_framework.backend import Message as FrameworkMessage
+from beeai_framework.backend.types import ChatModelUsage
 from langchain_core.documents import Document
 from pydantic import BaseModel
 
@@ -81,11 +82,22 @@ watsonx_env = [
 ]
 
 class UsageInfo(BaseModel):
-    completion_tokens: int
-    prompt_tokens: int
-    total_tokens: int
-    model: str
+    completion_tokens: Optional[int]
+    prompt_tokens: Optional[int]
+    total_tokens: Optional[int]
+    model_id: str
     type: Literal["usage_info"] = "usage_info"
+
+def create_usage_info(
+        usage: Optional[ChatModelUsage],
+        model_id: str,
+):
+    return UsageInfo(
+        completion_tokens=usage.completion_tokens if usage else None,
+        prompt_tokens=usage.prompt_tokens if usage else None,
+        total_tokens=usage.total_tokens if usage else None,
+        model_id=model_id,
+    )
 
 @server.agent(
     name="granite-chat",
@@ -123,23 +135,18 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                         content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                     )  # type: ignore[call-arg]
                 case (ChatModelSuccessEvent(), "success"):
-                    if data.value.usage is not None:
-                        yield UsageInfo(
-                            completion_tokens=data.value.usage.completion_tokens,
-                            prompt_tokens=data.value.usage.prompt_tokens,
-                            total_tokens=data.value.usage.total_tokens,
-                            model=model.model_id,
-                        )
+                    yield create_usage_info(
+                        data.value.usage,
+                        model.model_id
+                    )
     else:
         output = await model.create(messages=messages)
         yield MessagePart(content_type="text/plain", content=output.get_text_content())
 
-        if output.value.usage is not None:
-            yield UsageInfo(
-                completion_tokens=output.value.usage.completion_tokens,
-                prompt_tokens=output.value.usage.prompt_tokens,
-                total_tokens=output.value.usage.total_tokens
-            )
+        yield create_usage_info(
+            output.value.usage,
+            model.model_id
+        )
 
 
 @server.agent(
@@ -205,12 +212,10 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                                     role="assistant",
                                 )  # type: ignore[call-arg]
                 case (ChatModelSuccessEvent(), "success"):
-                    if data.value.usage is not None:
-                        yield UsageInfo(
-                            completion_tokens=data.value.usage.completion_tokens,
-                            prompt_tokens=data.value.usage.prompt_tokens,
-                            total_tokens=data.value.usage.total_tokens
-                        )
+                    yield create_usage_info(
+                        data.value.usage,
+                        model.model_id
+                    )
     else:
         chat_output = await model.create(messages=messages)
         text = chat_output.get_text_content()
@@ -234,12 +239,10 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
             yield MessagePart(content_type="text/plain", content=response_content)
 
-        if chat_output.value.usage is not None:
-            yield UsageInfo(
-                completion_tokens=chat_output.value.usage.completion_tokens,
-                prompt_tokens=chat_output.value.usage.prompt_tokens,
-                total_tokens=chat_output.value.usage.total_tokens
-            )
+        yield create_usage_info(
+            chat_output.value.usage,
+            model.model_id
+        )
 
 
 @server.agent(
@@ -309,21 +312,17 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         )  # type: ignore[call-arg]
 
                     case (ChatModelSuccessEvent(), "success"):
-                        if data.value.usage is not None:
-                            yield UsageInfo(
-                                completion_tokens=data.value.usage.completion_tokens,
-                                prompt_tokens=data.value.usage.prompt_tokens,
-                                total_tokens=data.value.usage.total_tokens
-                            )
+                        yield create_usage_info(
+                            data.value.usage,
+                            model.model_id
+                        )
         else:
             output = await model.create(messages=messages)
             yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
-            if output.value.usage is not None:
-                yield UsageInfo(
-                    completion_tokens=output.value.usage.completion_tokens,
-                    prompt_tokens=output.value.usage.prompt_tokens,
-                    total_tokens=output.value.usage.total_tokens
-                )
+            yield create_usage_info(
+                output.value.usage,
+                model.model_id
+            )
 
         # Yield sources/citation
         if len(docs) > 0:
