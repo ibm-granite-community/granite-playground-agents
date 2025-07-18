@@ -84,6 +84,7 @@ class UsageInfo(BaseModel):
     completion_tokens: int
     prompt_tokens: int
     total_tokens: int
+    model: str
     type: Literal["usage_info"] = "usage_info"
 
 @server.agent(
@@ -126,7 +127,8 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                         yield UsageInfo(
                             completion_tokens=data.value.usage.completion_tokens,
                             prompt_tokens=data.value.usage.prompt_tokens,
-                            total_tokens=data.value.usage.total_tokens
+                            total_tokens=data.value.usage.total_tokens,
+                            model=model.model_id,
                         )
     else:
         output = await model.create(messages=messages)
