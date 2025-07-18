@@ -235,8 +235,8 @@ wheels = [
 
 [[package]]
 name = "beeai-framework"
-version = "0.1.24"
-source = { git = "https://github.com/i-am-bee/beeai-framework.git?subdirectory=python#2d12782a9e89ff4e321b240168184766ea605a92" }
+version = "0.1.29"
+source = { git = "https://github.com/i-am-bee/beeai-framework.git?subdirectory=python#1c11030148de0c1228697e9999229422e0a610f1" }
 dependencies = [
     { name = "aiofiles" },
     { name = "cachetools" },
