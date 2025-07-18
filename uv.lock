@@ -789,7 +789,7 @@ requires-dist = [
     { name = "beeai-framework", git = "https://github.com/i-am-bee/beeai-framework.git?subdirectory=python" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "colorama", specifier = ">=0.4.6" },
-    { name = "granite-io", git = "https://github.com/ibm-granite/granite-io/" },
+    { name = "granite-io", specifier = ">=0.5.0" },
     { name = "langchain-community", specifier = ">=0.3.25" },
     { name = "langchain-ollama", specifier = ">=0.3.3" },
     { name = "langchain-openai", specifier = ">=0.3.24" },
@@ -810,14 +810,18 @@ dev = [
 
 [[package]]
 name = "granite-io"
-version = "0.4.1.dev18"
-source = { git = "https://github.com/ibm-granite/granite-io/#a6c898f4ced63a37a4921770c2f2e3a1c2d975c8" }
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "alchemy-config" },
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "rouge-score" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/31/d8/82f6a8f50619f06676cd8310d0173c5bfae49f1bd917cbae7259508ee230/granite_io-0.5.0.tar.gz", hash = "sha256:73aa9a93acb94403e880056b3fe02e76449f2baa9de9b8d5adc03ac0fe9e131f", size = 1317970, upload-time = "2025-07-15T17:50:20.729Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/db/71afed0caf6fc0c70bd89e7eba10fcd56b766e562f20434d3f39ca4096af/granite_io-0.5.0-py3-none-any.whl", hash = "sha256:fb1c28597ccac7a6b401713e624e25969ab6ab5fcfff5bde989cd3710928fe37", size = 146690, upload-time = "2025-07-15T17:50:18.772Z" },
 ]
 
 [[package]]

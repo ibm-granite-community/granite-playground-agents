@@ -14,6 +14,7 @@ class SearchResult(BaseModel):
 class Source(BaseModel):
     url: str
     title: str
+    snippet: str
 
     class Config:
         frozen = True  # makes it immutable and hashable

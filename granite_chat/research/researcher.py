@@ -10,15 +10,15 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
 from granite_chat import get_logger
-from granite_chat.config import settings
-from granite_chat.emitter import Event, EventEmitter
-from granite_chat.research.prompts import ResearchPrompts
-from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
-from granite_chat.search.citations import (
+from granite_chat.citations.citations import (
     CitationGenerator,
     DefaultCitationGenerator,
     GraniteIOCitationGenerator,
 )
+from granite_chat.config import settings
+from granite_chat.emitter import Event, EventEmitter
+from granite_chat.research.prompts import ResearchPrompts
+from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine

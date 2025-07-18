@@ -18,13 +18,13 @@ from langchain_core.documents import Document
 from pydantic import BaseModel
 
 from granite_chat import get_logger, utils
+from granite_chat.citations.citations import CitationGenerator
 from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
 from granite_chat.search.agent import SearchAgent
-from granite_chat.search.citations import CitationGenerator
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
@@ -307,7 +307,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield create_usage_info(data.value.usage, model.model_id)
         else:
             output = await model.create(messages=messages)
-            yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
+            response = output.get_text_content()
+            yield MessagePart(content_type="text/plain", content=response, role="assistant")  # type: ignore[call-arg]
             yield create_usage_info(output.usage, model.model_id)
 
         # Yield sources/citation

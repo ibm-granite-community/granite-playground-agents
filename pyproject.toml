@@ -7,7 +7,6 @@ requires-python = ">=3.11"
 dependencies = [
     "langchain-ollama>=0.3.3",
     "python-dotenv>=1.1.0",
-    "granite-io@git+https://github.com/ibm-granite/granite-io/",
     "transformers>=4.52.4",
     "beeai-framework@git+https://github.com/i-am-bee/beeai-framework.git#subdirectory=python",
     "acp-sdk>=1.0.0",
@@ -19,6 +18,7 @@ dependencies = [
     "arxiv>=2.2.0",
     "tavily-python>=0.7.7",
     "pymupdf>=1.26.1",
+    "granite-io>=0.5.0",
 ]
 
 [tool.ruff]
