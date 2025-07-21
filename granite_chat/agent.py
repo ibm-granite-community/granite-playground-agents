@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncGenerator
-from typing import Literal, Optional
+from typing import Literal
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models import Message
@@ -8,8 +8,8 @@ from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, Platfor
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
-    SystemMessage,
     ChatModelSuccessEvent,
+    SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
 from beeai_framework.backend.types import ChatModelUsage
@@ -81,23 +81,26 @@ watsonx_env = [
     {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
 ]
 
+
 class UsageInfo(BaseModel):
-    completion_tokens: Optional[int]
-    prompt_tokens: Optional[int]
-    total_tokens: Optional[int]
+    completion_tokens: int | None
+    prompt_tokens: int | None
+    total_tokens: int | None
     model_id: str
     type: Literal["usage_info"] = "usage_info"
 
+
 def create_usage_info(
-        usage: Optional[ChatModelUsage],
-        model_id: str,
-):
+    usage: ChatModelUsage | None,
+    model_id: str,
+) -> UsageInfo:
     return UsageInfo(
         completion_tokens=usage.completion_tokens if usage else None,
         prompt_tokens=usage.prompt_tokens if usage else None,
         total_tokens=usage.total_tokens if usage else None,
         model_id=model_id,
     )
+
 
 @server.agent(
     name="granite-chat",
@@ -135,18 +138,12 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                         content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                     )  # type: ignore[call-arg]
                 case (ChatModelSuccessEvent(), "success"):
-                    yield create_usage_info(
-                        data.value.usage,
-                        model.model_id
-                    )
+                    yield create_usage_info(data.value.usage, model.model_id)
     else:
         output = await model.create(messages=messages)
         yield MessagePart(content_type="text/plain", content=output.get_text_content())
 
-        yield create_usage_info(
-            output.usage,
-            model.model_id
-        )
+        yield create_usage_info(output.usage, model.model_id)
 
 
 @server.agent(
@@ -212,10 +209,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                                     role="assistant",
                                 )  # type: ignore[call-arg]
                 case (ChatModelSuccessEvent(), "success"):
-                    yield create_usage_info(
-                        data.value.usage,
-                        model.model_id
-                    )
+                    yield create_usage_info(data.value.usage, model.model_id)
     else:
         chat_output = await model.create(messages=messages)
         text = chat_output.get_text_content()
@@ -239,10 +233,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
             yield MessagePart(content_type="text/plain", content=response_content)
 
-        yield create_usage_info(
-            chat_output.usage,
-            model.model_id
-        )
+        yield create_usage_info(chat_output.usage, model.model_id)
 
 
 @server.agent(
@@ -312,17 +303,11 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         )  # type: ignore[call-arg]
 
                     case (ChatModelSuccessEvent(), "success"):
-                        yield create_usage_info(
-                            data.value.usage,
-                            model.model_id
-                        )
+                        yield create_usage_info(data.value.usage, model.model_id)
         else:
             output = await model.create(messages=messages)
             yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
-            yield create_usage_info(
-                output.usage,
-                model.model_id
-            )
+            yield create_usage_info(output.usage, model.model_id)
 
         # Yield sources/citation
         if len(docs) > 0:
