@@ -144,7 +144,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         yield MessagePart(content_type="text/plain", content=output.get_text_content())
 
         yield create_usage_info(
-            output.value.usage,
+            output.usage,
             model.model_id
         )
 
@@ -240,7 +240,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
             yield MessagePart(content_type="text/plain", content=response_content)
 
         yield create_usage_info(
-            chat_output.value.usage,
+            chat_output.usage,
             model.model_id
         )
 
@@ -320,7 +320,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             output = await model.create(messages=messages)
             yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
             yield create_usage_info(
-                output.value.usage,
+                output.usage,
                 model.model_id
             )
 
