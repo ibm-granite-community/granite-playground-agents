@@ -1,5 +1,6 @@
 import re
 from collections.abc import AsyncGenerator
+from typing import Literal
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models import Message
@@ -8,10 +9,13 @@ from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, Platfor
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
+    ChatModelSuccessEvent,
     SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
+from beeai_framework.backend.types import ChatModelUsage
 from langchain_core.documents import Document
+from pydantic import BaseModel
 
 from granite_chat import get_logger, utils
 from granite_chat.config import settings
@@ -79,6 +83,26 @@ watsonx_env = [
 ]
 
 
+class UsageInfo(BaseModel):
+    completion_tokens: int | None
+    prompt_tokens: int | None
+    total_tokens: int | None
+    model_id: str
+    type: Literal["usage_info"] = "usage_info"
+
+
+def create_usage_info(
+    usage: ChatModelUsage | None,
+    model_id: str,
+) -> UsageInfo:
+    return UsageInfo(
+        completion_tokens=usage.completion_tokens if usage else None,
+        prompt_tokens=usage.prompt_tokens if usage else None,
+        total_tokens=usage.total_tokens if usage else None,
+        model_id=model_id,
+    )
+
+
 @server.agent(
     name="granite-chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
@@ -114,9 +138,13 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                     yield MessagePart(
                         content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                     )  # type: ignore[call-arg]
+                case (ChatModelSuccessEvent(), "success"):
+                    yield create_usage_info(data.value.usage, model.model_id)
     else:
         output = await model.create(messages=messages)
         yield MessagePart(content_type="text/plain", content=output.get_text_content())
+
+        yield create_usage_info(output.usage, model.model_id)
 
 
 @server.agent(
@@ -181,6 +209,8 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                                     content="\n\n**😎 Response:**\n\n",
                                     role="assistant",
                                 )  # type: ignore[call-arg]
+                case (ChatModelSuccessEvent(), "success"):
+                    yield create_usage_info(data.value.usage, model.model_id)
     else:
         chat_output = await model.create(messages=messages)
         text = chat_output.get_text_content()
@@ -203,6 +233,8 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
             )  # type: ignore[call-arg]
 
             yield MessagePart(content_type="text/plain", content=response_content)
+
+        yield create_usage_info(chat_output.usage, model.model_id)
 
 
 @server.agent(
@@ -270,9 +302,13 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield MessagePart(
                             content_type="text/plain", content=data.value.get_text_content(), role="assistant"
                         )  # type: ignore[call-arg]
+
+                    case (ChatModelSuccessEvent(), "success"):
+                        yield create_usage_info(data.value.usage, model.model_id)
         else:
             output = await model.create(messages=messages)
             yield MessagePart(content_type="text/plain", content=output.get_text_content(), role="assistant")  # type: ignore[call-arg]
+            yield create_usage_info(output.usage, model.model_id)
 
         # Yield sources/citation
         if len(docs) > 0:
