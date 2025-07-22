@@ -15,3 +15,10 @@ class CitationSchema(BaseModel):
 
 class CitationsSchema(BaseModel):
     citations: list[CitationSchema] = Field(description="Citations")
+
+
+class Citation(BaseModel):
+    url: str | None = None
+    title: str | None = None
+    start_index: int | None = None
+    end_index: int | None = None

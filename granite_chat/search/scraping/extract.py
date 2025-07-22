@@ -14,7 +14,8 @@ from typing import cast
 from httpx import AsyncClient, Client
 
 from granite_chat import get_logger
-from granite_chat.emitter import Event, EventEmitter
+from granite_chat.emitter import EventEmitter
+from granite_chat.events import TrajectoryEvent
 from granite_chat.search.scraping import BeautifulSoupScraper
 from granite_chat.search.scraping.arxiv import ArxivScraper
 from granite_chat.search.scraping.pymupdf import PyMuPDFScraper
@@ -101,7 +102,7 @@ class ContentExtractor(EventEmitter):
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
 
-                await self._emit(Event(type="log", data=f"🕷️ Scraped source {link}"))
+                await self._emit(TrajectoryEvent(step=f"🕷️ Scraped source {link}"))
 
                 return ScrapedContent(
                     search_result=search_result,

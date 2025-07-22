@@ -10,13 +10,10 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
 from granite_chat import get_logger
-from granite_chat.citations.citations import (
-    CitationGenerator,
-    DefaultCitationGenerator,
-    GraniteIOCitationGenerator,
-)
+from granite_chat.citations.citations import CitationGenerator
 from granite_chat.config import settings
-from granite_chat.emitter import Event, EventEmitter
+from granite_chat.emitter import EventEmitter
+from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
 from granite_chat.search.embeddings import get_embeddings
@@ -72,16 +69,15 @@ class Researcher(EventEmitter):
 
         self.research_topic = await self._generate_research_topic()
 
-        await self._emit(Event(type="log", data=f"🚀 Starting research task for '{self.research_topic}'"))
-        await self._emit(Event(type="log", data="🤔 Planning research tasks"))
+        await self._emit(TrajectoryEvent(step=f"🚀 Starting research task for '{self.research_topic}'"))
+        await self._emit(TrajectoryEvent(step="🤔 Planning research tasks"))
 
         self.research_plan = await self._generate_research_plan()
 
         queries = [s.query for s in self.research_plan]
         await self._emit(
-            Event(
-                type="log",
-                data=f"I will research {queries}",
+            TrajectoryEvent(
+                step=f"I will research {queries}",
             )
         )
 
@@ -90,7 +86,7 @@ class Researcher(EventEmitter):
         await self._gather_sources()
 
         await asyncio.gather(
-            *[self._emit(Event(type="log", data=f"🔗 Added source {res.url}")) for res in self.search_results]
+            *[self._emit(TrajectoryEvent(step=f"🔗 Added source {res.url}")) for res in self.search_results]
         )
 
         await self._extract_sources()
@@ -144,7 +140,7 @@ class Researcher(EventEmitter):
         if len(self.interim_reports) == 0:
             raise ValueError("No interim reports available!")
 
-        await self._emit(Event(type="log", data="🧠 Generating final report..."))
+        await self._emit(TrajectoryEvent(step="🧠 Generating final report..."))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
@@ -156,12 +152,12 @@ class Researcher(EventEmitter):
                 match (data, event.name):
                     case (ChatModelNewTokenEvent(), "new_token"):
                         response += data.value.get_text_content()
-                        await self._emit(Event(type="token", data=data.value.get_text_content()))
+                        await self._emit(TextEvent(text=data.value.get_text_content()))
 
         else:
             output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
             response += output.get_text_content()
-            await self._emit(Event(type="token", data=response))
+            await self._emit(TextEvent(text=response))
 
         self.final_report = response
 
@@ -190,7 +186,7 @@ class Researcher(EventEmitter):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(Event(type="log", data=f"🧠 Researching '{query.query}'"))
+        await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
             query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
@@ -217,24 +213,10 @@ class Researcher(EventEmitter):
         if len(self.final_report_docs) > 0:
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
-            generator: CitationGenerator
+            generator = CitationGenerator.create()
 
-            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                    if settings.GRANITE_IO_OPENAI_API_HEADERS
-                    else None
-                )
-
-                generator = GraniteIOCitationGenerator(
-                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
-                    model_id=str(settings.GRANITE_IO_CITATIONS_MODEL_ID),
-                    extra_headers=extra_headers,
-                )
-            else:
-                generator = DefaultCitationGenerator()
-
-            async for message_part in generator.generate(
+            async for citation in generator.generate(
                 messages=input, docs=self.final_report_docs, response=self.final_report or ""
             ):
-                await self._emit(Event(type="token", data=message_part.content or ""))
+                # yield message_part
+                await self._emit(CitationEvent(citation=citation))

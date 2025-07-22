@@ -3,8 +3,7 @@ from collections.abc import AsyncGenerator
 from typing import Literal
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
-from acp_sdk.models import Message
-from acp_sdk.models.models import TrajectoryMetadata
+from acp_sdk.models.models import CitationMetadata, Message, TrajectoryMetadata
 from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, PlatformUIType
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
@@ -21,6 +20,7 @@ from granite_chat import get_logger, utils
 from granite_chat.citations.citations import CitationGenerator
 from granite_chat.config import settings
 from granite_chat.emitter import Event
+from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.model import ChatModelFactory
 from granite_chat.research.researcher import Researcher
@@ -315,8 +315,15 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         if len(docs) > 0:
             generator = CitationGenerator.create()
 
-            async for message_part in generator.generate(messages=input, docs=docs, response=response):
-                yield message_part
+            async for citation in generator.generate(messages=input, docs=docs, response=response):
+                yield MessagePart(
+                    metadata=CitationMetadata(
+                        url=citation.url,
+                        title=citation.title,
+                        start_index=citation.start_index,
+                        end_index=citation.end_index,
+                    ),
+                )
 
     except Exception as e:
         logger.exception(repr(e))
@@ -369,10 +376,21 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
         async def research_listener(event: Event) -> None:
-            if event.type == "token":
-                await context.yield_async(MessagePart(content=event.data))
-            elif event.type == "log":
-                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.data)))
+            if isinstance(event, TextEvent):
+                await context.yield_async(MessagePart(content=event.text))
+            elif isinstance(event, TrajectoryEvent):
+                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
+            elif isinstance(event, CitationEvent):
+                await context.yield_async(
+                    MessagePart(
+                        metadata=CitationMetadata(
+                            url=event.citation.url,
+                            title=event.citation.title,
+                            start_index=event.citation.start_index,
+                            end_index=event.citation.end_index,
+                        ),
+                    )
+                )
 
         researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
         researcher.subscribe(handler=research_listener)
@@ -428,10 +446,21 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         model = ChatModelFactory.create(provider=LLM_PROVIDER)
 
         async def research_listener(event: Event) -> None:
-            if event.type == "token":
-                await context.yield_async(MessagePart(content=event.data))
-            elif event.type == "log":
-                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.data)))
+            if isinstance(event, TextEvent):
+                await context.yield_async(MessagePart(content=event.text))
+            elif isinstance(event, TrajectoryEvent):
+                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
+            elif isinstance(event, CitationEvent):
+                await context.yield_async(
+                    MessagePart(
+                        metadata=CitationMetadata(
+                            url=event.citation.url,
+                            title=event.citation.title,
+                            start_index=event.citation.start_index,
+                            end_index=event.citation.end_index,
+                        ),
+                    )
+                )
 
         researcher = Researcher(chat_model=model, messages=messages, worker_pool=worker_pool)
         researcher.subscribe(handler=research_listener)

@@ -80,5 +80,6 @@ class ConfigurableVectorStoreWrapper:
 
     async def asimilarity_search(self, query: str, k: int, filter: dict[str, Any] | None = None) -> list[Document]:
         """Return query by vector store"""
-        results = await self.vector_store.asimilarity_search(query=query, k=k, filter=filter)
+        results = await self.vector_store.amax_marginal_relevance_search(query=query, k=k, filter=filter)
+        # results = await self.vector_store.asimilarity_search(query=query, k=k, filter=filter)
         return results

@@ -28,7 +28,7 @@ class SearchPrompts:
 You are a helpful assistant tasked with generating a comprehensive, informative, and accurate response.
 You have a set of documents that may contain relevant information. You can use these documents to help formulate your response.
 
-Your response should bee clear and comprehensive and stay aligned with the content and facts of the documents when possible.
+Your response should be clear and comprehensive and stay aligned with the content and facts of the documents when possible.
 If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 
 <documents>
@@ -38,6 +38,7 @@ If the information needed is not available, inform the user that the question ca
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 You have access to realtime data, you do not have a knowledge cutoff.
+
 """  # noqa: E501
 
     @staticmethod
