@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator
 
-from acp_sdk import MessagePart
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
     UserMessage,
@@ -15,7 +14,7 @@ class CitationRegenerator:
     def __init__(self, chat_model: ChatModel) -> None:
         self.chat_model = chat_model
 
-    async def regenerate(self, response: str, documents: list[Document]) -> AsyncIterator[MessagePart]:
+    async def regenerate(self, response: str, documents: list[Document]) -> AsyncIterator[str]:
         """
         Regenerate a response with inline citations.
 
@@ -29,8 +28,7 @@ class CitationRegenerator:
         async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
             match (data, event.name):
                 case (ChatModelNewTokenEvent(), "new_token"):
-                    token = data.value.get_text_content()
-                    yield MessagePart(content=token)
+                    yield data.value.get_text_content()
 
     def _build_prompt(self, response: str, documents: list[Document]) -> str:
         return CitationsPrompts.generate_response_with_citations_prompt(response=response, docs=documents)

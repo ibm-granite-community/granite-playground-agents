@@ -19,6 +19,7 @@ dependencies = [
     "tavily-python>=0.7.7",
     "pymupdf>=1.26.1",
     "granite-io>=0.5.0",
+    "markdown-it-py>=3.0.0",
 ]
 
 [tool.ruff]

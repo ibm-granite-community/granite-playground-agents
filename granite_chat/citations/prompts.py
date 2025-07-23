@@ -16,15 +16,19 @@ class CitationsPrompts:
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are given:
-1. A set of reference documents (with text and document IDs).
+1. A set of reference documents (with doc_id and text content).
 2. A set of sentences that may contain ideas or information supported by the reference documents.
 
-Your task is to extract citations. For each sentence, identify which document(s) the information is derived from or supported by. Include the document id and the verbatim supporting text from the document.
+Your task is to produce citations. A citation is a reference to a source of information. It tells the reader where specific ideas, facts, or quotations in a piece of writing came from.
 
-1. For each sentence, return a list of document that explicitly support or justify the information in that sentence.
-2. Only cite a document if the sentence is semantically equivalent to, or clearly restates, quotes, or closely paraphrases a specific passage from it.
-3. Do not infer or guess. If no supporting document is found skip the sentence.
-4. Avoid citing documents that are only vaguely or topically related.
+Include a citation if the sentence:
+- Contains a standalone claim, fact, or idea
+
+Do not include a citation if the sentence:
+- States common knowledge (widely known, undisputed facts)
+- Expresses your own analysis, reasoning, or opinion
+- Provides general background that's easily verifiable and widely accepted
+- Sets up procedural or instructional content
 
 Documents:
 {doc_str}
@@ -47,19 +51,22 @@ Output format:
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are given:
-- A set of documents, each with a unique `doc_id` and associated text.
+- A set of documents, each with a unique `doc_id` and content text.
 - A response that answers a question.
 
-Your task is to regenerate the response, inserting inline citations to the documents using the format [doc_id]. Each claim, sentence or paragraph in the response that is supported by information in one or more documents should be followed by the corresponding [doc_id] citation(s).
+Your task is to add citations to the response
+- Insert inline citations to the documents using the format [doc_id].
+- Each substantial claim in the response that is supported by information in one or more documents should be followed by a corresponding [doc_id] citation(s).
 
 Example:
-This is a statement that is supported by content from doc with doc_id 1 [1].
+The color of the sky changes because of Rayleigh scattering [1].
 
 Requirements:
-- Only include a citation if the information is clearly supported by a document.
+- Only include a citation if the information is clearly supported by the document.
 - You may cite multiple documents for a single claim if needed (e.g., [1, 2]).
 
-Do not alter the original response beyond the insertion of citations. Do not include any reference list or notes after the response.
+Do not alter the original response in any way beyond the insertion of citation annotations.
+Do not include any reference list or notes after the response.
 
 Documents:
 {doc_str}
@@ -67,5 +74,5 @@ Documents:
 Response:
 {response}
 
-Regenerate the response, inserting inline citations.
+Annotate the response, inserting inline citations.
 """  # noqa: E501

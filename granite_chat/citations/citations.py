@@ -15,6 +15,7 @@ from granite_chat import get_logger
 from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
+from granite_chat.markdown import get_markdown_tokens
 from granite_chat.model import ChatModelFactory
 from granite_chat.search.types import Source
 from granite_chat.utils import to_granite_io
@@ -109,12 +110,24 @@ class GraniteIOCitationGenerator(CitationGenerator):
             for gio_citation in result.citations:
                 if gio_citation.doc_id in doc_index:
                     doc = doc_index[gio_citation.doc_id]
-                    yield Citation(
-                        url=doc.metadata["url"],
-                        title=doc.metadata["title"],
-                        start_index=gio_citation.response_begin,
-                        end_index=gio_citation.response_end,
-                    )
+                    # Any citation that contains markdown needs to be adjusted
+                    tokens = get_markdown_tokens(gio_citation.response_text)
+                    last_tok_type = None
+                    for tok in tokens:
+                        if (
+                            tok.type == "inline"
+                            and last_tok_type
+                            and last_tok_type == "paragraph_open"
+                            and tok.content[-1] == "."  # Sentences only!
+                        ):
+                            yield Citation(
+                                url=doc.metadata["url"],
+                                title=doc.metadata["title"],
+                                context_text=tok.content,
+                                start_index=gio_citation.response_begin + tok.start_index,
+                                end_index=gio_citation.response_begin + tok.end_index,
+                            )
+                        last_tok_type = tok.type
 
         except Exception as e:  # Malformed citations throws error
             logger.exception(repr(e))
@@ -135,6 +148,7 @@ class GraniteCitationGenerator(CitationGenerator):
             source_index = {d.metadata["source"]: d.metadata["title"] for d in docs}
 
             sentences = sent_tokenize(response)
+
             offsets = []
             start = 0
             for i, sentence in enumerate(sentences):
@@ -165,6 +179,5 @@ class GraniteCitationGenerator(CitationGenerator):
                                 start_index=sent_index[cite.sentence_id].offset,
                                 end_index=sent_index[cite.sentence_id].offset + sent_index[cite.sentence_id].length,
                             )
-
         except Exception as e:  # Malformed citations throws error
             logger.exception(repr(e))

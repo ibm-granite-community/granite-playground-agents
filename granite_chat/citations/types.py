@@ -20,5 +20,6 @@ class CitationsSchema(BaseModel):
 class Citation(BaseModel):
     url: str | None = None
     title: str | None = None
+    context_text: str | None = None
     start_index: int | None = None
     end_index: int | None = None

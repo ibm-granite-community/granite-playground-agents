@@ -320,6 +320,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                     metadata=CitationMetadata(
                         url=citation.url,
                         title=citation.title,
+                        description=citation.context_text,
                         start_index=citation.start_index,
                         end_index=citation.end_index,
                     ),
@@ -386,6 +387,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
                         metadata=CitationMetadata(
                             url=event.citation.url,
                             title=event.citation.title,
+                            description=event.citation.context_text,
                             start_index=event.citation.start_index,
                             end_index=event.citation.end_index,
                         ),
@@ -456,6 +458,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
                         metadata=CitationMetadata(
                             url=event.citation.url,
                             title=event.citation.title,
+                            description=event.citation.context_text,
                             start_index=event.citation.start_index,
                             end_index=event.citation.end_index,
                         ),
