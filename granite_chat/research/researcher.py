@@ -211,12 +211,22 @@ class Researcher(EventEmitter):
 
     async def _generate_citations(self) -> None:
         if len(self.final_report_docs) > 0:
+            # Compress docs
+            docs = self._dedup_documents_by_content(self.final_report_docs)
+
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
             generator = CitationGenerator.create()
 
-            async for citation in generator.generate(
-                messages=input, docs=self.final_report_docs, response=self.final_report or ""
-            ):
+            async for citation in generator.generate(messages=input, docs=docs, response=self.final_report or ""):
                 # yield message_part
                 await self._emit(CitationEvent(citation=citation))
+
+    def _dedup_documents_by_content(self, documents: list[Document]) -> list[Document]:
+        seen = set()
+        deduped = []
+        for doc in documents:
+            if doc.page_content not in seen:
+                seen.add(doc.page_content)
+                deduped.append(doc)
+        return deduped

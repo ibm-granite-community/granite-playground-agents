@@ -8,6 +8,8 @@ import threading
 from typing import Any
 
 from langchain.docstore.document import Document
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import EmbeddingsFilter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import VectorStore
 from transformers import AutoTokenizer
@@ -80,6 +82,15 @@ class ConfigurableVectorStoreWrapper:
 
     async def asimilarity_search(self, query: str, k: int, filter: dict[str, Any] | None = None) -> list[Document]:
         """Return query by vector store"""
-        results = await self.vector_store.amax_marginal_relevance_search(query=query, k=k)
-        # results = await self.vector_store.asimilarity_search(query=query, k=k, filter=filter)
-        return results
+
+        if self.vector_store and self.vector_store.embeddings:
+            retriever = self.vector_store.as_retriever(search_kwargs={"k": k})
+
+            embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.5)
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=embeddings_filter, base_retriever=retriever
+            )
+            results = await compression_retriever.ainvoke(input=query)
+            return results
+        else:
+            raise ValueError("Embeddings must not be None")
