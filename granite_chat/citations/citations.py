@@ -17,7 +17,6 @@ from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
 from granite_chat.markdown import get_markdown_tokens
 from granite_chat.model import ChatModelFactory
-from granite_chat.search.types import Source
 from granite_chat.utils import to_granite_io
 
 logger = get_logger(__name__)
@@ -41,7 +40,7 @@ class CitationGenerator(ABC):
                 extra_headers=extra_headers,
             )
         else:
-            return GraniteCitationGenerator()
+            return DefaultCitationGenerator()
             # return DefaultCitationGenerator()
 
     @abstractmethod
@@ -50,19 +49,19 @@ class CitationGenerator(ABC):
         pass
 
 
-class DefaultCitationGenerator(CitationGenerator):
-    """Simple sources listed in markdown."""
+# class DefaultCitationGenerator(CitationGenerator):
+#     """Simple sources listed in markdown."""
 
-    async def generate(
-        self, messages: list[Message], docs: list[Document], response: str
-    ) -> AsyncGenerator[Citation, None]:
-        sources = {
-            Source(url=doc.metadata["url"], title=doc.metadata["title"], snippet=doc.metadata["snippet"])
-            for doc in docs
-        }
+#     async def generate(
+#         self, messages: list[Message], docs: list[Document], response: str
+#     ) -> AsyncGenerator[Citation, None]:
+#         sources = {
+#             Source(url=doc.metadata["url"], title=doc.metadata["title"], snippet=doc.metadata["snippet"])
+#             for doc in docs
+#         }
 
-        for source in sources:
-            yield Citation(url=source.url, title=source.title, start_index=len(response), end_index=len(response))
+#         for source in sources:
+#             yield Citation(url=source.url, title=source.title, start_index=len(response), end_index=len(response))
 
 
 class GraniteIOCitationGenerator(CitationGenerator):
@@ -133,7 +132,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
             logger.exception(repr(e))
 
 
-class GraniteCitationGenerator(CitationGenerator):
+class DefaultCitationGenerator(CitationGenerator):
     """Simple sources listed in markdown."""
 
     def __init__(self) -> None:
