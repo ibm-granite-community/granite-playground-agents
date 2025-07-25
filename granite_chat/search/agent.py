@@ -60,7 +60,7 @@ class SearchAgent(SearchResultsMixin):
         logger.info(f'Searching with queries => "{search_queries}"')
 
         # Perform search
-        await self._perform_web_search(search_queries)
+        await self._perform_web_search(search_queries, max_results=5)
         # Scraping
         scraped_content = await self._browse_urls(self.search_results)
 
@@ -69,7 +69,9 @@ class SearchAgent(SearchResultsMixin):
 
         logger.info(f'Searching for context => "{standalone_msg}"')
 
-        docs: list[Document] = await self.vector_store.asimilarity_search(query=standalone_msg, k=10)
+        docs: list[Document] = await self.vector_store.asimilarity_search(
+            query=standalone_msg, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+        )
 
         return docs
 
