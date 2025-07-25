@@ -102,7 +102,7 @@ class ContentExtractor(EventEmitter):
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
 
-                await self._emit(TrajectoryEvent(step=f"🕷️ Scraped source {link}"))
+                await self._emit(TrajectoryEvent(step=f"👀 Reading {link}"))
 
                 return ScrapedContent(
                     search_result=search_result,

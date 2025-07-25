@@ -24,6 +24,10 @@ class SearchQueriesSchema(BaseModel):
     search_queries: list[str] = Field(description="The list of search queries.")
 
 
+class SearchResultRelevanceSchema(BaseModel):
+    is_relevant: bool = Field(description="Flag indicating if the search result is likely to be relevant.")
+
+
 class ImageUrl(BaseModel):
     score: float
     url: str

@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 
 from beeai_framework.backend import Message, UserMessage
 from beeai_framework.backend.chat import ChatModel
@@ -11,6 +12,8 @@ from granite_chat.config import settings
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
+from granite_chat.search.filter import SearchResultsFilter
+from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult
@@ -20,8 +23,9 @@ from granite_chat.workers import WorkerPool
 logger = get_logger(__name__)
 
 
-class SearchAgent:
-    def __init__(self, chat_model: ChatModel, worker_pool: WorkerPool) -> None:
+class SearchAgent(SearchResultsMixin):
+    def __init__(self, chat_model: ChatModel, worker_pool: WorkerPool, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.worker_pool = worker_pool
 
@@ -45,6 +49,7 @@ class SearchAgent:
             )
 
         self.search_engine = get_search_engine(settings.RETRIEVER)
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries
@@ -55,9 +60,9 @@ class SearchAgent:
         logger.info(f'Searching with queries => "{search_queries}"')
 
         # Perform search
-        search_results = await self._perform_web_search(search_queries)
+        await self._perform_web_search(search_queries)
         # Scraping
-        scraped_content = await self._browse_urls(search_results)
+        scraped_content = await self._browse_urls(self.search_results)
 
         # Load scraped context into vector store
         await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
@@ -89,17 +94,17 @@ class SearchAgent:
         response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
         return response.get_text_content()
 
-    async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> list[SearchResult]:
-        results = await asyncio.gather(*(self._search_query(q, max_results) for q in queries))
-        flat = [item for sublist in results if sublist is not None for item in sublist]
-        return flat
+    async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> None:
+        await asyncio.gather(*(self._search_query(q, max_results) for q in queries))
 
-    async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult] | None:
+    async def _search_query(self, query: str, max_results: int = 3) -> None:
         async with self.worker_pool.throttle():
             try:
                 engine = get_search_engine(settings.RETRIEVER)
                 results = await engine.search(query=query, max_results=max_results)
-                return [SearchResult(**r) for r in results]
+                results = await self.search_results_filter.filter(query=query, results=results)
+                for r in results:
+                    self.add_search_result(r)
             except Exception as e:
                 logger.exception(repr(e))
         return None

@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -17,8 +17,9 @@ EventHandler = Callable[[T], Awaitable[None]]
 
 
 class EventEmitter:
-    def __init__(self) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._handlers: list[EventHandler] = []
+        super().__init__(*args, **kwargs)
 
     def subscribe(self, handler: EventHandler) -> None:
         """Register a handler to receive log events"""

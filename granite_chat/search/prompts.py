@@ -120,6 +120,7 @@ Generate a standalone query that clearly and concisely reflects the user's inten
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
 Given a user query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the user's query.
+Consider topical relevance, specificity, and usefulness.
 
 Here is the user's query: {query}
 
@@ -128,9 +129,7 @@ Here is the search result:
 - Title: {search_result.title}
 - A snippet from the page: {search_result.body}
 
-Respond with one of the following labels only:
-- RELEVANT: if the page likely contains meaningful information answering or directly related to the query.
-- IRRELEVANT: if the page is unlikely to contain information useful for the query.
+Return True if the result is likely relevant to the query; otherwise, return False.
 """  # noqa: E501
 
     @staticmethod

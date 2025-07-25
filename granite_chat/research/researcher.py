@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any
 
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
@@ -19,22 +20,26 @@ from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, Resea
 from granite_chat.search.embeddings import get_embeddings
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines import get_search_engine
+from granite_chat.search.filter import SearchResultsFilter
+from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 from granite_chat.workers import WorkerPool
 
 
-class Researcher(EventEmitter):
-    def __init__(self, chat_model: ChatModel, messages: list[Message], worker_pool: WorkerPool) -> None:
-        super().__init__()
+class Researcher(EventEmitter, SearchResultsMixin):
+    def __init__(
+        self, chat_model: ChatModel, messages: list[Message], worker_pool: WorkerPool, *args: Any, **kwargs: Any
+    ) -> None:
+        super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.messages = messages
         self.worker_pool = worker_pool
         self.logger = get_logger(__name__)
 
         self.research_topic: str | None = None
-        self.search_results: list[SearchResult] = []
+
         self.research_plan: list[ResearchQuery] = []
         self.interim_reports: list[ResearchReport] = []
         self.final_report_docs: list[Document] = []
@@ -63,6 +68,8 @@ class Researcher(EventEmitter):
                 vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
             )
 
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
+
     async def run(self) -> None:
         """Perform research investigation"""
         self.logger.info("Running Researcher")
@@ -85,9 +92,9 @@ class Researcher(EventEmitter):
 
         await self._gather_sources()
 
-        await asyncio.gather(
-            *[self._emit(TrajectoryEvent(step=f"🔗 Added source {res.url}")) for res in self.search_results]
-        )
+        # await asyncio.gather(
+        #     *[self._emit(TrajectoryEvent(step=f"🔗 Added source {res.url}")) for res in self.search_results]
+        # )
 
         await self._extract_sources()
         await self._perform_research()
@@ -118,7 +125,11 @@ class Researcher(EventEmitter):
         search_results = await self._search_query(
             query.query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
         )
-        self.search_results.extend(search_results)
+
+        search_results = await self.search_results_filter.filter(query.query, search_results)
+
+        for s in search_results:
+            self.add_search_result(s)
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
@@ -126,6 +137,8 @@ class Researcher(EventEmitter):
         scraped_content, _ = await scrape_urls(
             search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool, emitter=self
         )
+
+        await self._emit(TrajectoryEvent(step="🧑‍💻 Extracting knowledge..."))
 
         if scraped_content and len(scraped_content) > 0:
             await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
@@ -203,8 +216,7 @@ class Researcher(EventEmitter):
         async with self.worker_pool.throttle():
             try:
                 engine = get_search_engine(settings.RETRIEVER)
-                results = await engine.search(query=query, max_results=max_results)
-                return [SearchResult(**r) for r in results]
+                return await engine.search(query=query, max_results=max_results)
             except Exception as e:
                 self.logger.exception(repr(e))
         return []

@@ -12,18 +12,17 @@ class ResearchPrompts:
 
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
-        return f"""You are a research planner.
-Given a user-defined topic, generate a list of specific search queries that serve as the foundation for investigating the topic.
+        return f"""You are a research planner. The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+
+Given a user-defined topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
 
 The queries should be:
 - Clear and concise.
 - Cover the key aspects required to fully address the topic.
-- Be diverse (to prevent overlapping), non-redundant, and logically distributed (e.g. from foundational to advanced, temporally etc.) depending on context.
+- Be diverse (to prevent overlapping research) and logically distributed (e.g. from foundational to advanced, temporally etc.) depending on context.
 
 Here is the topic: {topic}
-
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")}, use this data if you need to incorporate the current time.
-Generate a maximum of {max_queries} search queries that will serve as a basis to explore the given topic.
+Generate {max_queries} search queries to guide and support in-depth research on the topic.
 """  # noqa: E501
 
     @staticmethod
@@ -58,7 +57,8 @@ Focus on addressing the query in a comprehensive and detailed manner.
     def final_report_prompt(topic: str, reports: list[ResearchReport]) -> str:
         reports_str = json.dumps([r.model_dump() for r in reports], indent=4)
 
-        return f"""
+        return f"""The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+
 You are given a topic along with a set detailed findings each covering a different angle of the subject.
 Your task is to review and synthesize this information into a clear and cohesive output.
 Ensure the content is cohesive, redundant points are merged, gaps are filled, and the overall narrative flows logically.
@@ -69,6 +69,7 @@ Output Format: A structured response including:
 - Conclusion that summarizes the key insights
 
 Ensure that each section adds new insight or perspective rather than reiterating previous content.
+- Use paragraphs rather than numbered lists.
 
 Topic: {topic}
 
@@ -77,5 +78,4 @@ Topic: {topic}
 </findings>
 
 The title of the response should be {topic}, or an appropriate variation thereof that maintains the general idea.
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 """
