@@ -58,7 +58,7 @@ You have access to realtime data, you do not have a knowledge cutoff.
 Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
-The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings.
+The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings. Include all important keywords.
 
 Tips:
 - Do not assume or introduce information that is not directly mentioned in the conversation.
@@ -78,7 +78,7 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate exactly {max_queries} search queries that reflect the intent of the user's last message.
+Generate {max_queries} search queries that reflect the intent of the user's last message.
 """  # noqa: E501
 
     @staticmethod
@@ -119,7 +119,12 @@ Generate a standalone query that clearly and concisely reflects the user's inten
     @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
-Given a query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the query.
+You are given a query and a search result (which includes a title, snippet, and URL). Your task is to determine whether the web page linked in the search result is likely to contain useful information that directly addresses the query.
+
+Consider the following when making your decision:
+- Does the page appear to cover the main topic or intent of the query?
+- Is the information likely to be specific, accurate, and up-to-date?
+- Avoid false positives: the result should be more than vaguely related.
 
 Here is the query: {query}
 
