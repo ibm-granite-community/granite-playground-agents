@@ -2,36 +2,32 @@ import asyncio
 from typing import Any
 
 from beeai_framework.backend import Message, UserMessage
-from beeai_framework.backend.chat import ChatModel
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from granite_chat import get_logger
+from granite_chat.chat import ChatModelService
 from granite_chat.config import settings
-from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.embeddings.embeddings import EmbeddingsFactory
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
-from granite_chat.search.engines import get_search_engine
+from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
 from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
-from granite_chat.workers import WorkerPool
 
 logger = get_logger(__name__)
 
 
 class SearchAgent(SearchResultsMixin):
-    def __init__(self, chat_model: ChatModel, worker_pool: WorkerPool, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, chat_model: ChatModelService, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
-        self.worker_pool = worker_pool
 
-        embeddings: Embeddings = get_embeddings(
-            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL, worker_pool=self.worker_pool
-        )
+        embeddings: Embeddings = EmbeddingsFactory.create()
 
         vector_store = InMemoryVectorStore(embedding=embeddings)
 
@@ -50,8 +46,7 @@ class SearchAgent(SearchResultsMixin):
                 chunk_overlap=settings.CHUNK_OVERLAP,
             )
 
-        self.search_engine = get_search_engine(settings.RETRIEVER)
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model, worker_pool=self.worker_pool)
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries
@@ -78,39 +73,34 @@ class SearchAgent(SearchResultsMixin):
         return docs
 
     async def _browse_urls(self, search_results: list[SearchResult]) -> list[ScrapedContent]:
-        scraped_content, _ = await scrape_urls(
-            search_results=search_results, scraper="bs", worker_pool=self.worker_pool
-        )
+        scraped_content, _ = await scrape_urls(search_results=search_results, scraper="bs")
         return scraped_content
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
-        async with self.worker_pool.throttle():
-            search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
-            response = await self.chat_model.create_structure(
-                schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
-            )
-            if "search_queries" in response.object:
-                return response.object["search_queries"]
-            else:
-                raise ValueError("Failed to generate valid search queries!")
+        search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
+        response = await self.chat_model.create_structure(
+            schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+        )
+        if "search_queries" in response.object:
+            return response.object["search_queries"]
+        else:
+            raise ValueError("Failed to generate valid search queries!")
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
-        async with self.worker_pool.throttle():
-            standalone_prompt = SearchPrompts.generate_standalone_query(messages)
-            response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
-            return response.get_text_content()
+        standalone_prompt = SearchPrompts.generate_standalone_query(messages)
+        response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
+        return response.get_text_content()
 
     async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> None:
         await asyncio.gather(*(self._search_query(q, max_results) for q in queries))
 
     async def _search_query(self, query: str, max_results: int = 3) -> None:
-        async with self.worker_pool.throttle():
-            try:
-                engine = get_search_engine(settings.RETRIEVER)
-                results = await engine.search(query=query, max_results=max_results)
-                results = await self.search_results_filter.filter(query=query, results=results)
-                for r in results:
-                    self.add_search_result(r)
-            except Exception as e:
-                logger.exception(repr(e))
+        try:
+            engine = SearchEngineFactory.create()
+            results = await engine.search(query=query, max_results=max_results)
+            results = await self.search_results_filter.filter(query=query, results=results)
+            for r in results:
+                self.add_search_result(r)
+        except Exception as e:
+            logger.exception(repr(e))
         return None

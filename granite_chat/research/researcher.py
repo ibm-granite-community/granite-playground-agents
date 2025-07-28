@@ -4,38 +4,34 @@ from typing import Any
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
-from beeai_framework.backend.chat import ChatModel
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
 from granite_chat import get_logger
+from granite_chat.chat import ChatModelService
 from granite_chat.citations.citations import CitationGenerator
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
-from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.embeddings.embeddings import EmbeddingsFactory
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
-from granite_chat.search.engines import get_search_engine
+from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
 from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
-from granite_chat.workers import WorkerPool
 
 
 class Researcher(EventEmitter, SearchResultsMixin):
-    def __init__(
-        self, chat_model: ChatModel, messages: list[Message], worker_pool: WorkerPool, *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, chat_model: ChatModelService, messages: list[Message], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.messages = messages
-        self.worker_pool = worker_pool
         self.logger = get_logger(__name__)
 
         self.research_topic: str | None = None
@@ -47,10 +43,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         self.logger.debug("Initializing Researcher")
 
-        embeddings: Embeddings = get_embeddings(
-            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL, worker_pool=self.worker_pool
-        )
-
+        embeddings: Embeddings = EmbeddingsFactory.create()
         vector_store = InMemoryVectorStore(embedding=embeddings)
         tokenizer = EmbeddingsTokenizer.get_instance().get_tokenizer()
 
@@ -70,7 +63,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
                 chunk_overlap=settings.CHUNK_OVERLAP,
             )
 
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model, worker_pool=worker_pool)
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -136,9 +129,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
 
-        scraped_content, _ = await scrape_urls(
-            search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool, emitter=self
-        )
+        scraped_content, _ = await scrape_urls(search_results=self.search_results, scraper="bs", emitter=self)
 
         await self._emit(TrajectoryEvent(step="🧑‍💻 Extracting knowledge..."))
 
@@ -161,19 +152,18 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         response: str = ""
 
-        async with self.worker_pool.throttle():
-            if settings.STREAMING is True:
-                # Final report is streamed
-                async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
-                    match (data, event.name):
-                        case (ChatModelNewTokenEvent(), "new_token"):
-                            response += data.value.get_text_content()
-                            await self._emit(TextEvent(text=data.value.get_text_content()))
+        if settings.STREAMING is True:
+            # Final report is streamed
+            async for data in self.chat_model.create_stream(messages=[UserMessage(content=prompt)]):
+                match data:
+                    case ChatModelNewTokenEvent():
+                        response += data.value.get_text_content()
+                        await self._emit(TextEvent(text=data.value.get_text_content()))
 
-            else:
-                output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
-                response += output.get_text_content()
-                await self._emit(TextEvent(text=response))
+        else:
+            output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+            response += output.get_text_content()
+            await self._emit(TextEvent(text=response))
 
         self.final_report = response
 
@@ -181,19 +171,18 @@ class Researcher(EventEmitter, SearchResultsMixin):
         if self.research_topic is None:
             raise ValueError("Research topic has not been set!")
 
-        async with self.worker_pool.throttle():
-            prompt = ResearchPrompts.research_plan_prompt(
-                topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
-            )
-            response = await self.chat_model.create_structure(
-                schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
-            )
+        prompt = ResearchPrompts.research_plan_prompt(
+            topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
+        )
+        response = await self.chat_model.create_structure(
+            schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
+        )
 
-            try:
-                plan = ResearchPlanSchema(**response.object)
-                return plan.queries
-            except ValidationError as e:
-                raise ValueError("Failed to generate a valid research plan!") from e
+        try:
+            plan = ResearchPlanSchema(**response.object)
+            return plan.queries
+        except ValidationError as e:
+            raise ValueError("Failed to generate a valid research plan!") from e
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
@@ -203,27 +192,25 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        async with self.worker_pool.throttle():
-            await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
+        await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
 
-            docs: list[Document] = await self.vector_store.asimilarity_search(
-                query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
-            )
+        docs: list[Document] = await self.vector_store.asimilarity_search(
+            query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+        )
 
-            self.final_report_docs += docs
+        self.final_report_docs += docs
 
-            research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
-            response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
-            report = response.get_text_content()
-            return ResearchReport(query=query, report=report)
+        research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
+        response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
+        report = response.get_text_content()
+        return ResearchReport(query=query, report=report)
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
-        async with self.worker_pool.throttle():
-            try:
-                engine = get_search_engine(settings.RETRIEVER)
-                return await engine.search(query=query, max_results=max_results)
-            except Exception as e:
-                self.logger.exception(repr(e))
+        try:
+            engine = SearchEngineFactory.create()
+            return await engine.search(query=query, max_results=max_results)
+        except Exception as e:
+            self.logger.exception(repr(e))
         return []
 
     async def _generate_citations(self) -> None:

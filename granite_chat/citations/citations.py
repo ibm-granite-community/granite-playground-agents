@@ -12,11 +12,11 @@ from langchain_core.documents import Document
 from nltk.tokenize import sent_tokenize
 
 from granite_chat import get_logger
+from granite_chat.chat import ChatModelService
 from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
 from granite_chat.markdown import get_markdown_tokens
-from granite_chat.model import ChatModelFactory
 from granite_chat.utils import to_granite_io
 
 logger = get_logger(__name__)
@@ -142,7 +142,7 @@ class DefaultCitationGenerator(CitationGenerator):
         self, messages: list[Message], docs: list[Document], response: str
     ) -> AsyncGenerator[Citation, None]:
         try:
-            model = ChatModelFactory.create(provider=settings.LLM_PROVIDER)
+            model = ChatModelService()
             doc_index = {str(i): d for i, d in enumerate(docs)}
             source_index = {d.metadata["source"]: d.metadata["title"] for d in docs}
 

@@ -3,7 +3,7 @@ import asyncio
 from beeai_framework.backend import EmbeddingModel, EmbeddingModelOutput
 from langchain_core.embeddings import Embeddings
 
-from granite_chat.workers import WorkerPool
+from granite_chat.work import WorkerPool
 
 
 class WatsonxEmbeddings(Embeddings):
