@@ -124,7 +124,7 @@ You are given a query and a search result (which includes a title, snippet, and 
 Consider the following when making your decision:
 - Does the page appear to cover the main topic or intent of the query?
 - Is the information likely to be specific, accurate, and up-to-date?
-- Avoid false positives: the result should be more than vaguely related.
+- Is the information likely to contribute an interesting angle to the primary topic?
 
 Here is the query: {query}
 

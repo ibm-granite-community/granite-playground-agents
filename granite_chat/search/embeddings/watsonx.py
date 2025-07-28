@@ -3,18 +3,22 @@ import asyncio
 from beeai_framework.backend import EmbeddingModel, EmbeddingModelOutput
 from langchain_core.embeddings import Embeddings
 
+from granite_chat.workers import WorkerPool
+
 
 class WatsonxEmbeddings(Embeddings):
     """Watsonx embedding model integration."""
 
-    def __init__(self, model_id: str) -> None:
+    def __init__(self, model_id: str, worker_pool: WorkerPool) -> None:
         # TODO: use watsonx embedding model directly
         self.embedding_model = EmbeddingModel.from_name("watsonx:" + model_id)
+        self.worker_pool = worker_pool
 
     async def _embed(self, texts: list[str]) -> list[list[float]]:
         """Perform embedding."""
-        response: EmbeddingModelOutput = await self.embedding_model.create(texts)
-        return response.embeddings
+        async with self.worker_pool.throttle():
+            response: EmbeddingModelOutput = await self.embedding_model.create(texts)
+            return response.embeddings
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Embed search docs."""

@@ -5,13 +5,14 @@ from pydantic import SecretStr
 
 from granite_chat.config import settings
 from granite_chat.search.embeddings.watsonx import WatsonxEmbeddings
+from granite_chat.workers import WorkerPool
 
 
-def get_embeddings(provider: str, model_name: str) -> Embeddings:
+def get_embeddings(provider: str, model_name: str, worker_pool: WorkerPool) -> Embeddings:
     """Return langchain embeddings based on provider and model name"""
 
     if provider == "watsonx":
-        return WatsonxEmbeddings(model_id=model_name)
+        return WatsonxEmbeddings(model_id=model_name, worker_pool=worker_pool)
 
     elif provider == "openai":
         # Optional extra headers for openai api

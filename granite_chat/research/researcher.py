@@ -48,7 +48,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.logger.debug("Initializing Researcher")
 
         embeddings: Embeddings = get_embeddings(
-            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL
+            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL, worker_pool=self.worker_pool
         )
 
         vector_store = InMemoryVectorStore(embedding=embeddings)
@@ -56,7 +56,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         if tokenizer:
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store,
+                vector_store=vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
                 chunk_overlap=int(settings.CHUNK_OVERLAP),
                 tokenizer=tokenizer,
@@ -65,10 +65,12 @@ class Researcher(EventEmitter, SearchResultsMixin):
             # Fall back on character chunks
             self.logger.warning("Falling back to vector store without tokenizer")
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
+                vector_store=vector_store,
+                chunk_size=settings.CHUNK_SIZE,
+                chunk_overlap=settings.CHUNK_OVERLAP,
             )
 
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model, worker_pool=worker_pool)
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -141,7 +143,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         await self._emit(TrajectoryEvent(step="🧑‍💻 Extracting knowledge..."))
 
         if scraped_content and len(scraped_content) > 0:
-            await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+            await self.vector_store.load(scraped_content)
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -159,18 +161,19 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         response: str = ""
 
-        if settings.STREAMING is True:
-            # Final report is streamed
-            async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
-                match (data, event.name):
-                    case (ChatModelNewTokenEvent(), "new_token"):
-                        response += data.value.get_text_content()
-                        await self._emit(TextEvent(text=data.value.get_text_content()))
+        async with self.worker_pool.throttle():
+            if settings.STREAMING is True:
+                # Final report is streamed
+                async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
+                    match (data, event.name):
+                        case (ChatModelNewTokenEvent(), "new_token"):
+                            response += data.value.get_text_content()
+                            await self._emit(TextEvent(text=data.value.get_text_content()))
 
-        else:
-            output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
-            response += output.get_text_content()
-            await self._emit(TextEvent(text=response))
+            else:
+                output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+                response += output.get_text_content()
+                await self._emit(TextEvent(text=response))
 
         self.final_report = response
 
@@ -178,18 +181,19 @@ class Researcher(EventEmitter, SearchResultsMixin):
         if self.research_topic is None:
             raise ValueError("Research topic has not been set!")
 
-        prompt = ResearchPrompts.research_plan_prompt(
-            topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
-        )
-        response = await self.chat_model.create_structure(
-            schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
-        )
+        async with self.worker_pool.throttle():
+            prompt = ResearchPrompts.research_plan_prompt(
+                topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
+            )
+            response = await self.chat_model.create_structure(
+                schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
+            )
 
-        try:
-            plan = ResearchPlanSchema(**response.object)
-            return plan.queries
-        except ValidationError as e:
-            raise ValueError("Failed to generate a valid research plan!") from e
+            try:
+                plan = ResearchPlanSchema(**response.object)
+                return plan.queries
+            except ValidationError as e:
+                raise ValueError("Failed to generate a valid research plan!") from e
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
@@ -199,18 +203,19 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
+        async with self.worker_pool.throttle():
+            await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
 
-        docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
-        )
+            docs: list[Document] = await self.vector_store.asimilarity_search(
+                query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            )
 
-        self.final_report_docs += docs
+            self.final_report_docs += docs
 
-        research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
-        response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
-        report = response.get_text_content()
-        return ResearchReport(query=query, report=report)
+            research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
+            response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
+            report = response.get_text_content()
+            return ResearchReport(query=query, report=report)
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         async with self.worker_pool.throttle():

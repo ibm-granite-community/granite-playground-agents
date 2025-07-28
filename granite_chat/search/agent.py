@@ -30,14 +30,14 @@ class SearchAgent(SearchResultsMixin):
         self.worker_pool = worker_pool
 
         embeddings: Embeddings = get_embeddings(
-            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL
+            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL, worker_pool=self.worker_pool
         )
 
         vector_store = InMemoryVectorStore(embedding=embeddings)
 
         if settings.EMBEDDINGS_HF_TOKENIZER and (tokenizer := EmbeddingsTokenizer.get_instance().get_tokenizer()):
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store,
+                vector_store=vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
                 chunk_overlap=int(settings.CHUNK_OVERLAP),
                 tokenizer=tokenizer,
@@ -45,11 +45,13 @@ class SearchAgent(SearchResultsMixin):
         else:
             # Fall back on character chunks
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
+                vector_store=vector_store,
+                chunk_size=settings.CHUNK_SIZE,
+                chunk_overlap=settings.CHUNK_OVERLAP,
             )
 
         self.search_engine = get_search_engine(settings.RETRIEVER)
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model, worker_pool=self.worker_pool)
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries
@@ -65,7 +67,7 @@ class SearchAgent(SearchResultsMixin):
         scraped_content = await self._browse_urls(self.search_results)
 
         # Load scraped context into vector store
-        await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+        await self.vector_store.load(scraped_content)
 
         logger.info(f'Searching for context => "{standalone_msg}"')
 
@@ -82,19 +84,21 @@ class SearchAgent(SearchResultsMixin):
         return scraped_content
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
-        search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
-        response = await self.chat_model.create_structure(
-            schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
-        )
-        if "search_queries" in response.object:
-            return response.object["search_queries"]
-        else:
-            raise ValueError("Failed to generate valid search queries!")
+        async with self.worker_pool.throttle():
+            search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
+            response = await self.chat_model.create_structure(
+                schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+            )
+            if "search_queries" in response.object:
+                return response.object["search_queries"]
+            else:
+                raise ValueError("Failed to generate valid search queries!")
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
-        standalone_prompt = SearchPrompts.generate_standalone_query(messages)
-        response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
-        return response.get_text_content()
+        async with self.worker_pool.throttle():
+            standalone_prompt = SearchPrompts.generate_standalone_query(messages)
+            response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
+            return response.get_text_content()
 
     async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> None:
         await asyncio.gather(*(self._search_query(q, max_results) for q in queries))

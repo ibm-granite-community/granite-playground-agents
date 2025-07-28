@@ -20,6 +20,7 @@ dependencies = [
     "pymupdf>=1.26.1",
     "granite-io>=0.5.0",
     "markdown-it-py>=3.0.0",
+    "aiolimiter>=1.2.1",
 ]
 
 [tool.ruff]
