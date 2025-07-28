@@ -84,7 +84,7 @@ class ConfigurableVectorStoreWrapper:
         """Return query by vector store"""
 
         if self.vector_store and self.vector_store.embeddings:
-            retriever = self.vector_store.as_retriever(search_kwargs={"k": k})
+            retriever = self.vector_store.as_retriever(search_type="mmr", search_kwargs={"k": k})
 
             embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.5)
             compression_retriever = ContextualCompressionRetriever(

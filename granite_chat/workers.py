@@ -19,7 +19,7 @@ class WorkerPool:
     def __init__(self, max_workers: int | None = None, max_concurrent_tasks: int | None = None) -> None:
         self.max_workers = max_workers
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.semaphore = asyncio.Semaphore(max_concurrent_tasks or 10)
+        self.semaphore = asyncio.Semaphore(max_concurrent_tasks or 8)
 
     @asynccontextmanager
     async def throttle(self):  # noqa: ANN201
