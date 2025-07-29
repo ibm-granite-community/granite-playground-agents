@@ -16,7 +16,7 @@ from granite_chat.search.filter import SearchResultsFilter
 from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult
+from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult, StandaloneQuerySchema
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
 
 logger = get_logger(__name__)
@@ -88,8 +88,11 @@ class SearchAgent(SearchResultsMixin):
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
         standalone_prompt = SearchPrompts.generate_standalone_query(messages)
-        response = await self.chat_model.create(messages=[UserMessage(content=standalone_prompt)])
-        return response.get_text_content()
+        response = await self.chat_model.create_structure(
+            schema=StandaloneQuerySchema, messages=[UserMessage(content=standalone_prompt)]
+        )
+        standalone_query = StandaloneQuerySchema(**response.object)
+        return standalone_query.query
 
     async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> None:
         await asyncio.gather(*(self._search_query(q, max_results) for q in queries))

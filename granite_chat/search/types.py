@@ -28,6 +28,10 @@ class SearchResultRelevanceSchema(BaseModel):
     is_relevant: bool = Field(description="Flag indicating if the search result is likely to be relevant.")
 
 
+class StandaloneQuerySchema(BaseModel):
+    query: str = Field(description="Standalone query that clearly and concisely reflects the user's intent.")
+
+
 class ImageUrl(BaseModel):
     score: float
     url: str

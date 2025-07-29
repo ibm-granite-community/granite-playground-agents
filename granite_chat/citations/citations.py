@@ -16,7 +16,7 @@ from granite_chat.chat import ChatModelService
 from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
-from granite_chat.markdown import get_markdown_tokens, split_on_last_special
+from granite_chat.markdown import get_markdown_tokens
 from granite_chat.utils import to_granite_io
 
 logger = get_logger(__name__)
@@ -109,32 +109,29 @@ class GraniteIOCitationGenerator(CitationGenerator):
             for gio_citation in result.citations:
                 if gio_citation.doc_id in doc_index:
                     doc = doc_index[gio_citation.doc_id]
-                    # Any citation that contains markdown needs to be adjusted
-                    # so that the markdown is not affected
+
+                    # Any citation that contains markdown formatting or spans lines needs to be adjusted
                     tokens = get_markdown_tokens(gio_citation.response_text)
-                    last_tok_type = None
 
                     for tok in tokens:
-                        if tok.type == "inline" and last_tok_type and last_tok_type == "paragraph_open":
-                            _, after, index = split_on_last_special(
-                                gio_citation.response_text[tok.start_index : tok.end_index]
-                            )
+                        stripped = tok.content.strip()
 
-                            start_index = gio_citation.response_begin + tok.start_index
-                            end_index = gio_citation.response_begin + tok.end_index
+                        if stripped.endswith(":"):
+                            continue
 
-                            if index >= 0:
-                                start_index += index
+                        if not stripped.endswith("."):
+                            continue
 
-                            yield Citation(
-                                url=doc.metadata["url"],
-                                title=doc.metadata["title"],
-                                context_text=gio_citation.context_text,
-                                start_index=start_index,
-                                end_index=end_index,
-                            )
+                        start_index = gio_citation.response_begin + tok.start_index
+                        end_index = gio_citation.response_begin + tok.end_index
 
-                        last_tok_type = tok.type
+                        yield Citation(
+                            url=doc.metadata["url"],
+                            title=doc.metadata["title"],
+                            context_text=gio_citation.context_text,
+                            start_index=start_index,
+                            end_index=end_index,
+                        )
 
         except Exception as e:  # Malformed citations throws error
             logger.exception(repr(e))

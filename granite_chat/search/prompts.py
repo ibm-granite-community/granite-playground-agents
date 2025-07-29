@@ -113,7 +113,7 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate a standalone query that clearly and concisely reflects the user's intent. Output only the standalone query.
+Generate a standalone query that clearly and concisely reflects the user's intent.
 """  # noqa: E501
 
     @staticmethod
