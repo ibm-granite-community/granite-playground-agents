@@ -1,43 +1,41 @@
 import asyncio
+from typing import Any
 
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
-from beeai_framework.backend.chat import ChatModel
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
 from granite_chat import get_logger
+from granite_chat.chat import ChatModelService
+from granite_chat.citations.citations import CitationGenerator
 from granite_chat.config import settings
-from granite_chat.emitter import Event, EventEmitter
+from granite_chat.emitter import EventEmitter
+from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
-from granite_chat.search.citations import (
-    CitationGenerator,
-    DefaultCitationGenerator,
-    GraniteIOCitationGenerator,
-)
-from granite_chat.search.embeddings import get_embeddings
+from granite_chat.search.embeddings.embeddings import EmbeddingsFactory
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
-from granite_chat.search.engines import get_search_engine
+from granite_chat.search.engines.factory import SearchEngineFactory
+from granite_chat.search.filter import SearchResultsFilter
+from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
-from granite_chat.workers import WorkerPool
 
 
-class Researcher(EventEmitter):
-    def __init__(self, chat_model: ChatModel, messages: list[Message], worker_pool: WorkerPool) -> None:
-        super().__init__()
+class Researcher(EventEmitter, SearchResultsMixin):
+    def __init__(self, chat_model: ChatModelService, messages: list[Message], *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.messages = messages
-        self.worker_pool = worker_pool
         self.logger = get_logger(__name__)
 
         self.research_topic: str | None = None
-        self.search_results: list[SearchResult] = []
+
         self.research_plan: list[ResearchQuery] = []
         self.interim_reports: list[ResearchReport] = []
         self.final_report_docs: list[Document] = []
@@ -45,16 +43,13 @@ class Researcher(EventEmitter):
 
         self.logger.debug("Initializing Researcher")
 
-        embeddings: Embeddings = get_embeddings(
-            provider=settings.EMBEDDINGS_PROVIDER, model_name=settings.EMBEDDINGS_MODEL
-        )
-
+        embeddings: Embeddings = EmbeddingsFactory.create()
         vector_store = InMemoryVectorStore(embedding=embeddings)
         tokenizer = EmbeddingsTokenizer.get_instance().get_tokenizer()
 
         if tokenizer:
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store,
+                vector_store=vector_store,
                 chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
                 chunk_overlap=int(settings.CHUNK_OVERLAP),
                 tokenizer=tokenizer,
@@ -63,8 +58,12 @@ class Researcher(EventEmitter):
             # Fall back on character chunks
             self.logger.warning("Falling back to vector store without tokenizer")
             self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store, chunk_size=settings.CHUNK_SIZE, chunk_overlap=settings.CHUNK_OVERLAP
+                vector_store=vector_store,
+                chunk_size=settings.CHUNK_SIZE,
+                chunk_overlap=settings.CHUNK_OVERLAP,
             )
+
+        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -72,16 +71,15 @@ class Researcher(EventEmitter):
 
         self.research_topic = await self._generate_research_topic()
 
-        await self._emit(Event(type="log", data=f"🚀 Starting research task for '{self.research_topic}'"))
-        await self._emit(Event(type="log", data="🤔 Planning research tasks"))
+        await self._emit(TrajectoryEvent(step=f"🚀 Starting research task for '{self.research_topic}'"))
+        await self._emit(TrajectoryEvent(step="🤔 Planning research tasks"))
 
         self.research_plan = await self._generate_research_plan()
 
         queries = [s.query for s in self.research_plan]
         await self._emit(
-            Event(
-                type="log",
-                data=f"I will research {queries}",
+            TrajectoryEvent(
+                step=f"I will research {queries}",
             )
         )
 
@@ -89,9 +87,9 @@ class Researcher(EventEmitter):
 
         await self._gather_sources()
 
-        await asyncio.gather(
-            *[self._emit(Event(type="log", data=f"🔗 Added source {res.url}")) for res in self.search_results]
-        )
+        # await asyncio.gather(
+        #     *[self._emit(TrajectoryEvent(step=f"🔗 Added source {res.url}")) for res in self.search_results]
+        # )
 
         await self._extract_sources()
         await self._perform_research()
@@ -122,17 +120,21 @@ class Researcher(EventEmitter):
         search_results = await self._search_query(
             query.query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
         )
-        self.search_results.extend(search_results)
+
+        search_results = await self.search_results_filter.filter(query.query, search_results)
+
+        for s in search_results:
+            self.add_search_result(s)
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
 
-        scraped_content, _ = await scrape_urls(
-            search_results=self.search_results, scraper="bs", worker_pool=self.worker_pool, emitter=self
-        )
+        scraped_content, _ = await scrape_urls(search_results=self.search_results, scraper="bs", emitter=self)
+
+        await self._emit(TrajectoryEvent(step="🧑‍💻 Extracting knowledge..."))
 
         if scraped_content and len(scraped_content) > 0:
-            await asyncio.to_thread(lambda: self.vector_store.load(scraped_content))
+            await self.vector_store.load(scraped_content)
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -144,7 +146,7 @@ class Researcher(EventEmitter):
         if len(self.interim_reports) == 0:
             raise ValueError("No interim reports available!")
 
-        await self._emit(Event(type="log", data="🧠 Generating final report..."))
+        await self._emit(TrajectoryEvent(step="🧠 Generating final report..."))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
@@ -152,16 +154,16 @@ class Researcher(EventEmitter):
 
         if settings.STREAMING is True:
             # Final report is streamed
-            async for data, event in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
-                match (data, event.name):
-                    case (ChatModelNewTokenEvent(), "new_token"):
+            async for data in self.chat_model.create_stream(messages=[UserMessage(content=prompt)]):
+                match data:
+                    case ChatModelNewTokenEvent():
                         response += data.value.get_text_content()
-                        await self._emit(Event(type="token", data=data.value.get_text_content()))
+                        await self._emit(TextEvent(text=data.value.get_text_content()))
 
         else:
             output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
             response += output.get_text_content()
-            await self._emit(Event(type="token", data=response))
+            await self._emit(TextEvent(text=response))
 
         self.final_report = response
 
@@ -190,7 +192,7 @@ class Researcher(EventEmitter):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(Event(type="log", data=f"🧠 Researching '{query.query}'"))
+        await self._emit(TrajectoryEvent(step=f"🧠 Researching '{query.query}'"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
             query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
@@ -204,37 +206,31 @@ class Researcher(EventEmitter):
         return ResearchReport(query=query, report=report)
 
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
-        async with self.worker_pool.throttle():
-            try:
-                engine = get_search_engine(settings.RETRIEVER)
-                results = await engine.search(query=query, max_results=max_results)
-                return [SearchResult(**r) for r in results]
-            except Exception as e:
-                self.logger.exception(repr(e))
+        try:
+            engine = SearchEngineFactory.create()
+            return await engine.search(query=query, max_results=max_results)
+        except Exception as e:
+            self.logger.exception(repr(e))
         return []
 
     async def _generate_citations(self) -> None:
         if len(self.final_report_docs) > 0:
+            # Compress docs
+            docs = self._dedup_documents_by_content(self.final_report_docs)
+
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
-            generator: CitationGenerator
+            generator = CitationGenerator.create()
 
-            if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
-                extra_headers = (
-                    dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                    if settings.GRANITE_IO_OPENAI_API_HEADERS
-                    else None
-                )
+            async for citation in generator.generate(messages=input, docs=docs, response=self.final_report or ""):
+                # yield message_part
+                await self._emit(CitationEvent(citation=citation))
 
-                generator = GraniteIOCitationGenerator(
-                    openai_base_url=str(settings.GRANITE_IO_OPENAI_API_BASE),
-                    model_id=str(settings.GRANITE_IO_CITATIONS_MODEL_ID),
-                    extra_headers=extra_headers,
-                )
-            else:
-                generator = DefaultCitationGenerator()
-
-            async for message_part in generator.generate(
-                messages=input, docs=self.final_report_docs, response=self.final_report or ""
-            ):
-                await self._emit(Event(type="token", data=message_part.content or ""))
+    def _dedup_documents_by_content(self, documents: list[Document]) -> list[Document]:
+        seen = set()
+        deduped = []
+        for doc in documents:
+            if doc.page_content not in seen:
+                seen.add(doc.page_content)
+                deduped.append(doc)
+        return deduped

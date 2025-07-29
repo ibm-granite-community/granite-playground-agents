@@ -4,10 +4,12 @@ Enables configurable chunk size
 Add document index
 """
 
-import threading
+import asyncio
 from typing import Any
 
 from langchain.docstore.document import Document
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import EmbeddingsFilter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import VectorStore
 from transformers import AutoTokenizer
@@ -18,8 +20,6 @@ from granite_chat.utils import batch
 
 
 class ConfigurableVectorStoreWrapper:
-    _semaphore = threading.Semaphore(3)
-
     def __init__(
         self,
         vector_store: VectorStore,
@@ -32,7 +32,7 @@ class ConfigurableVectorStoreWrapper:
         self.chunk_overlap = chunk_overlap
         self.tokenizer = tokenizer
 
-    def load(self, content: list[ScrapedContent]) -> None:
+    async def load(self, content: list[ScrapedContent]) -> None:
         """
         Load the documents into vector_store
         Translate to langchain doc type, split to chunks then load
@@ -40,9 +40,11 @@ class ConfigurableVectorStoreWrapper:
         langchain_documents = self._create_langchain_documents(content)
         splitted_documents = self._split_documents(langchain_documents)
 
-        with self._semaphore:
-            for b in batch(splitted_documents, settings.MAX_EMBEDDINGS):
-                self.vector_store.add_documents(b)
+        tasks = [self._add_documents(docs) for docs in batch(splitted_documents, settings.MAX_EMBEDDINGS)]
+        await asyncio.gather(*tasks)
+
+    async def _add_documents(self, docs: list[Document]) -> None:
+        await self.vector_store.aadd_documents(docs)
 
     # TODO: subclass Document for better typing support
     def _create_langchain_documents(self, scraped_content: list[ScrapedContent]) -> list[Document]:
@@ -80,5 +82,15 @@ class ConfigurableVectorStoreWrapper:
 
     async def asimilarity_search(self, query: str, k: int, filter: dict[str, Any] | None = None) -> list[Document]:
         """Return query by vector store"""
-        results = await self.vector_store.asimilarity_search(query=query, k=k, filter=filter)
-        return results
+
+        if self.vector_store and self.vector_store.embeddings:
+            retriever = self.vector_store.as_retriever(search_type="mmr", search_kwargs={"k": k})
+
+            embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.5)
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=embeddings_filter, base_retriever=retriever
+            )
+            results = await compression_retriever.ainvoke(input=query)
+            return results
+        else:
+            raise ValueError("Embeddings must not be None")

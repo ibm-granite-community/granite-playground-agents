@@ -1,28 +1,31 @@
 import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
 
 
 class Event(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    type: str
-    data: str
 
 
-LogEventHandler = Callable[[Event], Awaitable[None]]
+T = TypeVar("T", bound=Event)
+
+
+EventHandler = Callable[[T], Awaitable[None]]
 
 
 class EventEmitter:
-    def __init__(self) -> None:
-        self._handlers: list[LogEventHandler] = []
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._handlers: list[EventHandler] = []
+        super().__init__(*args, **kwargs)
 
-    def subscribe(self, handler: LogEventHandler) -> None:
+    def subscribe(self, handler: EventHandler) -> None:
         """Register a handler to receive log events"""
         self._handlers.append(handler)
 
-    def unsubscribe(self, handler: LogEventHandler) -> None:
+    def unsubscribe(self, handler: EventHandler) -> None:
         """Remove a previously registered handler"""
         self._handlers.remove(handler)
 

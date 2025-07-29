@@ -125,6 +125,15 @@ wheels = [
 ]
 
 [[package]]
+name = "aiolimiter"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/23/b52debf471f7a1e42e362d959a3982bdcb4fe13a5d46e63d28868807a79c/aiolimiter-1.2.1.tar.gz", hash = "sha256:e02a37ea1a855d9e832252a105420ad4d15011505512a1a1d814647451b5cca9", size = 7185, upload-time = "2024-12-08T15:31:51.496Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/ba/df6e8e1045aebc4778d19b8a3a9bc1808adb1619ba94ca354d9ba17d86c3/aiolimiter-1.2.1-py3-none-any.whl", hash = "sha256:d3f249e9059a20badcb56b61601a83556133655c11d1eb3dd3e04ff069e5f3c7", size = 6711, upload-time = "2024-12-08T15:31:49.874Z" },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -759,6 +768,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "acp-sdk" },
+    { name = "aiolimiter" },
     { name = "arxiv" },
     { name = "beeai-framework" },
     { name = "bs4" },
@@ -767,11 +777,13 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
+    { name = "markdown-it-py" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
     { name = "tavily-python" },
     { name = "trafilatura" },
     { name = "transformers" },
+    { name = "types-colorama" },
 ]
 
 [package.dev-dependencies]
@@ -785,19 +797,22 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "acp-sdk", specifier = ">=1.0.0" },
+    { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "arxiv", specifier = ">=2.2.0" },
     { name = "beeai-framework", git = "https://github.com/i-am-bee/beeai-framework.git?subdirectory=python" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "colorama", specifier = ">=0.4.6" },
-    { name = "granite-io", git = "https://github.com/ibm-granite/granite-io/" },
+    { name = "granite-io", specifier = ">=0.5.0" },
     { name = "langchain-community", specifier = ">=0.3.25" },
     { name = "langchain-ollama", specifier = ">=0.3.3" },
     { name = "langchain-openai", specifier = ">=0.3.24" },
+    { name = "markdown-it-py", specifier = ">=3.0.0" },
     { name = "pymupdf", specifier = ">=1.26.1" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "tavily-python", specifier = ">=0.7.7" },
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "transformers", specifier = ">=4.52.4" },
+    { name = "types-colorama", specifier = ">=0.4.15.20240311" },
 ]
 
 [package.metadata.requires-dev]
@@ -810,14 +825,18 @@ dev = [
 
 [[package]]
 name = "granite-io"
-version = "0.4.1.dev18"
-source = { git = "https://github.com/ibm-granite/granite-io/#a6c898f4ced63a37a4921770c2f2e3a1c2d975c8" }
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "alchemy-config" },
     { name = "jsonschema" },
     { name = "pydantic" },
     { name = "rouge-score" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/31/d8/82f6a8f50619f06676cd8310d0173c5bfae49f1bd917cbae7259508ee230/granite_io-0.5.0.tar.gz", hash = "sha256:73aa9a93acb94403e880056b3fe02e76449f2baa9de9b8d5adc03ac0fe9e131f", size = 1317970, upload-time = "2025-07-15T17:50:20.729Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/db/71afed0caf6fc0c70bd89e7eba10fcd56b766e562f20434d3f39ca4096af/granite_io-0.5.0-py3-none-any.whl", hash = "sha256:fb1c28597ccac7a6b401713e624e25969ab6ab5fcfff5bde989cd3710928fe37", size = 146690, upload-time = "2025-07-15T17:50:18.772Z" },
 ]
 
 [[package]]
@@ -2841,6 +2860,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c5/8c/7d682431efca5fd290017663ea4588bf6f2c6aad085c7f108c5dbc316e70/typer-0.16.0.tar.gz", hash = "sha256:af377ffaee1dbe37ae9440cb4e8f11686ea5ce4e9bae01b84ae7c63b87f1dd3b", size = 102625, upload-time = "2025-05-26T14:30:31.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/42/3efaf858001d2c2913de7f354563e3a3a2f0decae3efe98427125a8f441e/typer-0.16.0-py3-none-any.whl", hash = "sha256:1f79bed11d4d02d4310e3c1b7ba594183bcedb0ac73b27a9e5f28f6fb5b98855", size = 46317, upload-time = "2025-05-26T14:30:30.523Z" },
+]
+
+[[package]]
+name = "types-colorama"
+version = "0.4.15.20240311"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/73/0fb0b9fe4964b45b2a06ed41b60c352752626db46aa0fb70a49a9e283a75/types-colorama-0.4.15.20240311.tar.gz", hash = "sha256:a28e7f98d17d2b14fb9565d32388e419f4108f557a7d939a66319969b2b99c7a", size = 5608, upload-time = "2024-03-11T02:15:51.557Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/83/6944b4fa01efb2e63ac62b791a8ddf0fee358f93be9f64b8f152648ad9d3/types_colorama-0.4.15.20240311-py3-none-any.whl", hash = "sha256:6391de60ddc0db3f147e31ecb230006a6823e81e380862ffca1e4695c13a0b8e", size = 5840, upload-time = "2024-03-11T02:15:50.43Z" },
 ]
 
 [[package]]

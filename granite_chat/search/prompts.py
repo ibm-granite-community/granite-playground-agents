@@ -25,11 +25,13 @@ class SearchPrompts:
         logger.debug(doc_str)
 
         return f"""You are Granite, developed by IBM.
-You are a helpful assistant tasked with generating a comprehensive, informative, and accurate response.
-You have a set of documents that may contain relevant information. You can use these documents to help formulate your response.
+Provide a comprehensive, informative, and accurate response to the user.
 
-Your response should bee clear and comprehensive and stay aligned with the content and facts of the documents when possible.
-If the information needed is not available, inform the user that the question cannot be answered based on the available data.
+You are provided with a set of documents that may contain relevant information.
+- You can use these documents to help formulate your response.
+- Your response should be clear and comprehensive and stay aligned with the content and facts of the documents when possible.
+- If the information needed is not available, inform the user that the question cannot be answered based on the available data.
+- Not all documents will be relevant, ignore irrelevant or low quality documents.
 
 <documents>
 {doc_str}
@@ -56,7 +58,7 @@ You have access to realtime data, you do not have a knowledge cutoff.
 Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
-The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings.
+The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings. Include all important keywords.
 
 Tips:
 - Do not assume or introduce information that is not directly mentioned in the conversation.
@@ -76,7 +78,7 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate exactly {max_queries} search queries that reflect the intent of the user's last message.
+Generate {max_queries} search queries that reflect the intent of the user's last message.
 """  # noqa: E501
 
     @staticmethod
@@ -111,24 +113,27 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate a standalone query that clearly and concisely reflects the user's intent. Output only the standalone query.
+Generate a standalone query that clearly and concisely reflects the user's intent.
 """  # noqa: E501
 
     @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
-Given a user query and a search result, determine whether the web page linked in the search result is likely to provide information relevant to the user's query.
+You are given a query and a search result (which includes a title, snippet, and URL). Your task is to determine whether the web page linked in the search result is likely to contain useful information that directly addresses the query.
 
-Here is the user's query: {query}
+Consider the following when making your decision:
+- Does the page appear to cover the main topic or intent of the query?
+- Is the information likely to be specific, accurate, and up-to-date?
+- Is the information likely to contribute an interesting angle to the primary topic?
+
+Here is the query: {query}
 
 Here is the search result:
 - URL: {search_result.url}
 - Title: {search_result.title}
 - A snippet from the page: {search_result.body}
 
-Respond with one of the following labels only:
-- RELEVANT: if the page likely contains meaningful information answering or directly related to the query.
-- IRRELEVANT: if the page is unlikely to contain information useful for the query.
+Return True if the result is likely relevant to the query; otherwise, return False.
 """  # noqa: E501
 
     @staticmethod

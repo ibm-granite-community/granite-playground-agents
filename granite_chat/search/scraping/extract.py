@@ -14,13 +14,14 @@ from typing import cast
 from httpx import AsyncClient, Client
 
 from granite_chat import get_logger
-from granite_chat.emitter import Event, EventEmitter
+from granite_chat.emitter import EventEmitter
+from granite_chat.events import TrajectoryEvent
 from granite_chat.search.scraping import BeautifulSoupScraper
 from granite_chat.search.scraping.arxiv import ArxivScraper
 from granite_chat.search.scraping.pymupdf import PyMuPDFScraper
 from granite_chat.search.scraping.scraper import AsyncScraper, SyncScraper
 from granite_chat.search.types import ScrapedContent, SearchResult
-from granite_chat.workers import WorkerPool
+from granite_chat.work import task_pool
 
 
 class ContentExtractor(EventEmitter):
@@ -28,9 +29,7 @@ class ContentExtractor(EventEmitter):
     Scraper class to extract the content from the links
     """
 
-    def __init__(
-        self, search_results: list[SearchResult], user_agent: str, scraper_key: str, worker_pool: WorkerPool
-    ) -> None:
+    def __init__(self, search_results: list[SearchResult], user_agent: str, scraper_key: str) -> None:
         """
         Initialize the Scraper class.
         Args:
@@ -45,7 +44,6 @@ class ContentExtractor(EventEmitter):
 
         self.scraper_key = scraper_key
         self.logger = get_logger(__name__)
-        self.worker_pool = worker_pool
 
     async def run(self) -> list[ScrapedContent]:
         """
@@ -59,7 +57,7 @@ class ContentExtractor(EventEmitter):
         """
         Extracts the data from the link with logging
         """
-        async with self.worker_pool.throttle():
+        async with task_pool.throttle():
             try:
                 link = search_result.url
                 scraper_cls: type[AsyncScraper] | type[SyncScraper] = self.get_scraper(link)
@@ -81,7 +79,7 @@ class ContentExtractor(EventEmitter):
                         image_urls,
                         title,
                     ) = await asyncio.get_running_loop().run_in_executor(
-                        self.worker_pool.executor, lambda: sync_scraper.scrape(link, self.client)
+                        task_pool.executor, lambda: sync_scraper.scrape(link, self.client)
                     )
 
                 if len(content) < 200:
@@ -101,7 +99,7 @@ class ContentExtractor(EventEmitter):
                 self.logger.info(f"URL: {link}")
                 self.logger.info("=" * 50)
 
-                await self._emit(Event(type="log", data=f"🕷️ Scraped source {link}"))
+                await self._emit(TrajectoryEvent(step=f"👀 Reading {link}"))
 
                 return ScrapedContent(
                     search_result=search_result,

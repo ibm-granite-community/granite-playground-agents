@@ -12,18 +12,17 @@ class ResearchPrompts:
 
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
-        return f"""You are a research planner.
-Given a user-defined topic, generate a list of specific search queries that serve as the foundation for investigating the topic.
+        return f"""You are a research planner. The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
 
-The queries should:
+Given a user-defined topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
+
+The queries should be:
 - Clear and concise.
 - Cover the key aspects required to fully address the topic.
-- Be diverse (to prevent overlapping), non-redundant, and logically distributed (e.g. from foundational to advanced).
+- Be diverse (to prevent overlapping research) and logically distributed (e.g. from foundational to advanced, temporally etc.) depending on context.
 
 Here is the topic: {topic}
-
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-Generate a maximum of {max_queries} search queries that will serve as a basis to explore the main topic.
+Generate {max_queries} search queries to guide and support in-depth research on the topic.
 """  # noqa: E501
 
     @staticmethod
@@ -40,8 +39,7 @@ Generate a maximum of {max_queries} search queries that will serve as a basis to
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are a research assistant.
-Your role is to review a set of documents and produce a report focused on a specific query, which is provided.
-Your task is to synthesize information relevant to the query from the documents and organize this information clearly and concisely.
+Your task is to read a set of documents and produce a clear, detailed answer that addresses a specific query.
 
 <documents>
 {doc_str}
@@ -49,38 +47,35 @@ Your task is to synthesize information relevant to the query from the documents 
 
 Query: {query.query}
 
-Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your report.
+Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your answer.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
-Identify and synthesize all content from the documents that relevant to the query. Do not include unrelated material. Focus on addressing the query in a comprehensive manner.
+Focus on addressing the query in a comprehensive and detailed manner.
 """  # noqa: E501
 
     @staticmethod
     def final_report_prompt(topic: str, reports: list[ResearchReport]) -> str:
         reports_str = json.dumps([r.model_dump() for r in reports], indent=4)
 
-        return f"""You are Granite, a talented researcher.
-You are given a topic and a set of research reports provided by your assistants. Each report focuses on a different aspect of the same overarching topic.
-Your task is to review, and consolidate these aspect-specific reports into a single, comprehensive final report.
-Ensure that overlapping information is consolidated, gaps are addressed, and the overall narrative is coherent.
+        return f"""The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
 
-Use a professional, analytical tone suitable for expert readers.
+You are given a topic along with a set detailed findings each covering a different angle of the subject.
+Your task is to review and synthesize this information into a clear and cohesive output.
+Ensure the content is cohesive, redundant points are merged, gaps are filled, and the overall narrative flows logically.
 
-Output Format: A structured final report including:
-- An Introduction
-- A set of distinct and coherently organized sections that guide the reader
-- A Conclusion
+Output Format: A structured response including:
+- Introduction that sets the stage
+- Organized sections that clearly present each major aspect or theme
+- Conclusion that summarizes the key insights
 
 Ensure that each section adds new insight or perspective rather than reiterating previous content.
+- Use paragraphs rather than numbered lists.
 
 Topic: {topic}
 
-<research_reports>
+<findings>
 {reports_str}
-</research_reports>
+</findings>
 
-The title of the report should be {topic} of an appropriate variation thereof.
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-Avoid referencing or mentioning "interim reports", "report" or "the reports", or alluding to their existence in any way when formulating your response.
-Do not include references or citations, they will be added later.
-"""  # noqa: E501
+The title of the response should be {topic}, or an appropriate variation thereof that maintains the general idea.
+"""
