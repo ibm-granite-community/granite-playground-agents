@@ -1,3 +1,5 @@
+import re
+
 from markdown_it import MarkdownIt
 from pydantic import BaseModel
 
@@ -38,3 +40,15 @@ def get_markdown_tokens(markdown_text: str) -> list[MarkdownToken]:
         )
 
     return token_offsets
+
+
+def split_on_last_special(sentence: str) -> tuple[str, str, int]:
+    # Search for last occurrence of '**' or ':'
+    match = re.search(r"(.*)(\*\*|:)([^:*]*)$", sentence)
+    if match:
+        before = match.group(1)
+        sep = match.group(2)
+        after = match.group(3)
+        index = len(before) + len(sep)  # position right after the matched separator
+        return before, after, index
+    return sentence, "", -1  # -1 means no match found

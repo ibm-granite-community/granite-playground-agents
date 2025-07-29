@@ -9,6 +9,7 @@
 # Changes made:
 # - Allow max_workers to default via None
 # - Configure semaphore via max_concurrent_tasks
+# - Rate limiter
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor

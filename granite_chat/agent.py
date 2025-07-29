@@ -295,7 +295,6 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield MessagePart(
                             content_type="text/plain", content=event.value.get_text_content(), role="assistant"
                         )  # type: ignore[call-arg]
-
                     case ChatModelSuccessEvent():
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
