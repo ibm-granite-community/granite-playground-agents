@@ -274,8 +274,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             return
 
         chat_model = ChatModelService()
-
-        # await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message="Searching the web...")))
+        await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message="Searching the web")))
 
         search_agent = SearchAgent(chat_model=chat_model)
         docs: list[Document] = await search_agent.search(messages)
