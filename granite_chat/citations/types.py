@@ -10,7 +10,8 @@ class Sentence(BaseModel):
 
 class CitationSchema(BaseModel):
     sentence_id: str = Field(description="The id of the sentence.")
-    doc_ids: list[str] = Field(description="List of document ids that support this sentence.")
+    source_id: str = Field(description="The cited source id.")
+    source_summary: str = Field(description="A brief summary of the supporting source information.")
 
 
 class CitationsSchema(BaseModel):
