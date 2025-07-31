@@ -35,7 +35,7 @@ class WorkerPool:
 
     @asynccontextmanager
     async def throttle(self):  # noqa: ANN201
-        async with self.rate_limiter, self.semaphore:
+        async with self.semaphore, self.rate_limiter:
             # async with self._lock:
             #     self._active += 1
             # try:
@@ -46,10 +46,10 @@ class WorkerPool:
 
 
 # Control access to the chat backend
-chat_pool = WorkerPool()
+chat_pool = WorkerPool(max_concurrent_tasks=20)
 
 # Control access to the embeddings backend
 embeddings_pool = chat_pool
 
 # General task control
-task_pool = WorkerPool(max_workers=10, max_concurrent_tasks=10, rate_limit=10, rate_period=2)
+task_pool = WorkerPool(max_concurrent_tasks=20, rate_limit=10, rate_period=2)

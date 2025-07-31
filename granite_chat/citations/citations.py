@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from itertools import count
 
 from acp_sdk import Message
 from beeai_framework.backend import UserMessage
@@ -17,12 +18,12 @@ from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
 from granite_chat.markdown import get_markdown_tokens
-from granite_chat.utils import to_granite_io
+from granite_chat.utils import to_granite_io_messages
 
 logger = get_logger(__name__)
 
 
-class CitationGenerator(ABC):
+class CitationGeneratorFactory:
     """Factory for generating citations"""
 
     @staticmethod
@@ -41,27 +42,15 @@ class CitationGenerator(ABC):
             )
         else:
             return DefaultCitationGenerator()
-            # return DefaultCitationGenerator()
+
+
+class CitationGenerator(ABC):
+    """Factory for generating citations"""
 
     @abstractmethod
     def generate(self, messages: list[Message], docs: list[Document], response: str) -> AsyncGenerator[Citation, None]:
         """Generate citations"""
         pass
-
-
-# class DefaultCitationGenerator(CitationGenerator):
-#     """Simple sources listed in markdown."""
-
-#     async def generate(
-#         self, messages: list[Message], docs: list[Document], response: str
-#     ) -> AsyncGenerator[Citation, None]:
-#         sources = {
-#             Source(url=doc.metadata["url"], title=doc.metadata["title"], snippet=doc.metadata["snippet"])
-#             for doc in docs
-#         }
-
-#         for source in sources:
-#             yield Citation(url=source.url, title=source.title, start_index=len(response), end_index=len(response))
 
 
 class GraniteIOCitationGenerator(CitationGenerator):
@@ -88,7 +77,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
         try:
             # TODO: Should this be just the last user message?
-            granite_io_messages = to_granite_io(messages)
+            granite_io_messages = to_granite_io_messages(messages)
             # Add agent response
             granite_io_messages.append(GraniteIOAssistantMessage(content=response))
 
@@ -116,10 +105,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
                     for tok in tokens:
                         stripped = tok.content.strip()
 
-                        if stripped.endswith(":"):
-                            continue
-
-                        if not stripped.endswith("."):
+                        if stripped.endswith(":") or stripped.endswith("*") or not stripped.endswith("."):
                             continue
 
                         start_index = gio_citation.response_begin + tok.start_index
@@ -136,6 +122,12 @@ class GraniteIOCitationGenerator(CitationGenerator):
         except Exception as e:  # Malformed citations throws error
             logger.exception(repr(e))
 
+            # Falls back on the default generator in the event of failure
+            fall_back_generator = DefaultCitationGenerator()
+
+            async for citation in fall_back_generator.generate(messages=messages, docs=docs, response=response):
+                yield citation
+
 
 class DefaultCitationGenerator(CitationGenerator):
     """Simple sources listed in markdown."""
@@ -151,19 +143,17 @@ class DefaultCitationGenerator(CitationGenerator):
             doc_index = {str(i): d for i, d in enumerate(docs)}
             source_index = {d.metadata["source"]: d.metadata["title"] for d in docs}
 
-            sentences = sent_tokenize(response)
+            tokens = get_markdown_tokens(response)
+            sentences = []
+            counter = count(start=0, step=1)
+            for tok in tokens:
+                stripped_content = tok.content.strip()
+                if tok.type == "inline" and stripped_content.endswith("."):
+                    sentences.extend(self._to_sentences(response=tok.content, offset=tok.start_index, counter=counter))
 
-            offsets = []
-            start = 0
-            for i, sentence in enumerate(sentences):
-                start_index = response.find(sentence, start)
-                length = len(sentence)
-                if length > 5:
-                    offsets.append(Sentence(id=str(i), text=sentence, offset=start_index, length=length))
-                start = start_index + length  # advance to avoid matching earlier sentence again
-            sent_index: dict[str, Sentence] = {str(s.id): s for s in offsets}
+            sent_index: dict[str, Sentence] = {str(s.id): s for s in sentences}
 
-            prompt = CitationsPrompts.generate_citations_prompt(sentences=offsets, docs=docs)
+            prompt = CitationsPrompts.generate_citations_prompt(sentences=sentences, docs=docs)
 
             structured_output = await model.create_structure(
                 schema=CitationsSchema, messages=[UserMessage(content=prompt)]
@@ -172,16 +162,30 @@ class DefaultCitationGenerator(CitationGenerator):
             citations = CitationsSchema(**structured_output.object)
 
             for cite in citations.citations:
-                if cite.sentence_id in sent_index:
-                    sources = {doc_index[id].metadata["source"] for id in cite.doc_ids}
-                    for source in sources:
-                        if source in source_index:
-                            yield Citation(
-                                url=source,
-                                title=source_index[source],
-                                # description=doc_index[doc_id].page_content,
-                                start_index=sent_index[cite.sentence_id].offset,
-                                end_index=sent_index[cite.sentence_id].offset + sent_index[cite.sentence_id].length,
-                            )
-        except Exception as e:  # Malformed citations throws error
+                if cite.sentence_id in sent_index and cite.source_id in doc_index:
+                    source = doc_index[cite.source_id].metadata["source"]
+                    if source in source_index:
+                        sentence = sent_index[cite.sentence_id]
+                        yield Citation(
+                            url=source,
+                            title=source_index[source],
+                            context_text=cite.source_summary,
+                            start_index=sentence.offset,
+                            end_index=sentence.offset + sentence.length,
+                        )
+
+        except Exception as e:
             logger.exception(repr(e))
+
+    def _to_sentences(self, response: str, offset: int, counter: count) -> list[Sentence]:
+        sentences = sent_tokenize(response)
+        results = []
+        start = 0
+        for sentence in sentences:
+            start_index = response.find(sentence, start)
+            length = len(sentence)
+
+            results.append(Sentence(id=str(next(counter)), text=sentence, offset=offset + start_index, length=length))
+            start = start_index + length  # advance to avoid matching earlier sentence again
+
+        return results

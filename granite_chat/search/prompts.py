@@ -121,10 +121,12 @@ Generate a standalone query that clearly and concisely reflects the user's inten
         return f"""
 You are given a query and a search result (which includes a title, snippet, and URL). Your task is to determine whether the web page linked in the search result is likely to contain useful information that directly addresses the query.
 
-Consider the following when making your decision:
+Consider the following when deciding if a search result is relevant:
 - Does the page appear to cover the main topic or intent of the query?
 - Is the information likely to be specific, accurate, and up-to-date?
 - Is the information likely to contribute an interesting angle to the primary topic?
+
+If a search result looks like it may contain or promote violent, sexual, or controversial content it should be automatically marked as irrelevant.
 
 Here is the query: {query}
 

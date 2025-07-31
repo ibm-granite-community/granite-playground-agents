@@ -27,5 +27,10 @@ class SearchResultsFilter:
         if relevance.is_relevant:
             return result
 
-        logger.info(f"!! Rejected search result {result.url} {result.title}")
+        logger.info("==================================================")
+        logger.info(f"Rejected search result: {result.url}")
+        logger.info(f"Query: {query}")
+        logger.info(f"Title: {result.title}")
+        logger.info(f"Body: {result.body}")
+
         return None

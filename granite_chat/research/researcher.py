@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from granite_chat import get_logger
 from granite_chat.chat import ChatModelService
-from granite_chat.citations.citations import CitationGenerator
+from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
@@ -72,7 +72,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.research_topic = await self._generate_research_topic()
 
         await self._emit(TrajectoryEvent(step=f"🚀 Starting research task for '{self.research_topic}'"))
-        await self._emit(TrajectoryEvent(step="🤔 Planning research tasks"))
+        await self._emit(TrajectoryEvent(step="🤔 Planning research"))
 
         self.research_plan = await self._generate_research_plan()
 
@@ -220,7 +220,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
-            generator = CitationGenerator.create()
+            generator = CitationGeneratorFactory.create()
 
             async for citation in generator.generate(messages=input, docs=docs, response=self.final_report or ""):
                 # yield message_part

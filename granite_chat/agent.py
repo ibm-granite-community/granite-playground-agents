@@ -1,9 +1,8 @@
-import re
 from collections.abc import AsyncGenerator
 from typing import Literal
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
-from acp_sdk.models.models import CitationMetadata, Message, TrajectoryMetadata
+from acp_sdk.models.models import Message, TrajectoryMetadata
 from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, PlatformUIType
 from acp_sdk.server import Context, Server
 from beeai_framework.backend import (
@@ -18,7 +17,7 @@ from pydantic import BaseModel
 
 from granite_chat import get_logger, utils
 from granite_chat.chat import ChatModelService
-from granite_chat.citations.citations import CitationGenerator
+from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.events import CitationEvent, TextEvent, TrajectoryEvent
@@ -28,18 +27,15 @@ from granite_chat.search.agent import SearchAgent
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
+from granite_chat.thinking.response_parser import ThinkingResponseParser
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 
 logger = get_logger(__name__)
-
-LLM_PROVIDER = settings.LLM_PROVIDER
 
 # This will preload the embeddings tokenizer if set
 EmbeddingsTokenizer.get_instance()
 
 server = Server()
-# worker_pool = WorkerPool()
-
 
 base_env = [
     {
@@ -122,7 +118,7 @@ def create_usage_info(
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
     history = [message async for message in context.session.load_history()]
-    messages = utils.to_beeai_framework(messages=history + input)
+    messages = utils.to_beeai_framework_messages(messages=history + input)
 
     if exceeds_token_limit(messages):
         yield token_limit_message_part()
@@ -134,9 +130,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         async for event in chat_model.create_stream(messages=messages):
             match event:
                 case ChatModelNewTokenEvent():
-                    yield MessagePart(
-                        content_type="text/plain", content=event.value.get_text_content(), role="assistant"
-                    )  # type: ignore[call-arg]
+                    yield MessagePart(content_type="text/plain", content=event.value.get_text_content())
                 case (ChatModelSuccessEvent(), "success"):
                     yield create_usage_info(event.value.usage, event.model_id)
     else:
@@ -172,7 +166,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
     history = [message async for message in context.session.load_history()]
-    messages = utils.to_beeai_framework(messages=history + input)
+    messages = utils.to_beeai_framework_messages(messages=history + input)
 
     if exceeds_token_limit(messages):
         yield token_limit_message_part()
@@ -196,36 +190,23 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                     for output in handler.on_token(token=token):
                         if isinstance(output, TokenEvent):
                             content_type = "text/thinking" if output.tag == "think" else "text/plain"
-                            yield MessagePart(content_type=content_type, content=output.token, role="assistant")  # type: ignore[call-arg]
+                            yield MessagePart(content_type=content_type, content=output.token)
                         elif isinstance(output, TagStartEvent):
                             pass
-                            # if output.tag == "think":
-                            #     yield MessagePart(
-                            #         content_type="text/delimiter", content="**🤔 Thinking:**\n\n", role="assistant"
-                            #     )  # type: ignore[call-arg]
-                            # elif output.tag == "response":
-                            #     yield MessagePart(
-                            #         content_type="text/delimiter",
-                            #         content="\n\n**😎 Response:**\n\n",
-                            #         role="assistant",
-                            #     )  # type: ignore[call-arg]
                 case ChatModelSuccessEvent():
                     yield create_usage_info(event.value.usage, chat_model.model_id)
     else:
         chat_output = await chat_model.create(messages=messages)
         text = chat_output.get_text_content()
 
-        think_match = re.search(r"<think>(.*?)</think>", text, re.DOTALL)
-        response_match = re.search(r"<response>(.*?)</response>", text, re.DOTALL)
+        parser = ThinkingResponseParser()
+        think_resp = parser.parse(text=text)
 
-        think_content = think_match.group(1) if think_match else None
-        response_content = response_match.group(1) if response_match else None
+        if think_resp.thinking is not None:
+            yield MessagePart(content_type="text/thinking", content=think_resp.thinking)
 
-        if think_content is not None:
-            yield MessagePart(content_type="text/thinking", content=think_content)
-
-        if response_content is not None:
-            yield MessagePart(content_type="text/plain", content=response_content)
+        if think_resp.response is not None:
+            yield MessagePart(content_type="text/plain", content=think_resp.response)
 
         yield create_usage_info(chat_output.usage, chat_model.model_id)
 
@@ -267,7 +248,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
     try:
         history = [message async for message in context.session.load_history()]
-        messages = utils.to_beeai_framework(messages=history + input)
+        messages = utils.to_beeai_framework_messages(messages=history + input)
 
         if exceeds_token_limit(messages):
             yield token_limit_message_part()
@@ -291,30 +272,20 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                 match event:
                     case ChatModelNewTokenEvent():
                         response += event.value.get_text_content()
-                        yield MessagePart(
-                            content_type="text/plain", content=event.value.get_text_content(), role="assistant"
-                        )  # type: ignore[call-arg]
+                        yield MessagePart(content_type="text/plain", content=event.value.get_text_content())
                     case ChatModelSuccessEvent():
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
             output = await chat_model.create(messages=messages)
             response = output.get_text_content()
-            yield MessagePart(content_type="text/plain", content=response, role="assistant")  # type: ignore[call-arg]
+            yield MessagePart(content_type="text/plain", content=response)
             yield create_usage_info(output.usage, chat_model.model_id)
 
         # Yield sources/citation
         if len(docs) > 0:
-            generator = CitationGenerator.create()
+            generator = CitationGeneratorFactory.create()
             async for citation in generator.generate(messages=input, docs=docs, response=response):
-                yield MessagePart(
-                    metadata=CitationMetadata(
-                        url=citation.url,
-                        title=citation.title,
-                        description=citation.context_text,
-                        start_index=citation.start_index,
-                        end_index=citation.end_index,
-                    ),
-                )
+                yield utils.to_citation_message_part(citation)
 
     except Exception as e:
         logger.exception(repr(e))
@@ -358,7 +329,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
     try:
         history = [message async for message in context.session.load_history()]
-        messages = utils.to_beeai_framework(messages=history + input)
+        messages = utils.to_beeai_framework_messages(messages=history + input)
 
         if exceeds_token_limit(messages):
             yield token_limit_message_part()
@@ -372,17 +343,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             elif isinstance(event, TrajectoryEvent):
                 await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
             elif isinstance(event, CitationEvent):
-                await context.yield_async(
-                    MessagePart(
-                        metadata=CitationMetadata(
-                            url=event.citation.url,
-                            title=event.citation.title,
-                            description=event.citation.context_text,
-                            start_index=event.citation.start_index,
-                            end_index=event.citation.end_index,
-                        ),
-                    )
-                )
+                await context.yield_async(utils.to_citation_message_part(event.citation))
 
         researcher = Researcher(chat_model=chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)

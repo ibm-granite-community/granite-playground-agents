@@ -4,19 +4,16 @@ Enables configurable chunk size
 Add document index
 """
 
-import asyncio
 from typing import Any
 
-from langchain.docstore.document import Document
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import EmbeddingsFilter
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import VectorStore
+from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
-from granite_chat.config import settings
 from granite_chat.search.types import ScrapedContent
-from granite_chat.utils import batch
 
 
 class ConfigurableVectorStoreWrapper:
@@ -40,11 +37,7 @@ class ConfigurableVectorStoreWrapper:
         langchain_documents = self._create_langchain_documents(content)
         splitted_documents = self._split_documents(langchain_documents)
 
-        tasks = [self._add_documents(docs) for docs in batch(splitted_documents, settings.MAX_EMBEDDINGS)]
-        await asyncio.gather(*tasks)
-
-    async def _add_documents(self, docs: list[Document]) -> None:
-        await self.vector_store.aadd_documents(docs)
+        await self.vector_store.aadd_documents(splitted_documents)
 
     # TODO: subclass Document for better typing support
     def _create_langchain_documents(self, scraped_content: list[ScrapedContent]) -> list[Document]:

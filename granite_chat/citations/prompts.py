@@ -11,68 +11,41 @@ class CitationsPrompts:
 
     @staticmethod
     def generate_citations_prompt(sentences: list[Sentence], docs: list[Document]) -> str:
-        sent_str = json.dumps([s.model_dump_json() for s in sentences], indent=4)
-        json_docs = [{"doc_id": str(i), "content": d.page_content} for i, d in enumerate(docs)]
+        sent_str = json.dumps([s.model_dump_json(exclude={"offset", "length"}) for s in sentences], indent=4)
+        json_docs = [{"source_id": str(i), "content": d.page_content} for i, d in enumerate(docs)]
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are given:
-1. A set of reference documents (with doc_id and text content).
-2. A set of sentences that may contain ideas or information supported by the reference documents.
+1. A set of sources (with source_id and text).
+2. A set of sentences that may contain ideas or information supported by the sources.
 
-Your task is to produce citations. A citation is a reference to a source of information. It tells the reader where specific ideas, facts, or quotations in a piece of writing came from.
+Your task is to produce citations that link specific sentences to the given sources.
+A citation is a reference to a source of information.
+It tells the reader of the sentence where specific ideas, facts, or quotations came from.
 
-Include a citation if the sentence:
-- Contains a standalone claim, fact, or idea
+Include a source citation if the sentence:
+- Contains a standalone claim or fact.
 
-Do not include a citation if the sentence:
+DO NOT include a source citation if the sentence:
+- Is a title or section heading (look for markdown formatting)
 - States common knowledge (widely known, undisputed facts)
 - Expresses your own analysis, reasoning, or opinion
-- Provides general background that's easily verifiable and widely accepted
+- Provides general background information that is easily verifiable and widely accepted
 - Sets up procedural or instructional content
 
-Documents:
+For each citation produce a summary of the supporting source content:
+- The source summary is a summary of the relevant source content. DO NOT summarize the sentence.
+- Do not mention or quote sentences.
+- Each summary must be self-contained and not refer to previous or following sources or sentences.
+
+Example of a good source summary:
+- The Amazon rainforest plays a crucial role in regulating the Earth's carbon cycle.
+
+Sources:
 {doc_str}
 
 Sentences:
 {sent_str}
 
-Output format:
-[
-   {{
-        "sentence_id": "<sentence_id_1>",
-        "citations": ["<doc_id_1>", "<doc_id_2>"]
-    }},
-]
-"""  # noqa: E501
-
-    @staticmethod
-    def generate_response_with_citations_prompt(response: str, docs: list[Document]) -> str:
-        json_docs = [{"doc_id": str(i), "content": d.page_content} for i, d in enumerate(docs)]
-        doc_str = json.dumps(json_docs, indent=4)
-
-        return f"""You are given:
-- A set of documents, each with a unique `doc_id` and content text.
-- A response that answers a question.
-
-Your task is to add citations to the response
-- Insert inline citations to the documents using the format [doc_id].
-- Each substantial claim in the response that is supported by information in one or more documents should be followed by a corresponding [doc_id] citation(s).
-
-Example:
-The color of the sky changes because of Rayleigh scattering [1].
-
-Requirements:
-- Only include a citation if the information is clearly supported by the document.
-- You may cite multiple documents for a single claim if needed (e.g., [1, 2]).
-
-Do not alter the original response in any way beyond the insertion of citation annotations.
-Do not include any reference list or notes after the response.
-
-Documents:
-{doc_str}
-
-Response:
-{response}
-
-Annotate the response, inserting inline citations.
-"""  # noqa: E501
+Now produce the appropriate citations. Be accurate, only produce a citation if there is very strong evidence.
+"""

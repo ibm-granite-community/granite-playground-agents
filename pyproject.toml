@@ -8,7 +8,6 @@ dependencies = [
     "langchain-ollama>=0.3.3",
     "python-dotenv>=1.1.0",
     "transformers>=4.52.4",
-    "beeai-framework@git+https://github.com/i-am-bee/beeai-framework.git#subdirectory=python",
     "acp-sdk>=1.0.0",
     "trafilatura>=2.0.0",
     "langchain-openai>=0.3.24",
@@ -22,6 +21,7 @@ dependencies = [
     "markdown-it-py>=3.0.0",
     "aiolimiter>=1.2.1",
     "types-colorama>=0.4.15.20240311",
+    "beeai-framework>=0.1.29",
 ]
 
 [tool.ruff]
