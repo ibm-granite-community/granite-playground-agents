@@ -121,7 +121,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
         except Exception as e:  # Malformed citations throws error
             logger.exception(repr(e))
-
+            logger.info("Falling back to default citation generator!")
             # Falls back on the default generator in the event of failure
             fall_back_generator = DefaultCitationGenerator()
 

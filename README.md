@@ -23,6 +23,8 @@ pre-commit install
 
 Install dependencies using `uv sync`
 
+Activate your virtual environment `source .venv/bin/activate`
+
 ## Configuration
 
 The agent is designed to use models from Watsonx directly. Copy the `.env.template` file to `.env` and fill in the missing secrets.
