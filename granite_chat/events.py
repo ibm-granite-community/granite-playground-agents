@@ -10,5 +10,9 @@ class TrajectoryEvent(Event):
     step: str
 
 
+class GeneratingCitationsEvent(Event):
+    pass
+
+
 class CitationEvent(Event):
     citation: Citation
