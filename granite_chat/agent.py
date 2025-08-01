@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from typing import Literal
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models.models import Message, TrajectoryMetadata
@@ -11,9 +10,7 @@ from beeai_framework.backend import (
     SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
-from beeai_framework.backend.types import ChatModelUsage
 from langchain_core.documents import Document
-from pydantic import BaseModel
 
 from granite_chat import get_logger, utils
 from granite_chat.chat import ChatModelService
@@ -29,6 +26,7 @@ from granite_chat.search.prompts import SearchPrompts
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.response_parser import ThinkingResponseParser
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
+from granite_chat.usage import create_usage_info
 
 logger = get_logger(__name__)
 
@@ -76,26 +74,6 @@ watsonx_env = [
     {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
     {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
 ]
-
-
-class UsageInfo(BaseModel):
-    completion_tokens: int | None
-    prompt_tokens: int | None
-    total_tokens: int | None
-    model_id: str
-    type: Literal["usage_info"] = "usage_info"
-
-
-def create_usage_info(
-    usage: ChatModelUsage | None,
-    model_id: str,
-) -> UsageInfo:
-    return UsageInfo(
-        completion_tokens=usage.completion_tokens if usage else None,
-        prompt_tokens=usage.prompt_tokens if usage else None,
-        total_tokens=usage.total_tokens if usage else None,
-        model_id=model_id,
-    )
 
 
 @server.agent(
