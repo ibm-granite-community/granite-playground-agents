@@ -16,7 +16,7 @@ class BaseAgentStatus(BaseModel):
 
 
 class SearchingWebStatus(BaseAgentStatus):
-    status: str = "web-search"
+    status: str = "searching-web"
 
 
 class GeneratingCitationsStatus(BaseAgentStatus):
