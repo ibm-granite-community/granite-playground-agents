@@ -5,8 +5,6 @@ from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
 from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
 from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
-from langchain_core.vectorstores import InMemoryVectorStore
 from pydantic import ValidationError
 
 from granite_chat import get_logger
@@ -17,14 +15,12 @@ from granite_chat.emitter import EventEmitter
 from granite_chat.events import CitationEvent, GeneratingCitationsEvent, TextEvent, TrajectoryEvent
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
-from granite_chat.search.embeddings.embeddings import EmbeddingsFactory
-from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
 from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
-from granite_chat.search.vector_store import ConfigurableVectorStoreWrapper
+from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
 
 
 class Researcher(EventEmitter, SearchResultsMixin):
@@ -42,27 +38,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.final_report: str | None = None
 
         self.logger.debug("Initializing Researcher")
-
-        embeddings: Embeddings = EmbeddingsFactory.create()
-        vector_store = InMemoryVectorStore(embedding=embeddings)
-        tokenizer = EmbeddingsTokenizer.get_instance().get_tokenizer()
-
-        if tokenizer:
-            self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store=vector_store,
-                chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
-                chunk_overlap=int(settings.CHUNK_OVERLAP),
-                tokenizer=tokenizer,
-            )
-        else:
-            # Fall back on character chunks
-            self.logger.warning("Falling back to vector store without tokenizer")
-            self.vector_store = ConfigurableVectorStoreWrapper(
-                vector_store=vector_store,
-                chunk_size=settings.CHUNK_SIZE,
-                chunk_overlap=settings.CHUNK_OVERLAP,
-            )
-
+        self.vector_store = VectorStoreWrapperFactory.create()
         self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
 
     async def run(self) -> None:

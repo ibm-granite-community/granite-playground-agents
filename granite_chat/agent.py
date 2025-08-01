@@ -20,9 +20,9 @@ from granite_chat.emitter import Event
 from granite_chat.events import CitationEvent, GeneratingCitationsEvent, TextEvent, TrajectoryEvent
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.research.researcher import Researcher
-from granite_chat.search.agent import SearchAgent
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
+from granite_chat.search.tool import SearchTool
 from granite_chat.status import GeneratingCitationsStatus, SearchingWebStatus
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.response_parser import ThinkingResponseParser
@@ -237,8 +237,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         await context.yield_async(SearchingWebStatus())
 
-        search_agent = SearchAgent(chat_model=chat_model)
-        docs: list[Document] = await search_agent.search(messages)
+        search_tool = SearchTool(chat_model=chat_model)
+        docs: list[Document] = await search_tool.search(messages)
 
         if len(docs) > 0:
             doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]

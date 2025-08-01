@@ -9,7 +9,7 @@ from granite_chat.work import embeddings_pool
 
 
 class EmbeddingsFactory:
-    """Factory for ChatModel instances."""
+    """Factory for Embeddings instances."""
 
     @staticmethod
     def create() -> Embeddings:

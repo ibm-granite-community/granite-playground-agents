@@ -16,7 +16,7 @@ from transformers import AutoTokenizer
 from granite_chat.search.types import ScrapedContent
 
 
-class ConfigurableVectorStoreWrapper:
+class VectorStoreWrapper:
     def __init__(
         self,
         vector_store: VectorStore,
