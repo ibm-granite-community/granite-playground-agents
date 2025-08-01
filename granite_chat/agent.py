@@ -285,6 +285,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         if len(docs) > 0:
             generator = CitationGeneratorFactory.create()
             async for citation in generator.generate(messages=input, docs=docs, response=response):
+                logger.info(f"Citation: {citation.url}")
                 yield utils.to_citation_message_part(citation)
 
     except Exception as e:
@@ -343,6 +344,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             elif isinstance(event, TrajectoryEvent):
                 await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
             elif isinstance(event, CitationEvent):
+                logger.info(f"Citation: {event.citation.url}")
                 await context.yield_async(utils.to_citation_message_part(event.citation))
 
         researcher = Researcher(chat_model=chat_model, messages=messages)
