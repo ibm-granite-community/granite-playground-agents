@@ -12,7 +12,13 @@ from granite_chat.chat import ChatModelService
 from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
-from granite_chat.events import CitationEvent, GeneratingCitationsEvent, TextEvent, TrajectoryEvent
+from granite_chat.events import (
+    CitationEvent,
+    GeneratingCitationsCompleteEvent,
+    GeneratingCitationsEvent,
+    TextEvent,
+    TrajectoryEvent,
+)
 from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
 from granite_chat.search.engines.factory import SearchEngineFactory
@@ -203,6 +209,8 @@ class Researcher(EventEmitter, SearchResultsMixin):
             async for citation in generator.generate(messages=input, docs=docs, response=self.final_report or ""):
                 # yield message_part
                 await self._emit(CitationEvent(citation=citation))
+
+            await self._emit(GeneratingCitationsCompleteEvent())
 
     def _dedup_documents_by_content(self, documents: list[Document]) -> list[Document]:
         seen = set()

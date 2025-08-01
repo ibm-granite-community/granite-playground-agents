@@ -14,5 +14,9 @@ class GeneratingCitationsEvent(Event):
     pass
 
 
+class GeneratingCitationsCompleteEvent(Event):
+    pass
+
+
 class CitationEvent(Event):
     citation: Citation

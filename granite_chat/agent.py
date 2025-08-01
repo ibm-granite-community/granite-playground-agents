@@ -17,13 +17,19 @@ from granite_chat.chat import ChatModelService
 from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import Event
-from granite_chat.events import CitationEvent, GeneratingCitationsEvent, TextEvent, TrajectoryEvent
+from granite_chat.events import (
+    CitationEvent,
+    GeneratingCitationsCompleteEvent,
+    GeneratingCitationsEvent,
+    TextEvent,
+    TrajectoryEvent,
+)
 from granite_chat.memory import exceeds_token_limit, token_limit_message_part
 from granite_chat.research.researcher import Researcher
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.tool import SearchTool
-from granite_chat.status import GeneratingCitationsStatus, SearchingWebStatus
+from granite_chat.status import GeneratingCitationsStatus, Phase, SearchingWebStatus
 from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.response_parser import ThinkingResponseParser
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
@@ -235,7 +241,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         chat_model = ChatModelService()
 
-        await context.yield_async(SearchingWebStatus())
+        await context.yield_async(SearchingWebStatus(phase=Phase.active))
 
         search_tool = SearchTool(chat_model=chat_model)
         docs: list[Document] = await search_tool.search(messages)
@@ -244,6 +250,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
             # Prepend document prompt
             messages = doc_messages + messages
+
+        await context.yield_async(SearchingWebStatus(phase=Phase.completed))
 
         response: str = ""
 
@@ -264,10 +272,11 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         # Yield sources/citation
         if len(docs) > 0:
             generator = CitationGeneratorFactory.create()
-            await context.yield_async(GeneratingCitationsStatus())
+            await context.yield_async(GeneratingCitationsStatus(phase=Phase.active))
             async for citation in generator.generate(messages=input, docs=docs, response=response):
                 logger.info(f"Citation: {citation.url}")
                 yield utils.to_citation_message_part(citation)
+            await context.yield_async(GeneratingCitationsStatus(phase=Phase.completed))
 
     except Exception as e:
         logger.exception(repr(e))
@@ -325,10 +334,12 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             elif isinstance(event, TrajectoryEvent):
                 await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
             elif isinstance(event, GeneratingCitationsEvent):
-                await context.yield_async(GeneratingCitationsStatus())
+                await context.yield_async(GeneratingCitationsStatus(phase=Phase.active))
             elif isinstance(event, CitationEvent):
                 logger.info(f"Citation: {event.citation.url}")
                 await context.yield_async(utils.to_citation_message_part(event.citation))
+            elif isinstance(event, GeneratingCitationsCompleteEvent):
+                await context.yield_async(GeneratingCitationsStatus(phase=Phase.completed))
 
         researcher = Researcher(chat_model=chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)
