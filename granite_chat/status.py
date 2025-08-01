@@ -12,7 +12,7 @@ class Phase(str, Enum):
 class BaseAgentStatus(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: str
-    phase: Phase = Phase.active
+    phase: Phase
 
 
 class SearchingWebStatus(BaseAgentStatus):
