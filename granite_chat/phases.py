@@ -10,12 +10,12 @@ class Status(str, Enum):
 
 class Phase(BaseModel):
     status: Status
-    activity: str
+    name: str
 
 
 class SearchingWebPhase(Phase):
-    activity: str = "searching-web"
+    name: str = "searching-web"
 
 
 class GeneratingCitationsPhase(Phase):
-    activity: str = "generating-citations"
+    name: str = "generating-citations"
