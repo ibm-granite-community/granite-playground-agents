@@ -9,8 +9,8 @@ class Status(str, Enum):
 
 
 class Phase(BaseModel):
-    status: Status
     name: str
+    status: Status
 
     @property
     def wrapped(self) -> dict:
