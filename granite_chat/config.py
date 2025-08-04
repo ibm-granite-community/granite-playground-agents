@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str | None = Field(description="The API key for Google Search")
     GOOGLE_CX_KEY: str | None = Field(description="The CX key for Google Search")
     TAVILY_API_KEY: str | None = Field(default=None, description="The API key for Tavily")
+    SAFE_SEARCH: bool = Field(default=True, description="Turn on safe search if available for search engine.")
 
     OLLAMA_BASE_URL: Annotated[
         HttpUrl,

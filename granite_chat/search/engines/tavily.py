@@ -13,7 +13,6 @@ from tavily import AsyncTavilyClient
 from granite_chat.config import settings
 from granite_chat.search.engines.engine import SearchEngine
 from granite_chat.search.types import SearchResult
-from granite_chat.work import task_pool
 
 
 class TavilySearch(SearchEngine):
@@ -36,23 +35,22 @@ class TavilySearch(SearchEngine):
         Returns:
             list: List of search results with title, href and body
         """
-        async with task_pool.throttle():
-            results = await self.tavily_client.search(query=query, max_results=max_results, domains=domains)
-            search_results = []
+        results = await self.tavily_client.search(query=query, max_results=max_results, domains=domains)
+        search_results = []
 
-            # Normalizing results to match the format of the other search APIs
-            for result in results["results"]:
-                # skip youtube results
-                if "youtube.com" in result["url"]:
-                    continue
-                try:
-                    search_result = SearchResult(
-                        title=result["title"],
-                        href=result["link"],
-                        body=result["snippet"],
-                    )
-                except Exception:
-                    continue
-                search_results.append(search_result)
+        # Normalizing results to match the format of the other search APIs
+        for result in results["results"]:
+            # skip youtube results
+            if "youtube.com" in result["url"]:
+                continue
+            try:
+                search_result = SearchResult(
+                    title=result["title"],
+                    href=result["link"],
+                    body=result["snippet"],
+                )
+            except Exception:
+                continue
+            search_results.append(search_result)
 
-            return search_results
+        return search_results
