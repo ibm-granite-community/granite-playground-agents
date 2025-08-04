@@ -241,7 +241,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         chat_model = ChatModelService()
 
-        await context.yield_async(SearchingWebPhase(status=Status.active))
+        await context.yield_async(SearchingWebPhase(status=Status.active).wrapped)
 
         search_tool = SearchTool(chat_model=chat_model)
         docs: list[Document] = await search_tool.search(messages)
@@ -251,7 +251,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             # Prepend document prompt
             messages = doc_messages + messages
 
-        await context.yield_async(SearchingWebPhase(status=Status.completed))
+        await context.yield_async(SearchingWebPhase(status=Status.completed).wrapped)
 
         response: str = ""
 
@@ -272,11 +272,11 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         # Yield sources/citation
         if len(docs) > 0:
             generator = CitationGeneratorFactory.create()
-            await context.yield_async(GeneratingCitationsPhase(status=Status.active))
+            await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
             async for citation in generator.generate(messages=input, docs=docs, response=response):
                 logger.info(f"Citation: {citation.url}")
                 yield utils.to_citation_message_part(citation)
-            await context.yield_async(GeneratingCitationsPhase(status=Status.completed))
+            await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
 
     except Exception as e:
         logger.exception(repr(e))
@@ -334,12 +334,12 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             elif isinstance(event, TrajectoryEvent):
                 await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
             elif isinstance(event, GeneratingCitationsEvent):
-                await context.yield_async(GeneratingCitationsPhase(status=Status.active))
+                await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
             elif isinstance(event, CitationEvent):
                 logger.info(f"Citation: {event.citation.url}")
                 await context.yield_async(utils.to_citation_message_part(event.citation))
             elif isinstance(event, GeneratingCitationsCompleteEvent):
-                await context.yield_async(GeneratingCitationsPhase(status=Status.completed))
+                await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
 
         researcher = Researcher(chat_model=chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)

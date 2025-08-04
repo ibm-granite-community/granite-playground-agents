@@ -12,6 +12,10 @@ class Phase(BaseModel):
     status: Status
     name: str
 
+    @property
+    def wrapped(self) -> dict:
+        return {"phase": self.model_dump()}
+
 
 class SearchingWebPhase(Phase):
     name: str = "searching-web"
