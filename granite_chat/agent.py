@@ -116,8 +116,8 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
             match event:
                 case ChatModelNewTokenEvent():
                     yield MessagePart(content_type="text/plain", content=event.value.get_text_content())
-                case (ChatModelSuccessEvent(), "success"):
-                    yield create_usage_info(event.value.usage, event.model_id)
+                case ChatModelSuccessEvent():
+                    yield create_usage_info(event.value.usage, chat_model.model_id)
     else:
         output = await chat_model.create(messages=messages)
         yield MessagePart(content_type="text/plain", content=output.get_text_content())
