@@ -27,6 +27,7 @@ from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
+from granite_chat.work import task_pool
 
 
 class Researcher(EventEmitter, SearchResultsMixin):
@@ -190,7 +191,9 @@ class Researcher(EventEmitter, SearchResultsMixin):
     async def _search_query(self, query: str, max_results: int = 3) -> list[SearchResult]:
         try:
             engine = SearchEngineFactory.create()
-            return await engine.search(query=query, max_results=max_results)
+            # search engines do not throttle internally
+            async with task_pool.throttle():
+                return await engine.search(query=query, max_results=max_results)
         except Exception as e:
             self.logger.exception(repr(e))
         return []

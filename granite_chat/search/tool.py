@@ -14,6 +14,7 @@ from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult, StandaloneQuerySchema
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
+from granite_chat.work import task_pool
 
 logger = get_logger(__name__)
 
@@ -78,7 +79,11 @@ class SearchTool(SearchResultsMixin):
     async def _search_query(self, query: str, max_results: int = 3) -> None:
         try:
             engine = SearchEngineFactory.create()
-            results = await engine.search(query=query, max_results=max_results)
+
+            # search engines do not throttle internally
+            async with task_pool.throttle():
+                results = await engine.search(query=query, max_results=max_results)
+
             results = await self.search_results_filter.filter(query=query, results=results)
             for r in results:
                 self.add_search_result(r)

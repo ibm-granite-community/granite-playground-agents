@@ -5,7 +5,7 @@ from granite_chat.search.engines.tavily import TavilySearch
 
 
 class SearchEngineFactory:
-    """Factory for ChatModel instances."""
+    """Factory for SearchEngine instances."""
 
     @staticmethod
     def create() -> SearchEngine:
