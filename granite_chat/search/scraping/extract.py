@@ -57,17 +57,18 @@ class ContentExtractor(EventEmitter):
         """
         Extracts the data from the link with logging
         """
-        async with task_pool.throttle():
-            try:
-                link = search_result.url
-                scraper_cls: type[AsyncScraper] | type[SyncScraper] = self.get_scraper(link)
-                scraper = scraper_cls()
 
-                # Get scraper name
-                scraper_name = scraper.__class__.__name__
-                self.logger.info(f"=== Using {scraper_name} ===")
+        try:
+            link = search_result.url
+            scraper_cls: type[AsyncScraper] | type[SyncScraper] = self.get_scraper(link)
+            scraper = scraper_cls()
 
-                # Get content
+            # Get scraper name
+            scraper_name = scraper.__class__.__name__
+            self.logger.info(f"=== Using {scraper_name} ===")
+
+            # Get content
+            async with task_pool.throttle():
                 if isinstance(scraper, AsyncScraper):
                     content, image_urls, title = await cast(AsyncScraper, scraper).ascrape(
                         link=link, client=self.async_client
@@ -82,42 +83,41 @@ class ContentExtractor(EventEmitter):
                         task_pool.executor, lambda: sync_scraper.scrape(link, self.client)
                     )
 
-                if len(content) < 200:
-                    self.logger.warning(f"Content too short or empty for {link}")
-                    return ScrapedContent(
-                        search_result=search_result,
-                        url=link,
-                        raw_content=None,
-                        image_urls=[],
-                        title=title,
-                    )
-
-                # Log results
-                self.logger.info(f"Title: {title}")
-                self.logger.info(f"Content length: {len(content) if content else 0} characters")
-                self.logger.info(f"Number of images: {len(image_urls)}")
-                self.logger.info(f"URL: {link}")
-                self.logger.info("=" * 50)
-
-                await self._emit(TrajectoryEvent(step=f"👀 Reading {link}"))
-
-                return ScrapedContent(
-                    search_result=search_result,
-                    url=link,
-                    raw_content=content,
-                    image_urls=image_urls,
-                    title=title,
-                )
-
-            except Exception as e:
-                self.logger.error(f"Error processing {link}: {e!s}")
+            if len(content) < 200:
+                self.logger.warning(f"Content too short or empty for {link}")
                 return ScrapedContent(
                     search_result=search_result,
                     url=link,
                     raw_content=None,
                     image_urls=[],
-                    title="",
+                    title=title,
                 )
+
+            # Log results
+            self.logger.info(f"Title: {title}")
+            self.logger.info(f"Content length: {len(content) if content else 0} characters")
+            self.logger.info(f"Number of images: {len(image_urls)}")
+            self.logger.info(f"URL: {link}")
+            self.logger.info("=" * 50)
+
+            await self._emit(TrajectoryEvent(step=f"👀 Reading {link}"))
+
+            return ScrapedContent(
+                search_result=search_result,
+                url=link,
+                raw_content=content,
+                image_urls=image_urls,
+                title=title,
+            )
+        except Exception as e:
+            self.logger.error(f"Error processing {link}: {e!s}")
+            return ScrapedContent(
+                search_result=search_result,
+                url=link,
+                raw_content=None,
+                image_urls=[],
+                title="",
+            )
 
     def get_scraper(
         self,
