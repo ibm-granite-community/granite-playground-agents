@@ -23,6 +23,8 @@ from granite_chat.search.scraping.scraper import AsyncScraper, SyncScraper
 from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.work import task_pool
 
+SCRAPE_TIMEOUT_SEC = 20
+
 
 class ContentExtractor(EventEmitter):
     """
@@ -50,10 +52,10 @@ class ContentExtractor(EventEmitter):
         Extracts the content from the links
         """
         contents = await asyncio.gather(*(self.extract_data_from_url(s) for s in self.search_results))
-        res = [content for content in contents if content.raw_content is not None]
+        res = [content for content in contents if content is not None]
         return res
 
-    async def extract_data_from_url(self, search_result: SearchResult) -> ScrapedContent:
+    async def extract_data_from_url(self, search_result: SearchResult) -> ScrapedContent | None:
         """
         Extracts the data from the link with logging
         """
@@ -70,28 +72,25 @@ class ContentExtractor(EventEmitter):
             # Get content
             async with task_pool.throttle():
                 if isinstance(scraper, AsyncScraper):
-                    content, image_urls, title = await cast(AsyncScraper, scraper).ascrape(
-                        link=link, client=self.async_client
+                    content, image_urls, title = await asyncio.wait_for(
+                        cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
+                        timeout=SCRAPE_TIMEOUT_SEC,
                     )
                 else:
+                    loop = asyncio.get_running_loop()
                     sync_scraper = cast(SyncScraper, scraper)
                     (
                         content,
                         image_urls,
                         title,
-                    ) = await asyncio.get_running_loop().run_in_executor(
-                        task_pool.executor, lambda: sync_scraper.scrape(link, self.client)
+                    ) = await asyncio.wait_for(
+                        loop.run_in_executor(task_pool.executor, lambda: sync_scraper.scrape(link, self.client)),
+                        timeout=SCRAPE_TIMEOUT_SEC,
                     )
 
             if len(content) < 200:
                 self.logger.warning(f"Content too short or empty for {link}")
-                return ScrapedContent(
-                    search_result=search_result,
-                    url=link,
-                    raw_content=None,
-                    image_urls=[],
-                    title=title,
-                )
+                return None
 
             # Log results
             self.logger.info(f"Title: {title}")
@@ -100,7 +99,7 @@ class ContentExtractor(EventEmitter):
             self.logger.info(f"URL: {link}")
             self.logger.info("=" * 50)
 
-            await self._emit(TrajectoryEvent(step=f"👀 Reading {link}"))
+            await self._emit(TrajectoryEvent(step=f"👀 Read {link}"))
 
             return ScrapedContent(
                 search_result=search_result,
@@ -109,15 +108,14 @@ class ContentExtractor(EventEmitter):
                 image_urls=image_urls,
                 title=title,
             )
+
+        except TimeoutError as e:
+            self.logger.error(f"Timed out scraping {link}: {e!s}")
+            return None
+
         except Exception as e:
             self.logger.error(f"Error processing {link}: {e!s}")
-            return ScrapedContent(
-                search_result=search_result,
-                url=link,
-                raw_content=None,
-                image_urls=[],
-                title="",
-            )
+            return None
 
     def get_scraper(
         self,
