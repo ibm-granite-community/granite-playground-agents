@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from itertools import count
@@ -17,7 +18,7 @@ from granite_chat.chat import ChatModelService
 from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
-from granite_chat.markdown import get_markdown_tokens
+from granite_chat.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
 from granite_chat.utils import to_granite_io_messages
 
 logger = get_logger(__name__)
@@ -61,11 +62,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
         self.openai_base_url = openai_base_url
         self.model_id = model_id
         self.extra_headers = extra_headers
-
-    async def generate(
-        self, messages: list[Message], docs: list[Document], response: str
-    ) -> AsyncGenerator[Citation, None]:
-        citations_io_processor = CitationsIOProcessor(
+        self.citations_io_processor = CitationsIOProcessor(
             backend=make_backend(
                 "openai",
                 {
@@ -75,16 +72,31 @@ class GraniteIOCitationGenerator(CitationGenerator):
             )
         )
 
+    async def generate(
+        self, messages: list[Message], docs: list[Document], response: str
+    ) -> AsyncGenerator[Citation, None]:
+        try:
+            sections = get_markdown_sections(response)
+            for section in sections:
+                if len(section.content.strip()) > 0:
+                    async for citation in self._generate_citations(messages, docs, section):
+                        yield citation
+        except asyncio.CancelledError:
+            raise
+
+    async def _generate_citations(
+        self, messages: list[Message], docs: list[Document], section: MarkdownSection
+    ) -> AsyncGenerator[Citation, None]:
         try:
             # TODO: Should this be just the last user message?
             granite_io_messages = to_granite_io_messages(messages)
             # Add agent response
-            granite_io_messages.append(GraniteIOAssistantMessage(content=response))
+            granite_io_messages.append(GraniteIOAssistantMessage(content=section.content))
 
             granite_io_documents = [GraniteIODocument(doc_id=str(i), text=d.page_content) for i, d in enumerate(docs)]
             doc_index = {str(i): d for i, d in enumerate(docs)}
 
-            result = await citations_io_processor.acreate_chat_completion(
+            result = await self.citations_io_processor.acreate_chat_completion(
                 ChatCompletionInputs(
                     messages=granite_io_messages,
                     documents=granite_io_documents,
@@ -100,7 +112,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
                     doc = doc_index[gio_citation.doc_id]
 
                     # Any citation that contains markdown formatting or spans lines needs to be adjusted
-                    tokens = get_markdown_tokens(gio_citation.response_text)
+                    tokens = get_markdown_tokens_with_content(gio_citation.response_text)
 
                     for tok in tokens:
                         stripped = tok.content.strip()
@@ -108,8 +120,8 @@ class GraniteIOCitationGenerator(CitationGenerator):
                         if stripped.endswith(":") or stripped.endswith("*") or not stripped.endswith("."):
                             continue
 
-                        start_index = gio_citation.response_begin + tok.start_index
-                        end_index = gio_citation.response_begin + tok.end_index
+                        start_index = gio_citation.response_begin + section.start_index + tok.start_index
+                        end_index = gio_citation.response_begin + +section.start_index + tok.end_index
 
                         yield Citation(
                             url=doc.metadata["url"],
@@ -123,10 +135,10 @@ class GraniteIOCitationGenerator(CitationGenerator):
             logger.exception(repr(e))
             logger.info("Falling back to default citation generator!")
             # Falls back on the default generator in the event of failure
-            fall_back_generator = DefaultCitationGenerator()
+            # fall_back_generator = DefaultCitationGenerator()
 
-            async for citation in fall_back_generator.generate(messages=messages, docs=docs, response=response):
-                yield citation
+            # async for citation in fall_back_generator.generate(messages=messages, docs=docs, response=response):
+            #     yield citation
 
 
 class DefaultCitationGenerator(CitationGenerator):
@@ -143,7 +155,7 @@ class DefaultCitationGenerator(CitationGenerator):
             doc_index = {str(i): d for i, d in enumerate(docs)}
             source_index = {d.metadata["source"]: d.metadata["title"] for d in docs}
 
-            tokens = get_markdown_tokens(response)
+            tokens = get_markdown_tokens_with_content(response)
             sentences = []
             counter = count(start=0, step=1)
             for tok in tokens:

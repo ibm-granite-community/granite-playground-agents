@@ -1,16 +1,25 @@
+import re
+
 from markdown_it import MarkdownIt
 from pydantic import BaseModel
 
 
-class MarkdownToken(BaseModel):
-    type: str
-    tag: str
+class MarkdownText(BaseModel):
     content: str
     start_index: int
     end_index: int
 
 
-def get_markdown_tokens(markdown_text: str) -> list[MarkdownToken]:
+class MarkdownToken(MarkdownText):
+    type: str
+    tag: str
+
+
+class MarkdownSection(MarkdownText):
+    heading: str
+
+
+def get_markdown_tokens_with_content(markdown_text: str) -> list[MarkdownToken]:
     md = MarkdownIt("commonmark")
     tokens = md.parse(markdown_text)
 
@@ -59,3 +68,23 @@ def get_markdown_tokens(markdown_text: str) -> list[MarkdownToken]:
         )
 
     return token_offsets
+
+
+def get_markdown_sections(markdown_text: str) -> list[MarkdownSection]:
+    # Looking for all headings to split on
+    heading_pattern = re.compile(r"^(?P<full>(?P<hashes>#{1,6}) (?P<title>[^\n]+))", re.MULTILINE)
+
+    matches = list(heading_pattern.finditer(markdown_text))
+    sections = []
+
+    for i, match in enumerate(matches):
+        heading_text = match.group("title").strip()
+        content_start = match.end()
+        content_end = matches[i + 1].start() if i + 1 < len(matches) else len(markdown_text)
+        content = markdown_text[content_start:content_end]
+
+        sections.append(
+            MarkdownSection(heading=heading_text, content=content, start_index=content_start, end_index=content_end)
+        )
+
+    return sections
