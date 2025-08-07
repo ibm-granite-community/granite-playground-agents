@@ -12,6 +12,7 @@ import os
 import tempfile
 from urllib.parse import urlparse
 
+import aiofiles
 from httpx import AsyncClient, TimeoutException
 from langchain_community.document_loaders import PyMuPDFLoader
 
@@ -51,8 +52,10 @@ class PyMuPDFScraper(AsyncScraper):
 
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
                         temp_filename = temp_file.name
+
+                    async with aiofiles.open(temp_filename, "wb") as f:
                         async for chunk in response.aiter_bytes(chunk_size=8192):
-                            temp_file.write(chunk)
+                            await f.write(chunk)
 
                 loader = PyMuPDFLoader(temp_filename)
                 doc = loader.load()
@@ -71,3 +74,7 @@ class PyMuPDFScraper(AsyncScraper):
         except Exception:
             logger.exception(f"Error loading PDF: {link}")
             return "", [], ""
+
+        finally:
+            if temp_filename and os.path.exists(temp_filename):
+                os.remove(temp_filename)
