@@ -17,6 +17,10 @@ from contextlib import asynccontextmanager
 
 from aiolimiter import AsyncLimiter
 
+from granite_chat import get_logger
+
+logger = get_logger(__name__)
+
 
 class WorkerPool:
     def __init__(
@@ -31,11 +35,42 @@ class WorkerPool:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self.rate_limiter = AsyncLimiter(rate_limit, rate_period)
+        self._semaphore_acquired_count = 0
+        self._rate_limiter_acquired_count = 0
+        self._counter_lock = asyncio.Lock()
 
     @asynccontextmanager
     async def throttle(self):  # noqa: ANN201
-        async with self.semaphore, self.rate_limiter:
-            yield
+        logger.debug(
+            f"[{self.name}] Before acquire - semaphore={self._semaphore_acquired_count}, "
+            f"rate_limiter={self._rate_limiter_acquired_count}"
+        )
+
+        async with self.semaphore:
+            async with self._counter_lock:
+                self._semaphore_acquired_count += 1
+
+            async with self.rate_limiter:
+                async with self._counter_lock:
+                    self._rate_limiter_acquired_count += 1
+
+                logger.debug(
+                    f"[{self.name}] After acquire - semaphore={self._semaphore_acquired_count}, "
+                    f"rate_limiter={self._rate_limiter_acquired_count}"
+                )
+
+                try:
+                    yield
+
+                finally:
+                    async with self._counter_lock:
+                        self._rate_limiter_acquired_count -= 1
+                        self._semaphore_acquired_count -= 1
+
+                    logger.debug(
+                        f"[{self.name}] After release - semaphore={self._semaphore_acquired_count}, "
+                        f"rate_limiter={self._rate_limiter_acquired_count}"
+                    )
 
 
 # Control access to the chat backend
