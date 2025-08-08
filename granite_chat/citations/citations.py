@@ -20,6 +20,7 @@ from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
 from granite_chat.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
+from granite_chat.work import task_pool
 
 nltk.download("punkt_tab")
 
@@ -80,9 +81,10 @@ class GraniteIOCitationGenerator(CitationGenerator):
         try:
             sections = get_markdown_sections(response)
             for section in sections:
-                if len(section.content.strip()) > 0:
-                    async for citation in self._generate_citations(messages, docs, section):
-                        yield citation
+                if section.content.strip():
+                    async with task_pool.throttle():
+                        async for citation in self._generate_citations(messages, docs, section):
+                            yield citation
         except asyncio.CancelledError:
             raise
 
@@ -147,9 +149,10 @@ class DefaultCitationGenerator(CitationGenerator):
         try:
             sections = get_markdown_sections(response)
             for section in sections:
-                if len(section.content.strip()) > 0:
-                    async for citation in self._generate_citations(messages, docs, section):
-                        yield citation
+                if section.content.strip():
+                    async with task_pool.throttle():
+                        async for citation in self._generate_citations(messages, docs, section):
+                            yield citation
         except asyncio.CancelledError:
             raise
 
