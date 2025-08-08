@@ -89,7 +89,7 @@ class Settings(BaseSettings):
         default=4096, description="The maximum number of tokens the LLM will generate", ge=10, le=128_000
     )
     TEMPERATURE: float = Field(
-        default=0.2,
+        default=0.1,
         description="How predictable (low value) or creative (high value) the LLM responses are",
         ge=0.0,
         le=2.0,

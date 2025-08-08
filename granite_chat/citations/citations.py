@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from itertools import count
 
+import nltk
 from acp_sdk import Message
 from beeai_framework.backend import UserMessage
 from granite_io import make_backend
@@ -19,7 +20,8 @@ from granite_chat.citations.prompts import CitationsPrompts
 from granite_chat.citations.types import Citation, CitationsSchema, Sentence
 from granite_chat.config import settings
 from granite_chat.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
-from granite_chat.utils import to_granite_io_messages
+
+nltk.download("punkt_tab")
 
 logger = get_logger(__name__)
 
@@ -88,11 +90,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
         self, messages: list[Message], docs: list[Document], section: MarkdownSection
     ) -> AsyncGenerator[Citation, None]:
         try:
-            # TODO: Should this be just the last user message?
-            granite_io_messages = to_granite_io_messages(messages)
-            # Add agent response
-            granite_io_messages.append(GraniteIOAssistantMessage(content=section.content))
-
+            granite_io_messages = [GraniteIOAssistantMessage(content=section.content)]
             granite_io_documents = [GraniteIODocument(doc_id=str(i), text=d.page_content) for i, d in enumerate(docs)]
             doc_index = {str(i): d for i, d in enumerate(docs)}
 
@@ -132,13 +130,8 @@ class GraniteIOCitationGenerator(CitationGenerator):
                         )
 
         except Exception as e:  # Malformed citations throws error
+            logger.info("Failed to generate citations!")
             logger.exception(repr(e))
-            logger.info("Falling back to default citation generator!")
-            # Falls back on the default generator in the event of failure
-            # fall_back_generator = DefaultCitationGenerator()
-
-            # async for citation in fall_back_generator.generate(messages=messages, docs=docs, response=response):
-            #     yield citation
 
 
 class DefaultCitationGenerator(CitationGenerator):
@@ -146,31 +139,43 @@ class DefaultCitationGenerator(CitationGenerator):
 
     def __init__(self) -> None:
         super().__init__()
+        self.chat_model = ChatModelService()
 
     async def generate(
         self, messages: list[Message], docs: list[Document], response: str
     ) -> AsyncGenerator[Citation, None]:
         try:
-            model = ChatModelService()
+            sections = get_markdown_sections(response)
+            for section in sections:
+                if len(section.content.strip()) > 0:
+                    async for citation in self._generate_citations(messages, docs, section):
+                        yield citation
+        except asyncio.CancelledError:
+            raise
+
+    async def _generate_citations(
+        self, messages: list[Message], docs: list[Document], section: MarkdownSection
+    ) -> AsyncGenerator[Citation, None]:
+        try:
             doc_index = {str(i): d for i, d in enumerate(docs)}
             source_index = {d.metadata["source"]: d.metadata["title"] for d in docs}
-
-            tokens = get_markdown_tokens_with_content(response)
+            tokens = get_markdown_tokens_with_content(section.content)
             sentences = []
             counter = count(start=0, step=1)
             for tok in tokens:
                 stripped_content = tok.content.strip()
                 if tok.type == "inline" and stripped_content.endswith("."):
-                    sentences.extend(self._to_sentences(response=tok.content, offset=tok.start_index, counter=counter))
+                    sentences.extend(
+                        self._to_sentences(
+                            response=tok.content, offset=section.start_index + tok.start_index, counter=counter
+                        )
+                    )
 
             sent_index: dict[str, Sentence] = {str(s.id): s for s in sentences}
-
             prompt = CitationsPrompts.generate_citations_prompt(sentences=sentences, docs=docs)
-
-            structured_output = await model.create_structure(
+            structured_output = await self.chat_model.create_structure(
                 schema=CitationsSchema, messages=[UserMessage(content=prompt)]
             )
-
             citations = CitationsSchema(**structured_output.object)
 
             for cite in citations.citations:
@@ -187,6 +192,7 @@ class DefaultCitationGenerator(CitationGenerator):
                         )
 
         except Exception as e:
+            logger.info("Failed to generate citations!")
             logger.exception(repr(e))
 
     def _to_sentences(self, response: str, offset: int, counter: count) -> list[Sentence]:
