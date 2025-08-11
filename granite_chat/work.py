@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 
 from aiolimiter import AsyncLimiter
 
-from granite_chat import get_logger
+from granite_chat import get_logger, settings
 
 logger = get_logger(__name__)
 
@@ -74,10 +74,20 @@ class WorkerPool:
 
 
 # Control access to the chat backend
-chat_pool = WorkerPool(name="inference", max_concurrent_tasks=20)
+chat_pool = WorkerPool(
+    name="inference",
+    max_concurrent_tasks=settings.MAX_CONCURRENT_INFERENCE_TASKS,
+    rate_limit=settings.RATE_LIMIT_INFERENCE_TASKS,
+    rate_period=settings.RATE_PERIOD_INFERENCE_TASKS,
+)
 
-# Control access to the embeddings backend
+# Control access to the embeddings backend, share with chat for now
 embeddings_pool = chat_pool
 
 # General task control
-task_pool = WorkerPool(name="general", max_concurrent_tasks=20, rate_limit=10, rate_period=2)
+task_pool = WorkerPool(
+    name="general",
+    max_concurrent_tasks=settings.MAX_CONCURRENT_TASKS,
+    rate_limit=settings.RATE_LIMIT_TASKS,
+    rate_period=settings.RATE_PERIOD_TASKS,
+)

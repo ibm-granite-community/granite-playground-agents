@@ -113,6 +113,31 @@ class Settings(BaseSettings):
         default=15, description="The number of documents to return from the vector store"
     )
 
+    # Inference throttle
+    MAX_CONCURRENT_INFERENCE_TASKS: int = Field(
+        default=20,
+        description="The max. number of inference operations that can run simultaneously, includes chat and embeddings",
+    )
+    RATE_LIMIT_INFERENCE_TASKS: int = Field(
+        default=8, description="Rate limit for inference tasks in specified rate period"
+    )
+    RATE_PERIOD_INFERENCE_TASKS: int = Field(
+        default=2, description="Rate period in seconds, use with rate limit to implement throttle"
+    )
+
+    # General task throttle
+    MAX_CONCURRENT_TASKS: int = Field(
+        default=20,
+        description="The max. number of tasks that can run simultaneously, excludes inference tasks",
+    )
+    RATE_LIMIT_TASKS: int = Field(
+        default=20,
+        description="Rate limit for tasks in specified rate period",
+    )
+    RATE_PERIOD_TASKS: int = Field(
+        default=2, description="Rate period in seconds, use with rate limit to implement throttle"
+    )
+
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
         # We need OLLAMA_BASE_URL to be set in the event that ollama embeddings are used
