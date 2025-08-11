@@ -132,7 +132,7 @@ class GraniteIOCitationGenerator(CitationGenerator):
                         )
 
         except Exception as e:  # Malformed citations throws error
-            logger.info("Failed to generate citations!")
+            logger.info(f"Failed to generate citations for `{section.content}`")
             logger.exception(repr(e))
 
 
