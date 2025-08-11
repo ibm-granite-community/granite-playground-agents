@@ -195,7 +195,7 @@ class DefaultCitationGenerator(CitationGenerator):
                         )
 
         except Exception as e:
-            logger.info("Failed to generate citations!")
+            logger.info(f"Failed to generate citations for `{section.content}`")
             logger.exception(repr(e))
 
     def _to_sentences(self, response: str, offset: int, counter: count) -> list[Sentence]:
