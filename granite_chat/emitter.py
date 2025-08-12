@@ -22,7 +22,7 @@ class EventEmitter:
         super().__init__(*args, **kwargs)
 
     def subscribe(self, handler: EventHandler) -> None:
-        """Register a handler to receive log events"""
+        """Register a handler to receive events"""
         self._handlers.append(handler)
 
     def unsubscribe(self, handler: EventHandler) -> None:

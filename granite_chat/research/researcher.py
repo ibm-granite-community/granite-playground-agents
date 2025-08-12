@@ -3,17 +3,20 @@ from typing import Any
 
 from acp_sdk import Message as AcpMessage
 from acp_sdk import MessagePart
-from beeai_framework.backend import ChatModelNewTokenEvent, Message, UserMessage
+from beeai_framework.backend import (
+    ChatModel,
+    ChatModelNewTokenEvent,
+    Message,
+    UserMessage,
+)
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
 from granite_chat import get_logger
-from granite_chat.chat import ChatModelService
 from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.events import (
-    CitationEvent,
     GeneratingCitationsCompleteEvent,
     GeneratingCitationsEvent,
     TextEvent,
@@ -27,11 +30,11 @@ from granite_chat.search.mixins import SearchResultsMixin
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
-from granite_chat.work import task_pool
+from granite_chat.work import chat_pool, task_pool
 
 
 class Researcher(EventEmitter, SearchResultsMixin):
-    def __init__(self, chat_model: ChatModelService, messages: list[Message], *args: Any, **kwargs: Any) -> None:
+    def __init__(self, chat_model: ChatModel, messages: list[Message], *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.messages = messages
@@ -133,22 +136,22 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
 
-        response: str = ""
+        response: list[str] = []
 
         if settings.STREAMING is True:
             # Final report is streamed
-            async for data in self.chat_model.create_stream(messages=[UserMessage(content=prompt)]):
-                match data:
-                    case ChatModelNewTokenEvent():
-                        response += data.value.get_text_content()
-                        await self._emit(TextEvent(text=data.value.get_text_content()))
-
+            async with chat_pool.throttle():
+                async for event, _ in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
+                    if isinstance(event, ChatModelNewTokenEvent):
+                        content = event.value.get_text_content()
+                        response.append(content)
+                        await self._emit(TextEvent(text=content))
         else:
             output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
-            response += output.get_text_content()
-            await self._emit(TextEvent(text=response))
+            response.append(output.get_text_content())
+            await self._emit(TextEvent(text="".join(response)))
 
-        self.final_report = response
+        self.final_report = "".join(response)
 
     async def _generate_research_plan(self) -> list[ResearchQuery]:
         if self.research_topic is None:
@@ -157,9 +160,10 @@ class Researcher(EventEmitter, SearchResultsMixin):
         prompt = ResearchPrompts.research_plan_prompt(
             topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
         )
-        response = await self.chat_model.create_structure(
-            schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
-        )
+        async with chat_pool.throttle():
+            response = await self.chat_model.create_structure(
+                schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
+            )
 
         try:
             plan = ResearchPlanSchema(**response.object)
@@ -184,7 +188,8 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.final_report_docs += docs
 
         research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
-        response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
+        async with chat_pool.throttle():
+            response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
         report = response.get_text_content()
         return ResearchReport(query=query, report=report)
 
@@ -202,17 +207,13 @@ class Researcher(EventEmitter, SearchResultsMixin):
         if len(self.final_report_docs) > 0:
             # Compress docs
             docs = self._dedup_documents_by_content(self.final_report_docs)
-
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
 
             generator = CitationGeneratorFactory.create()
+            self.forward_events_from(generator)
 
             await self._emit(GeneratingCitationsEvent())
-
-            async for citation in generator.generate(messages=input, docs=docs, response=self.final_report or ""):
-                # yield message_part
-                await self._emit(CitationEvent(citation=citation))
-
+            await generator.generate(messages=input, docs=docs, response=self.final_report or "")
             await self._emit(GeneratingCitationsCompleteEvent())
 
     def _dedup_documents_by_content(self, documents: list[Document]) -> list[Document]:

@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
@@ -13,12 +14,13 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
 from granite_chat import get_logger, utils
-from granite_chat.chat import ChatModelService
+from granite_chat.chat.prompts import ChatPrompts
+from granite_chat.chat_model import ChatModelFactory
 from granite_chat.citations.citations import CitationGeneratorFactory
+from granite_chat.citations.events import CitationEvent
 from granite_chat.config import settings
 from granite_chat.emitter import Event
 from granite_chat.events import (
-    CitationEvent,
     GeneratingCitationsCompleteEvent,
     GeneratingCitationsEvent,
     TextEvent,
@@ -34,6 +36,7 @@ from granite_chat.thinking.prompts import ThinkingPrompts
 from granite_chat.thinking.response_parser import ThinkingResponseParser
 from granite_chat.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_chat.usage import create_usage_info
+from granite_chat.work import chat_pool
 
 logger = get_logger(__name__)
 
@@ -104,23 +107,26 @@ watsonx_env = [
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
+    messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
     if exceeds_token_limit(messages):
         yield token_limit_message_part()
         return
 
-    chat_model = ChatModelService()
+    chat_model = ChatModelFactory.create()
 
     if settings.STREAMING is True:
-        async for event in chat_model.create_stream(messages=messages):
-            match event:
-                case ChatModelNewTokenEvent():
-                    yield MessagePart(content_type="text/plain", content=event.value.get_text_content())
-                case ChatModelSuccessEvent():
+        async with chat_pool.throttle():
+            async for event, _ in chat_model.create(messages=messages, stream=True):
+                if isinstance(event, ChatModelNewTokenEvent):
+                    yield MessagePart(content=event.value.get_text_content())
+                elif isinstance(event, ChatModelSuccessEvent):
                     yield create_usage_info(event.value.usage, chat_model.model_id)
+                await asyncio.sleep(0)
     else:
-        output = await chat_model.create(messages=messages)
-        yield MessagePart(content_type="text/plain", content=output.get_text_content())
+        async with chat_pool.throttle():
+            output = await chat_model.create(messages=messages)
+        yield MessagePart(content=output.get_text_content())
         yield create_usage_info(output.usage, chat_model.model_id)
 
 
@@ -157,7 +163,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
         yield token_limit_message_part()
         return
 
-    chat_model = ChatModelService()
+    chat_model = ChatModelFactory.create()
 
     messages = [
         SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
@@ -167,9 +173,9 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     handler = ThinkingStreamHandler(tags=["think", "response"])
 
     if settings.STREAMING is True:
-        async for event in chat_model.create_stream(messages=messages):
-            match event:
-                case ChatModelNewTokenEvent():
+        async with chat_pool.throttle():
+            async for event, _ in chat_model.create(messages=messages, stream=True):
+                if isinstance(event, ChatModelNewTokenEvent):
                     token = event.value.get_text_content()
                     for output in handler.on_token(token=token):
                         if isinstance(output, TokenEvent):
@@ -177,11 +183,13 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                             yield MessagePart(content_type=content_type, content=output.token)
                         elif isinstance(output, TagStartEvent):
                             pass
-
-                case ChatModelSuccessEvent():
+                elif isinstance(event, ChatModelSuccessEvent):
                     yield create_usage_info(event.value.usage, chat_model.model_id)
+                await asyncio.sleep(0)
     else:
-        chat_output = await chat_model.create(messages=messages)
+        async with chat_pool.throttle():
+            chat_output = await chat_model.create(messages=messages)
+
         text = chat_output.get_text_content()
 
         parser = ThinkingResponseParser()
@@ -239,7 +247,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             yield token_limit_message_part()
             return
 
-        chat_model = ChatModelService()
+        chat_model = ChatModelFactory.create()
 
         await context.yield_async(SearchingWebPhase(status=Status.active).wrapped)
 
@@ -253,29 +261,39 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         await context.yield_async(SearchingWebPhase(status=Status.completed).wrapped)
 
-        response: str = ""
+        response: list[str] = []
 
         if settings.STREAMING is True:
-            async for event in chat_model.create_stream(messages=messages):
-                match event:
-                    case ChatModelNewTokenEvent():
-                        response += event.value.get_text_content()
-                        yield MessagePart(content_type="text/plain", content=event.value.get_text_content())
-                    case ChatModelSuccessEvent():
+            async with chat_pool.throttle():
+                async for event, _ in chat_model.create(messages=messages, stream=True):
+                    if isinstance(event, ChatModelNewTokenEvent):
+                        content = event.value.get_text_content()
+                        response.append(content)
+                        yield MessagePart(content=content)
+                    elif isinstance(event, ChatModelSuccessEvent):
                         yield create_usage_info(event.value.usage, chat_model.model_id)
+                    await asyncio.sleep(0)
         else:
-            output = await chat_model.create(messages=messages)
-            response = output.get_text_content()
-            yield MessagePart(content_type="text/plain", content=response)
+            async with chat_pool.throttle():
+                output = await chat_model.create(messages=messages)
+
+            response.append(output.get_text_content())
+            yield MessagePart(content="".join(response))
             yield create_usage_info(output.usage, chat_model.model_id)
 
         # Yield sources/citation
         if len(docs) > 0:
+
+            async def citation_handler(event: Event) -> None:
+                if isinstance(event, CitationEvent):
+                    logger.info(f"Citation: {event.citation.url}")
+                    await context.yield_async(utils.to_citation_message_part(event.citation))
+
             generator = CitationGeneratorFactory.create()
+            generator.subscribe(handler=citation_handler)
+
             await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
-            async for citation in generator.generate(messages=input, docs=docs, response=response):
-                logger.info(f"Citation: {citation.url}")
-                yield utils.to_citation_message_part(citation)
+            await generator.generate(messages=input, docs=docs, response="".join(response))
             await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
 
     except Exception as e:
@@ -326,7 +344,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             yield token_limit_message_part()
             return
 
-        chat_model = ChatModelService()
+        chat_model = ChatModelFactory.create()
 
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
@@ -340,6 +358,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
                 await context.yield_async(utils.to_citation_message_part(event.citation))
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
+            await asyncio.sleep(0)
 
         researcher = Researcher(chat_model=chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)
