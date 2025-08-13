@@ -26,7 +26,7 @@ from granite_chat.events import (
     TextEvent,
     TrajectoryEvent,
 )
-from granite_chat.memory import exceeds_token_limit, token_limit_message_part
+from granite_chat.memory import estimate_tokens, exceeds_token_limit, token_limit_response
 from granite_chat.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
 from granite_chat.research.researcher import Researcher
 from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
@@ -109,8 +109,9 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     messages = utils.to_beeai_framework_messages(messages=history + input)
     messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
-    if exceeds_token_limit(messages):
-        yield token_limit_message_part()
+    token_count = estimate_tokens(messages=messages)
+    if exceeds_token_limit(token_count):
+        yield token_limit_response(token_count)
         return
 
     chat_model = ChatModelFactory.create()
@@ -159,8 +160,9 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
 
-    if exceeds_token_limit(messages):
-        yield token_limit_message_part()
+    token_count = estimate_tokens(messages=messages)
+    if exceeds_token_limit(token_count):
+        yield token_limit_response(token_count)
         return
 
     chat_model = ChatModelFactory.create()
@@ -243,8 +245,9 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
-        if exceeds_token_limit(messages):
-            yield token_limit_message_part()
+        token_count = estimate_tokens(messages=messages)
+        if exceeds_token_limit(token_count):
+            yield token_limit_response(token_count)
             return
 
         chat_model = ChatModelFactory.create()
@@ -340,8 +343,9 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
-        if exceeds_token_limit(messages):
-            yield token_limit_message_part()
+        token_count = estimate_tokens(messages=messages)
+        if exceeds_token_limit(token_count):
+            yield token_limit_response(token_count)
             return
 
         chat_model = ChatModelFactory.create()
