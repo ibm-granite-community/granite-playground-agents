@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "acp-sdk"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -36,9 +36,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "redis" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/27/2dc08578badd7863634bbb395a63b1539f571c3d1d2fba3c639e27603625/acp_sdk-1.0.0.tar.gz", hash = "sha256:997351cc9042eb2cf3d1bd3f53997d8d5b83afd5ae975c32c419a86de7205ad5", size = 30077, upload-time = "2025-07-01T06:08:40.172Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/97/a647f4e19e1043a2c4613cf1be5882fcf316b96a7558bde2a8bd134a094a/acp_sdk-1.0.1.tar.gz", hash = "sha256:9cf6468085a0fae6cf23c809c85ac1863d74c0fdfb39e6a45b875fd6997043ff", size = 30408, upload-time = "2025-07-24T16:30:13.959Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/91/dce09af24c6f67a4df7fcaf898a565b0efd44de3d085894ee1c0a672ae9a/acp_sdk-1.0.0-py3-none-any.whl", hash = "sha256:837779e52f1f922f8c017b1e6a19181ef618fe996de971255cfd0251b9408180", size = 32253, upload-time = "2025-07-01T06:08:38.603Z" },
+    { url = "https://files.pythonhosted.org/packages/42/ec/cc831210db594f91a0f51381a6dc991d47984a4913eeb1bcb27ac936e4be/acp_sdk-1.0.1-py3-none-any.whl", hash = "sha256:209898228c6f5207df987d42aabf3f9aab984ae32d4823de0416849048fd438e", size = 34987, upload-time = "2025-07-24T16:30:12.646Z" },
 ]
 
 [[package]]
@@ -801,7 +801,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "acp-sdk", specifier = ">=1.0.0" },
+    { name = "acp-sdk", specifier = ">=1.0.1" },
     { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "arxiv", specifier = ">=2.2.0" },
     { name = "beeai-framework", specifier = ">=0.1.29" },
