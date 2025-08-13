@@ -107,6 +107,16 @@ watsonx_env = [
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
+
+    logger.info(f"Session id: {context.session.id}")
+    logger.info("=========== Message URLs ============")
+    for url in context.session.history:
+        logger.info(url)
+    logger.info("========== Message history ==========")
+    for m in messages:
+        logger.info(f"{m.role}: {m.text}")
+    logger.info("=====================================")
+
     messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
     token_count = estimate_tokens(messages=messages)
