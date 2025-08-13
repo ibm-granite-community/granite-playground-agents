@@ -1,4 +1,3 @@
-from granite_chat.citations.types import Citation
 from granite_chat.emitter import Event
 
 
@@ -16,7 +15,3 @@ class GeneratingCitationsEvent(Event):
 
 class GeneratingCitationsCompleteEvent(Event):
     pass
-
-
-class CitationEvent(Event):
-    citation: Citation

@@ -1,11 +1,10 @@
 import asyncio
 from typing import Any
 
-from beeai_framework.backend import Message, UserMessage
+from beeai_framework.backend import ChatModel, Message, UserMessage
 from langchain_core.documents import Document
 
 from granite_chat import get_logger
-from granite_chat.chat import ChatModelService
 from granite_chat.config import settings
 from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
@@ -14,13 +13,13 @@ from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.types import ScrapedContent, SearchQueriesSchema, SearchResult, StandaloneQuerySchema
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
-from granite_chat.work import task_pool
+from granite_chat.work import chat_pool, task_pool
 
 logger = get_logger(__name__)
 
 
 class SearchTool(SearchResultsMixin):
-    def __init__(self, chat_model: ChatModelService, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, chat_model: ChatModel, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.vector_store = VectorStoreWrapperFactory.create()
@@ -57,9 +56,11 @@ class SearchTool(SearchResultsMixin):
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
         search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
-        response = await self.chat_model.create_structure(
-            schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
-        )
+
+        async with chat_pool.throttle():
+            response = await self.chat_model.create_structure(
+                schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+            )
         if "search_queries" in response.object:
             return response.object["search_queries"]
         else:
@@ -67,9 +68,11 @@ class SearchTool(SearchResultsMixin):
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
         standalone_prompt = SearchPrompts.generate_standalone_query(messages)
-        response = await self.chat_model.create_structure(
-            schema=StandaloneQuerySchema, messages=[UserMessage(content=standalone_prompt)]
-        )
+
+        async with chat_pool.throttle():
+            response = await self.chat_model.create_structure(
+                schema=StandaloneQuerySchema, messages=[UserMessage(content=standalone_prompt)]
+            )
         standalone_query = StandaloneQuerySchema(**response.object)
         return standalone_query.query
 

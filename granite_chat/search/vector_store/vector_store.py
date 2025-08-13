@@ -4,6 +4,7 @@ Enables configurable chunk size
 Add document index
 """
 
+import asyncio
 from typing import Any
 
 from langchain.retrievers import ContextualCompressionRetriever
@@ -14,6 +15,7 @@ from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
 from granite_chat.search.types import ScrapedContent
+from granite_chat.work import task_pool
 
 
 class VectorStoreWrapper:
@@ -35,7 +37,12 @@ class VectorStoreWrapper:
         Translate to langchain doc type, split to chunks then load
         """
         langchain_documents = self._create_langchain_documents(content)
-        splitted_documents = self._split_documents(langchain_documents)
+
+        loop = asyncio.get_running_loop()
+
+        splitted_documents = await asyncio.wait_for(
+            loop.run_in_executor(task_pool.executor, lambda: self._split_documents(langchain_documents)), timeout=None
+        )
 
         await self.vector_store.aadd_documents(splitted_documents)
 
