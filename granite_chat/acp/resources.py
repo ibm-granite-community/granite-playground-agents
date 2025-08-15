@@ -26,8 +26,14 @@ class AsyncCachingResourceLoader(ResourceLoader):
 class ResourceStoreFactory:
     @staticmethod
     def create() -> ResourceStore | None:
-        if settings.RESOURCE_STORE_PROVIDER == "S3":
-            logger.info("Found S3 RESOURCE_STORE_PROVIDER")
+        if (
+            settings.RESOURCE_STORE_PROVIDER == "S3"
+            and settings.S3_BUCKET is not None
+            and settings.S3_ENDPOINT is not None
+            and settings.S3_ACCESS_KEY_ID is not None
+            and settings.S3_SECRET_ACCESS_KEY
+        ):
+            logger.info("Found a valid S3 RESOURCE_STORE_PROVIDER")
             return ResourceStore(
                 store=S3Store(
                     bucket=settings.S3_BUCKET,
