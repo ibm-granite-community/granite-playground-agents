@@ -11,5 +11,5 @@ class ChatPrompts:
     def chat_core_guidelines() -> str:
         return """Always format your responses using Markdown, no LaTeX formatting.
 Do not give advice that could be unsafe or unethical.
-When appropriate, suggest follow-up questions to continue the conversation or explore the topic further.
+When it makes sense, offer natural, conversational follow-up questions to keep the dialogue flowing.
 """
