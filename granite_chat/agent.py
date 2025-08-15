@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models.models import Message, TrajectoryMetadata
 from acp_sdk.models.platform import AgentToolInfo, PlatformUIAnnotation, PlatformUIType
-from acp_sdk.server import Context, Server
+from acp_sdk.server import Context, RedisStore, Server
 from beeai_framework.backend import (
     ChatModelNewTokenEvent,
     ChatModelSuccessEvent,
@@ -12,10 +12,11 @@ from beeai_framework.backend import (
 )
 from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
+from redis.asyncio import Redis
 
 from granite_chat import get_logger, utils
 from granite_chat.acp.resources import AsyncCachingResourceLoader, ResourceStoreFactory
-from granite_chat.acp.store import PrefixRouterStore
+from granite_chat.acp.store import PrefixRouterMemoryStore
 from granite_chat.chat.prompts import ChatPrompts
 from granite_chat.chat_model import ChatModelFactory
 from granite_chat.citations.citations import CitationGeneratorFactory
@@ -88,6 +89,10 @@ watsonx_env = [
 ]
 
 
+def log_context(context: Context) -> None:
+    logger.info(f">>> Session ID: {context.session.id}")
+
+
 @server.agent(
     name="granite-chat",
     description="This agent leverages the Granite 3.3 large language model for general chat.",
@@ -107,6 +112,8 @@ watsonx_env = [
     ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
+    log_context(context)
+
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
     messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
@@ -159,6 +166,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
+    log_context(context)
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
 
@@ -244,6 +252,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
     try:
+        log_context(context)
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
@@ -342,6 +351,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
     try:
+        log_context(context)
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
@@ -414,13 +424,25 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         yield mp
 
 
+store: PrefixRouterMemoryStore = PrefixRouterMemoryStore()
+
+if settings.KEY_STORE_PROVIDER == "redis":
+    logger.info("Found redis KEY_STORE_PROVIDER")
+    redis = Redis().from_url(settings.REDIS_CLIENT_URL)
+    # Sessions are stored in persistent store, everything else to memory
+    store.map_prefix("session_", RedisStore(redis=redis))
+
+resource_store = ResourceStoreFactory.create()
+forward_resources = resource_store is None
+resource_loader = AsyncCachingResourceLoader()
+
 server.run(
     configure_logger=False,
     host=settings.host,
     port=settings.port,
     access_log=settings.ACCESS_LOG,
-    store=PrefixRouterStore(),
-    resource_store=ResourceStoreFactory.create(),
-    forward_resources=False,
-    resource_loader=AsyncCachingResourceLoader(),
+    store=store,
+    resource_store=resource_store,
+    forward_resources=forward_resources,
+    resource_loader=resource_loader,
 )
