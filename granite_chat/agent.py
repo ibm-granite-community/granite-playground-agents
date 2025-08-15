@@ -426,8 +426,8 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
 
 store: PrefixRouterMemoryStore = PrefixRouterMemoryStore()
 
-if settings.KEY_STORE_PROVIDER == "redis":
-    logger.info("Found redis KEY_STORE_PROVIDER")
+if settings.KEY_STORE_PROVIDER == "redis" and settings.REDIS_CLIENT_URL is not None:
+    logger.info("Found a valid redis KEY_STORE_PROVIDER")
     redis = Redis().from_url(settings.REDIS_CLIENT_URL)
     # Sessions are stored in persistent store, everything else to memory
     store.map_prefix("session_", RedisStore(redis=redis))
