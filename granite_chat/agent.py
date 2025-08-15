@@ -14,6 +14,8 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 
 from granite_chat import get_logger, utils
+from granite_chat.acp.resources import AsyncCachingResourceLoader, ResourceStoreFactory
+from granite_chat.acp.store import PrefixRouterStore
 from granite_chat.chat.prompts import ChatPrompts
 from granite_chat.chat_model import ChatModelFactory
 from granite_chat.citations.citations import CitationGeneratorFactory
@@ -107,16 +109,6 @@ watsonx_env = [
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
     history = [message async for message in context.session.load_history()]
     messages = utils.to_beeai_framework_messages(messages=history + input)
-
-    logger.info(f"Session id: {context.session.id}")
-    logger.info("=========== Message URLs ============")
-    for url in context.session.history:
-        logger.info(url)
-    logger.info("========== Message history ==========")
-    for m in messages:
-        logger.info(f"{m.role}: {m.text}")
-    logger.info("=====================================")
-
     messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
     token_count = estimate_tokens(messages=messages)
@@ -427,4 +419,8 @@ server.run(
     host=settings.host,
     port=settings.port,
     access_log=settings.ACCESS_LOG,
+    store=PrefixRouterStore(),
+    resource_store=ResourceStoreFactory.create(),
+    forward_resources=False,
+    resource_loader=AsyncCachingResourceLoader(),
 )
