@@ -5,6 +5,7 @@ from beeai_framework.backend import Message
 from langchain_core.documents import Document
 
 from granite_chat import get_logger
+from granite_chat.chat.prompts import ChatPrompts
 from granite_chat.search.types import SearchResult
 
 logger = get_logger(__name__)
@@ -40,7 +41,8 @@ You are provided with a set of documents that may contain relevant information.
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 You have access to realtime data, you do not have a knowledge cutoff.
-"""  # noqa: E501
+
+{ChatPrompts.chat_core_guidelines()}"""  # noqa: E501
 
     @staticmethod
     def generate_search_queries_prompt(messages: list[Message], max_queries: int = 3) -> str:

@@ -63,13 +63,14 @@ You are given a topic along with a set detailed findings each covering a differe
 Your task is to review and synthesize this information into a clear and cohesive output.
 Ensure the content is cohesive, redundant points are merged, gaps are filled, and the overall narrative flows logically.
 
-Output Format: A structured response including:
-- Introduction that sets the stage
-- Organized sections that clearly present each major aspect or theme
-- Conclusion that summarizes the key insights
+Output Format: A markdown structured response including:
+- Introduction that sets the stage (##)
+- Organized sections that clearly present each major aspect or theme (each section has a title ##)
+    - You can include sub sections but make sure to maintain headings i.e. ###
+- Conclusion that summarizes the key insights (##)
 
 Ensure that each section adds new insight or perspective rather than reiterating previous content.
-- Use paragraphs rather than numbered lists.
+- Use paragraphs rather than numbered lists if possible.
 
 Topic: {topic}
 
@@ -77,5 +78,5 @@ Topic: {topic}
 {reports_str}
 </findings>
 
-The title of the response should be {topic}, or an appropriate variation thereof that maintains the general idea.
-"""
+The title (use # markdown) of the response should be {topic}, or an appropriate variation thereof that maintains the general idea.
+"""  # noqa: E501
