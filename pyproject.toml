@@ -23,6 +23,7 @@ dependencies = [
     "types-colorama>=0.4.15.20240311",
     "beeai-framework>=0.1.29",
     "types-aiofiles>=24.1.0.20250801",
+    "types-cachetools>=6.1.0.20250717",
 ]
 
 [tool.ruff]

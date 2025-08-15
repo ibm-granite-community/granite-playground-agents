@@ -788,6 +788,7 @@ dependencies = [
     { name = "trafilatura" },
     { name = "transformers" },
     { name = "types-aiofiles" },
+    { name = "types-cachetools" },
     { name = "types-colorama" },
 ]
 
@@ -818,6 +819,7 @@ requires-dist = [
     { name = "trafilatura", specifier = ">=2.0.0" },
     { name = "transformers", specifier = ">=4.52.4" },
     { name = "types-aiofiles", specifier = ">=24.1.0.20250801" },
+    { name = "types-cachetools", specifier = ">=6.1.0.20250717" },
     { name = "types-colorama", specifier = ">=0.4.15.20240311" },
 ]
 
@@ -2875,6 +2877,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f3/fb/978d03bec716a3d58b53058df42c8175ee6e163140b0cdf781b748b3b796/types_aiofiles-24.1.0.20250801.tar.gz", hash = "sha256:050d85e662eba7be4dd2a66a7d6ccd4ff779a3a89361603393ed16ba30d12457", size = 14311, upload-time = "2025-08-01T03:48:26.212Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/c3/5ab027a94662ca7f453757370f79ca3a1b9c42b279ff3d3bcde80db8e454/types_aiofiles-24.1.0.20250801-py3-none-any.whl", hash = "sha256:0f3bdb3384ae5b3425644a2e56e414b7c2791b23079e639a2c2914b0b85c3ecf", size = 14266, upload-time = "2025-08-01T03:48:25.094Z" },
+]
+
+[[package]]
+name = "types-cachetools"
+version = "6.1.0.20250717"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/14/e98ea3b3fda81787659268bbf09dec56961c39db060fdca74cb521df0515/types_cachetools-6.1.0.20250717.tar.gz", hash = "sha256:4acc8e25de9f5f84dd176ea81dcffa7cb24393869bb2e59e692dfd0139a1e66f", size = 9105, upload-time = "2025-07-17T03:20:48.482Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/bb/554208964e901e9e1992a7ea0bcab1590a4b2e94d20a9e6200826110ec89/types_cachetools-6.1.0.20250717-py3-none-any.whl", hash = "sha256:bba4b8d42262460d24e570097d2d9040e60311934603caa642efd971f3658ed0", size = 8940, upload-time = "2025-07-17T03:20:47.375Z" },
 ]
 
 [[package]]

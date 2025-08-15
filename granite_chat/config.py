@@ -138,6 +138,17 @@ class Settings(BaseSettings):
         default=2, description="Rate period in seconds, use with rate limit to implement throttle"
     )
 
+    # Resource store
+    RESOURCE_STORE_PROVIDER: Literal["S3"] | None = None
+    S3_BUCKET: str | None = Field(default=None, description="S3 bucket name")
+    S3_ENDPOINT: str | None = Field(default=None, description="S3 resource store endpoint")
+    S3_ACCESS_KEY_ID: str | None = Field(default=None, description="S3 access key id")
+    S3_SECRET_ACCESS_KEY: str | None = Field(default=None, description="S3 secret access ket")
+
+    # Key Store
+    KEY_STORE_PROVIDER: Literal["redis"] | None = None
+    REDIS_CLIENT_URL: str | None = Field(default=None, description="Redis client object configured from the given URL")
+
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
         # We need OLLAMA_BASE_URL to be set in the event that ollama embeddings are used
