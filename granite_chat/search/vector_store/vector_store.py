@@ -14,6 +14,7 @@ from langchain.vectorstores import VectorStore
 from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
+from granite_chat.config import settings
 from granite_chat.search.types import ScrapedContent
 from granite_chat.work import task_pool
 
@@ -84,7 +85,9 @@ class VectorStoreWrapper:
         """Return query by vector store"""
 
         if self.vector_store and self.vector_store.embeddings:
-            retriever = self.vector_store.as_retriever(search_type="mmr", search_kwargs={"k": k})
+            retriever = self.vector_store.as_retriever(
+                search_type="mmr", search_kwargs={"k": k, "lambda_mult": settings.MMR_LAMBDA_MULT}
+            )
 
             embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.5)
             compression_retriever = ContextualCompressionRetriever(
