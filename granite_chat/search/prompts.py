@@ -29,10 +29,11 @@ class SearchPrompts:
 Provide a comprehensive, informative, and accurate response to the user.
 
 You are provided with a set of documents that may contain relevant information.
-- You can use these documents to help formulate your response.
-- Your response should be clear and comprehensive and stay aligned with the content and facts of the documents when possible.
+- Use these documents to help formulate your response.
+- Your response should stay aligned with the content and facts of the documents when possible.
 - If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 - Not all documents will be relevant, ignore irrelevant or low quality documents.
+- Draw on multiple documents to create a more diverse and informed response.
 
 <documents>
 {doc_str}
@@ -97,7 +98,7 @@ Generate {max_queries} search queries that reflect the intent of the user's last
 
         return f"""
 Given the following conversation between a user and an assistant, analyze the user's last message and generate a single, standalone query that clearly and concisely reflects the user's intent, preserving the necessary context so it can be understood independently.
-The query will be used to look up information.
+The query will be used to look up information. Include relevant keywords.
 
 Here is an example:
 Conversation:
@@ -108,7 +109,7 @@ Assistant: You can use libraries like spaCy or sklearn.
 User: I want the output in a JSON format with relevance scores.
 
 Standalone Query:
-How to extract keywords from text using Python and output the results in a JSON format with relevance scores.
+Extract keywords from text using Python and output the results in a JSON format with relevance scores.
 
 Now here is your task:
 

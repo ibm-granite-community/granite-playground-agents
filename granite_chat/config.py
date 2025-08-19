@@ -149,6 +149,12 @@ class Settings(BaseSettings):
     KEY_STORE_PROVIDER: Literal["redis"] | None = None
     REDIS_CLIENT_URL: str | None = Field(default=None, description="Redis client object configured from the given URL")
 
+    # MMR
+    MMR_LAMBDA_MULT: float = Field(
+        default=0.4,
+        description="Controls the weighting between relevance and diversity in MMR",
+    )
+
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
         # We need OLLAMA_BASE_URL to be set in the event that ollama embeddings are used
