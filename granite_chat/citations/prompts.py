@@ -16,15 +16,15 @@ class CitationsPrompts:
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are given:
-1. A set of sources (with source_id and text).
+1. A set of sources (with source_id and content).
 2. A set of sentences that may contain ideas or information supported by the sources.
 
-Your task is to produce citations that link specific sentences to the given sources.
+Your task is to produce citations that link specific sentences to the sources.
 A citation is a reference to a source of information.
 It tells the reader of the sentence where specific ideas, facts, or quotations came from.
 
 Include a source citation if the sentence:
-- Contains a standalone claim or fact.
+- Contains a standalone claim or fact
 
 DO NOT include a source citation if the sentence:
 - Is a title or section heading (look for markdown formatting)
@@ -34,7 +34,7 @@ DO NOT include a source citation if the sentence:
 - Sets up procedural or instructional content
 
 For each citation produce a summary of the supporting source content:
-- The source summary is a summary of the relevant source content. DO NOT summarize the sentence.
+- The source summary is a summary of the relevant source content. DO NOT summarize the sentence itself.
 - Do not mention or quote sentences.
 - Each summary must be self-contained and not refer to previous or following sources or sentences.
 
@@ -47,5 +47,5 @@ Sources:
 Sentences:
 {sent_str}
 
-Now produce the appropriate citations. Be accurate, only produce a citation if there is very strong evidence.
+Produce citations. Be accurate, only produce a citation if there is very strong evidence.
 """

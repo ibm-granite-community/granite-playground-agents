@@ -136,7 +136,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         await self._emit(TrajectoryEvent(step="Generating final report"))
 
-        prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, reports=self.interim_reports)
+        prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, findings=self.interim_reports)
 
         response: list[str] = []
 

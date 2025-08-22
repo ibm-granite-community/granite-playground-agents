@@ -12,17 +12,20 @@ class ResearchPrompts:
 
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
-        return f"""You are a research planner. The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+        return f"""You are a research planner.
 
-Given a user-defined topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
+Given a topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
+Expect that the queries will form the basis of a report so make sure that they are diverse and have a coherent narrative.
 
 The queries should be:
 - Clear and concise.
 - Cover the key aspects required to fully address the topic.
-- Be diverse (to prevent overlapping research) and logically distributed (e.g. from foundational to advanced, temporally etc.) depending on context.
+- Be sufficiently diverse (to prevent overlap)
+- Be Logically distributed (i.e. from foundational to advanced, temporally etc.) depending on the research.
 
 Here is the topic: {topic}
-Generate {max_queries} search queries to guide and support in-depth research on the topic.
+
+Generate a maximum of {max_queries} search queries to guide and support in-depth research on the given topic.
 """  # noqa: E501
 
     @staticmethod
@@ -39,44 +42,58 @@ Generate {max_queries} search queries to guide and support in-depth research on 
         doc_str = json.dumps(json_docs, indent=4)
 
         return f"""You are a research assistant.
-Your task is to read a set of documents and produce a clear, detailed answer that addresses a specific query.
+You are given a collection of documents. Your task is to analyze the documents and produce a detailed set of findings that focus on a given theme.
+
+Rules:
+- Identify key findings, insights and evidence that *directly* relate to the given theme.
+- Make sure findings are specific, concise, and grounded in the documents.
+- If multiple documents mention similar points, consolidate them.
+- If documents disagree or provide contrasting perspectives, note the differences.
+- Do not include details that are not directly relevant to the theme. Findings should be focused on the given theme only.
 
 <documents>
 {doc_str}
 </documents>
 
-Query: {query.query}
+Theme: {query}
 
-Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your answer.
+Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your report.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
-Focus on addressing the query in a comprehensive and detailed manner.
+Output format:
+- Present your findings as a set of well-structured paragraphs.
 """  # noqa: E501
 
     @staticmethod
-    def final_report_prompt(topic: str, reports: list[ResearchReport]) -> str:
-        reports_str = json.dumps([r.model_dump() for r in reports], indent=4)
+    def final_report_prompt(topic: str, findings: list[ResearchReport]) -> str:
+        findings_str = json.dumps(
+            [f.model_dump_json() for f in findings],
+            indent=4,
+        )
 
-        return f"""The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+        return f"""You are given a topic and a set of detailed findings (each covering a different theme).
+Your task is to write a comprehensive, cohesive, and in-depth report that integrates all findings into a single narrative.
 
-You are given a topic along with a set detailed findings each covering a different angle of the subject.
-Your task is to review and synthesize this information into a clear and cohesive output.
-Ensure the content is cohesive, redundant points are merged, gaps are filled, and the overall narrative flows logically.
-
-Output Format: A markdown structured response including:
-- Introduction that sets the stage (##)
-- Organized sections that clearly present each major aspect or theme (each section has a title ##)
-    - You can include sub sections but make sure to maintain headings i.e. ###
-- Conclusion that summarizes the key insights (##)
-
-Ensure that each section adds new insight or perspective rather than reiterating previous content.
-- Use paragraphs rather than numbered lists if possible.
+Output format (Markdown):
+Title (#): Use the topic as the title, or develop a compelling variation.
+Introduction (##)
+    - Provide context and set the stage for the report.
+    - Avoid references to structure (e.g., “This report will cover…”).
+Sections (##)
+    - Each set of findings should become a dedicated section with a clear heading.
+    - Expand on the findings: explain implications, add interpretation, connect ideas.
+    - You may include subsections (###) to deepen or clarify the analysis.
+    - Use paragraphs for explanations rather than numbered lists.
+Conclusion (##)
+    - Summarize the overall insights and significance of the report.
+    - End with forward-looking reflections or open questions.
 
 Topic: {topic}
 
 <findings>
-{reports_str}
+{findings_str}
 </findings>
 
-The title (use # markdown) of the response should be {topic}, or an appropriate variation thereof that maintains the general idea.
+Write with detail and length—expand on each theme so that the report reads like a well-researched analysis, not just a summary.
+Use a confident, analytical, and narrative tone, making the report engaging and authoritative.
 """  # noqa: E501
