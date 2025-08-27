@@ -15,7 +15,7 @@ class ResearchPrompts:
         return f"""You are a research planner.
 
 Given a topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
-Expect that the queries will form the basis of a report so make sure that they are diverse and have a coherent narrative.
+Expect that the queries will form the basis of an in-depth report so make sure that they are diverse and have a logical narrative.
 
 The queries should be:
 - Clear and concise.
@@ -26,6 +26,7 @@ The queries should be:
 Here is the topic: {topic}
 
 Generate a maximum of {max_queries} search queries to guide and support in-depth research on the given topic.
+Include a rationale with each query indicating how it fits into logical narrative i.e. how it flows from previous topics to add to a coherent report.
 """  # noqa: E501
 
     @staticmethod

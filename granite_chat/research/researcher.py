@@ -57,13 +57,13 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         self.research_topic = await self._generate_research_topic()
 
-        await self._emit(TrajectoryEvent(step=f"Starting research task for '{self.research_topic}'"))
-        await self._emit(TrajectoryEvent(step="Planning research"))
+        await self._emit(TrajectoryEvent(step=f"**Topic:** {self.research_topic.strip()}"))
+        await self._emit(TrajectoryEvent(step="**Developing a research plan**"))
 
         self.research_plan = await self._generate_research_plan()
 
         queries = [s.query for s in self.research_plan]
-        md = "I will research:\n"
+        md = "**Research plan:**\n"
         md += "\n".join(f"- {q}" for q in queries)
         await self._emit(
             TrajectoryEvent(
@@ -119,7 +119,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         scraped_content, _ = await scrape_urls(search_results=self.search_results, scraper="bs", emitter=self)
 
-        await self._emit(TrajectoryEvent(step="Extracting knowledge..."))
+        await self._emit(TrajectoryEvent(step="**Extracting knowledge**"))
 
         if scraped_content and len(scraped_content) > 0:
             await self.vector_store.load(scraped_content)
@@ -134,7 +134,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         if len(self.interim_reports) == 0:
             raise ValueError("No interim reports available!")
 
-        await self._emit(TrajectoryEvent(step="Generating final report"))
+        await self._emit(TrajectoryEvent(step="**Generating final report**"))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, findings=self.interim_reports)
 
@@ -181,7 +181,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(TrajectoryEvent(step=f"Researching '{query.query}'"))
+        await self._emit(TrajectoryEvent(step=f"**Researching:** {query.query}"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
             query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
