@@ -65,13 +65,13 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         self.research_topic = await self._generate_research_topic()
 
-        await self._emit(TrajectoryEvent(step=f"**Topic:** {self.research_topic.strip()}"))
+        await self._emit(TrajectoryEvent(step=f"**Research topic**  \n{self.research_topic.strip()}"))
         await self._emit(TrajectoryEvent(step="**Developing a research plan**"))
 
         self.research_plan = await self._generate_research_plan()
 
         queries = [s.query for s in self.research_plan]
-        md = "**Research plan:**\n"
+        md = "**Research plan**\n"
         md += "\n".join(f"- {q}" for q in queries)
         await self._emit(
             TrajectoryEvent(
@@ -81,13 +81,14 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         self.logger.debug(f"Research plan: {self.research_plan}")
 
+        await self._emit(TrajectoryEvent(step="**Gathering information**"))
+
         await self._gather_sources()
 
-        # await asyncio.gather(
-        #     *[self._emit(TrajectoryEvent(step=f"🔗 Added source {res.url}")) for res in self.search_results]
-        # )
-
         await self._extract_sources()
+
+        await self._emit(TrajectoryEvent(step="**Performing research**"))
+
         await self._perform_research()
 
         self.logger.debug(f"reports: {self.interim_reports}")
@@ -189,7 +190,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(TrajectoryEvent(step=f"**Researching:** {query.query}"))
+        await self._emit(TrajectoryEvent(step=f"**Researching**  \n{query.query}"))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
             query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
