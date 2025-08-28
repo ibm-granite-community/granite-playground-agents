@@ -25,7 +25,6 @@ class SearchQueriesSchema(BaseModel):
 
 
 class SearchResultRelevanceSchema(BaseModel):
-    # reason: str = Field(description="One line reason as to why this search results is or is not relevant.")
     is_relevant: bool = Field(description="Flag indicating if the search result is likely to be relevant.")
 
 

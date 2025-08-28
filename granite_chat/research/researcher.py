@@ -34,9 +34,17 @@ from granite_chat.work import chat_pool, task_pool
 
 
 class Researcher(EventEmitter, SearchResultsMixin):
-    def __init__(self, chat_model: ChatModel, messages: list[Message], *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        chat_model: ChatModel,
+        structured_chat_model: ChatModel,
+        messages: list[Message],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
+        self.structured_chat_model = structured_chat_model or chat_model
         self.messages = messages
         self.logger = get_logger(__name__)
 
@@ -49,7 +57,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
         self.logger.debug("Initializing Researcher")
         self.vector_store = VectorStoreWrapperFactory.create()
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=self.structured_chat_model)
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -163,7 +171,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
             topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
         )
         async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
+            response = await self.structured_chat_model.create_structure(
                 schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
             )
 

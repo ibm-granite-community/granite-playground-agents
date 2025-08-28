@@ -262,10 +262,11 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             return
 
         chat_model = ChatModelFactory.create()
+        structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         await context.yield_async(SearchingWebPhase(status=Status.active).wrapped)
 
-        search_tool = SearchTool(chat_model=chat_model)
+        search_tool = SearchTool(chat_model=structured_chat_model)
         docs: list[Document] = await search_tool.search(messages)
 
         if len(docs) > 0:
@@ -361,6 +362,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             return
 
         chat_model = ChatModelFactory.create()
+        structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
@@ -376,7 +378,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
                 await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
             await asyncio.sleep(0)
 
-        researcher = Researcher(chat_model=chat_model, messages=messages)
+        researcher = Researcher(chat_model=chat_model, structured_chat_model=structured_chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)
         await researcher.run()
 
