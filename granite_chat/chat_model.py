@@ -1,3 +1,5 @@
+from typing import Literal
+
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.adapters.watsonx import WatsonxChatModel
 from beeai_framework.backend import (
@@ -11,10 +13,16 @@ from granite_chat.config import settings
 class ChatModelFactory:
     """Factory for ChatModel instances."""
 
+    ModelType = Literal["default", "structured"]
+
     @staticmethod
-    def create() -> ChatModel:
+    def create(model_type: ModelType = "default") -> ChatModel:
         provider = settings.LLM_PROVIDER
         model_id = settings.LLM_MODEL
+
+        if model_type == "structured":
+            model_id = settings.LLM_STRUCTURED_MODEL
+
         max_tokens = settings.MAX_TOKENS
         temperature = settings.TEMPERATURE
 

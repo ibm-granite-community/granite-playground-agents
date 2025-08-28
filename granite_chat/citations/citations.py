@@ -144,7 +144,7 @@ class DefaultCitationGenerator(CitationGenerator):
 
     def __init__(self) -> None:
         super().__init__()
-        self.chat_model = ChatModelFactory.create()
+        self.chat_model = ChatModelFactory.create("structured")
 
     async def generate(self, messages: list[Message], docs: list[Document], response: str) -> None:
         try:

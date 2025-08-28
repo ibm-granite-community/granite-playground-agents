@@ -23,7 +23,7 @@ class SearchTool(SearchResultsMixin):
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.vector_store = VectorStoreWrapperFactory.create()
-        self.search_results_filter = SearchResultsFilter(chat_model=chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=self.chat_model)
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries

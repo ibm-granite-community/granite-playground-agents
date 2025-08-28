@@ -16,6 +16,8 @@ class Settings(BaseSettings):
 
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
+    LLM_STRUCTURED_MODEL: str | None = Field(description="The model ID of the LLM used for structured generation tasks")
+
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
     ] = None
@@ -173,6 +175,10 @@ class Settings(BaseSettings):
         # Allows headers to be picked up by framework
         if self.LLM_API_HEADERS:
             os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
+
+        # Default structured model if not set
+        if self.LLM_STRUCTURED_MODEL is None:
+            self.LLM_STRUCTURED_MODEL = self.LLM_MODEL
 
         return self
 

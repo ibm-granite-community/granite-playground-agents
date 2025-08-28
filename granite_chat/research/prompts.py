@@ -13,20 +13,22 @@ class ResearchPrompts:
     @staticmethod
     def research_plan_prompt(topic: str, max_queries: int = 3) -> str:
         return f"""You are a research planner.
+Given a topic, generate a list of targeted research questions designed to guide and support in-depth research on the topic.
+Expect that the questions will form the basis of an in-depth report so make sure that they are diverse and have a sequential logical narrative.
+Tailor the complexity of the research to the given audience.
 
-Given a topic, generate a list of targeted search queries designed to guide and support in-depth research on the topic.
-Expect that the queries will form the basis of an in-depth report so make sure that they are diverse and have a logical narrative.
-
-The queries should be:
-- Clear and concise.
+The research questions should be:
+- Clear and concise, ideally a single sentence.
 - Cover the key aspects required to fully address the topic.
-- Be sufficiently diverse (to prevent overlap)
-- Be Logically distributed (i.e. from foundational to advanced, temporally etc.) depending on the research.
+- Be sufficiently diverse (to prevent overlap and repetition)
+- Be Logically connected (i.e. from foundational to advanced, temporally etc.) depending on the research topic.
 
-Here is the topic: {topic}
+Audience: General
 
-Generate a maximum of {max_queries} search queries to guide and support in-depth research on the given topic.
-Include a rationale with each query indicating how it fits into logical narrative i.e. how it flows from previous topics to add to a coherent report.
+Topic: {topic}
+
+Generate a maximum of {max_queries} research questions to guide and support in-depth research on the given topic.
+Include a rationale with each question indicating how it fits into logical narrative i.e. how it flows from previous questions to add to a coherent report.
 """  # noqa: E501
 
     @staticmethod

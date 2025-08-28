@@ -138,7 +138,7 @@ Here is the search result:
 - Title: {search_result.title}
 - A snippet from the page: {search_result.body}
 
-Return True if the result is likely relevant to the query; otherwise, return False.
+Return True if the result is likely relevant to the query; otherwise, return False. Do no produce an explanation, just True or False.
 """  # noqa: E501
 
     @staticmethod
