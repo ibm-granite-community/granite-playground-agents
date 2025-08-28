@@ -244,7 +244,7 @@ wheels = [
 
 [[package]]
 name = "beeai-framework"
-version = "0.1.29"
+version = "0.1.38"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -257,9 +257,9 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/9e/6bcac07b0f240100d6c05db0f95c9539bb0cd221fe9d9187f339b954cecf/beeai_framework-0.1.29.tar.gz", hash = "sha256:36604e6287e309eb4b99e17ddb5bc160f532844fb64af7bd5bfa2c43ad3635c2", size = 119982, upload-time = "2025-07-02T13:18:05.301Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/d2/aaf1b63c2357d9ce42ffa5089121891bebeae99e5d1dc77a22cb82ab0637/beeai_framework-0.1.38.tar.gz", hash = "sha256:45b968787ddd7777286e7d8389f238dd0c0f3119bd0a88c8c04eac8a8fb3a60f", size = 133990, upload-time = "2025-08-27T14:17:46.882Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/7b/c8e60c4412ccb519441e91e0f53625c13e7072eb67a2432d08bd0ebf87bc/beeai_framework-0.1.29-py3-none-any.whl", hash = "sha256:ae07b62f36be6783e6b1cdb72f78f8acaae038a08b89a16cc777527a152529d9", size = 271857, upload-time = "2025-07-02T13:18:03.794Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/ae/56bb0fd7c82bf3fd7daa2278e23f44facd78f036067577d80819e51a40b8/beeai_framework-0.1.38-py3-none-any.whl", hash = "sha256:f73e0cb23c9c722f475c83149d24615c60d8688fe0e575d4127f8320900d5547", size = 249409, upload-time = "2025-08-27T14:17:45.187Z" },
 ]
 
 [[package]]
@@ -805,7 +805,7 @@ requires-dist = [
     { name = "acp-sdk", specifier = ">=1.0.1" },
     { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "arxiv", specifier = ">=2.2.0" },
-    { name = "beeai-framework", specifier = ">=0.1.29" },
+    { name = "beeai-framework", specifier = ">=0.1.37" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "colorama", specifier = ">=0.4.6" },
     { name = "granite-io", specifier = ">=0.5.1" },
