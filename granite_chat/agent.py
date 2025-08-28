@@ -368,7 +368,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             if isinstance(event, TextEvent):
                 await context.yield_async(MessagePart(content=event.text))
             elif isinstance(event, TrajectoryEvent):
-                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.step)))
+                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.to_markdown())))
             elif isinstance(event, GeneratingCitationsEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
             elif isinstance(event, CitationEvent):
