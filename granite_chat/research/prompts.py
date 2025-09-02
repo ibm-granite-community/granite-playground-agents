@@ -100,6 +100,7 @@ Topic: {topic}
 {findings_str}
 </findings>
 
+DO NOT produce any references or citations!!
 Write with detail and length—expand on each theme so that the report reads like a well-researched analysis, not just a summary.
 Use a confident, analytical, and narrative tone, making the report engaging and authoritative.
 """  # noqa: E501
