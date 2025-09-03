@@ -90,6 +90,10 @@ Sections (##)
 Conclusion (##)
     - Summarize the overall insights and significance of the report.
     - End with forward-looking reflections or open questions.
+When presenting mathematical formulas:
+  - Use block math syntax $$$$ ... $$$$ for larger formulas
+  - Use inline math syntax $$ ... $$ for inline formulas
+  - Inside these blocks, use LaTeX notation such as \sum, \pi, e^{...}, \frac{a}{b}, etc.
 
 Topic: {topic}
 
