@@ -86,10 +86,10 @@ def get_markdown_sections(markdown_text: str) -> list[MarkdownSection]:
         first_start = matches[0].start()
         if first_start > 0:
             content = markdown_text[:first_start]
-            sections.extend(split_paragraphs(content, 0))
+            sections.extend(split_markdown_paragraphs(content, 0))
     else:
         # No headings found
-        return split_paragraphs(markdown_text, 0)
+        return split_markdown_paragraphs(markdown_text, 0)
 
     # Now process each heading and the content after it
     for i, match in enumerate(matches):
@@ -97,12 +97,12 @@ def get_markdown_sections(markdown_text: str) -> list[MarkdownSection]:
         content_end = matches[i + 1].start() if i + 1 < len(matches) else len(markdown_text)
         content = markdown_text[content_start:content_end]
 
-        sections.extend(split_paragraphs(content, content_start))
+        sections.extend(split_markdown_paragraphs(content, content_start))
 
     return sections
 
 
-def split_paragraphs(text: str, offset: int) -> list[MarkdownSection]:
+def split_markdown_paragraphs(text: str, offset: int) -> list[MarkdownSection]:
     paragraphs = []
     splits = re.split(r"\n\s*\n", text)
     search_start = 0

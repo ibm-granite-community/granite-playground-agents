@@ -112,7 +112,7 @@ class Settings(BaseSettings):
         default=10, description="Controls how man search results are considered for each search query", ge=1
     )
     RESEARCH_MAX_DOCS_PER_STEP: int = Field(
-        default=15, description="The number of documents to return from the vector store"
+        default=10, description="The number of documents to return from the vector store"
     )
 
     # Inference throttle
