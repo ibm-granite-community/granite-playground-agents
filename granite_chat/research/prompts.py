@@ -91,6 +91,7 @@ Sections (##)
 Conclusion (##)
     - Summarize the overall insights and significance of the report.
     - End with forward-looking reflections or open questions.
+
 {ChatPrompts.math_format_instructions()}
 
 Topic: {topic}
