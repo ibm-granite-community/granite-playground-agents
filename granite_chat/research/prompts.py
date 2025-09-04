@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from langchain_core.documents import Document
 
+from granite_chat.chat.prompts import ChatPrompts
 from granite_chat.research.types import ResearchQuery, ResearchReport
 
 
@@ -90,6 +91,8 @@ Sections (##)
 Conclusion (##)
     - Summarize the overall insights and significance of the report.
     - End with forward-looking reflections or open questions.
+
+{ChatPrompts.math_format_instructions()}
 
 Topic: {topic}
 
