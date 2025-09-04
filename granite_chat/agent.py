@@ -273,6 +273,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             doc_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
             # Prepend document prompt
             messages = doc_messages + messages
+        else:
+            messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         await context.yield_async(SearchingWebPhase(status=Status.completed).wrapped)
 
