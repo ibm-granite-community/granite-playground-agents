@@ -24,3 +24,12 @@ class Citation(BaseModel):
     context_text: str | None = None
     start_index: int | None = None
     end_index: int | None = None
+
+
+class ReferencingCitationSchema(BaseModel):
+    r: int = Field(description="The response statement.")
+    s: int = Field(description="The supporting source statement.")
+
+
+class ReferencingCitationsSchema(BaseModel):
+    citations: list[ReferencingCitationSchema] = Field(description="Citations")

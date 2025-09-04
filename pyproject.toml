@@ -24,6 +24,8 @@ dependencies = [
     "beeai-framework>=0.1.37",
     "types-aiofiles>=24.1.0.20250801",
     "types-cachetools>=6.1.0.20250717",
+    "scikit-learn>=1.7.1",
+    "numpy>=2.2.6",
 ]
 
 [tool.ruff]
