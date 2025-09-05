@@ -276,7 +276,9 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                             )
                             np_resp = np.atleast_2d(np.array(response_embeddings))
                             sim_matrix = cosine_similarity(np_resp, np_src)
-                            top_n_indices = np.argsort(sim_matrix, axis=1)[:, -10:][:, ::-1]  # sort descending
+                            top_n_indices = np.argsort(sim_matrix, axis=1)[:, -settings.CITATIONS_MAX_STATEMENTS :][
+                                :, ::-1
+                            ]  # sort descending
                             top_n_scores = np.take_along_axis(sim_matrix, top_n_indices, axis=1)
 
                             flat_indices = top_n_indices.flatten()
