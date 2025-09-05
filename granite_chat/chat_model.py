@@ -20,7 +20,7 @@ class ChatModelFactory:
         provider = settings.LLM_PROVIDER
         model_id = settings.LLM_MODEL
 
-        if model_type == "structured":
+        if model_type == "structured" and settings.LLM_STRUCTURED_MODEL:
             model_id = settings.LLM_STRUCTURED_MODEL
 
         max_tokens = settings.MAX_TOKENS

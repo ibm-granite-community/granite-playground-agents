@@ -35,7 +35,7 @@ class SearchTool(SearchResultsMixin):
         logger.info(f'Searching with queries => "{search_queries}"')
 
         # Perform search
-        await self._perform_web_search(search_queries, max_results=5)
+        await self._perform_web_search(search_queries, max_results=settings.SEARCH_MAX_SEARCH_RESULTS_PER_STEP)
         # Scraping
         scraped_content = await self._browse_urls(self.search_results)
 
@@ -45,7 +45,7 @@ class SearchTool(SearchResultsMixin):
         logger.info(f'Searching for context => "{standalone_msg}"')
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=standalone_msg, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            query=standalone_msg, k=settings.SEARCH_MAX_DOCS_PER_STEP
         )
 
         return docs
@@ -59,7 +59,9 @@ class SearchTool(SearchResultsMixin):
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
-                schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+                schema=SearchQueriesSchema,
+                messages=[UserMessage(content=search_query_prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
         if "search_queries" in response.object:
             return response.object["search_queries"]
@@ -71,7 +73,9 @@ class SearchTool(SearchResultsMixin):
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
-                schema=StandaloneQuerySchema, messages=[UserMessage(content=standalone_prompt)]
+                schema=StandaloneQuerySchema,
+                messages=[UserMessage(content=standalone_prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
         standalone_query = StandaloneQuerySchema(**response.object)
         return standalone_query.query

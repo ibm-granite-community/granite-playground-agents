@@ -166,7 +166,9 @@ class Researcher(EventEmitter, SearchResultsMixin):
         )
         async with chat_pool.throttle():
             response = await self.structured_chat_model.create_structure(
-                schema=ResearchPlanSchema, messages=[UserMessage(content=prompt)]
+                schema=ResearchPlanSchema,
+                messages=[UserMessage(content=prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
 
         try:

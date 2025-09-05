@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
     LLM_STRUCTURED_MODEL: str | None = Field(
-        default=None, description="The model ID of the LLM used for structured generation tasks"
+        description="The model ID of the LLM used for structured generation tasks", default=None
     )
 
     LLM_API_BASE: Annotated[
@@ -28,11 +28,17 @@ class Settings(BaseSettings):
     )
     LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
 
+    MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
+
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
     GOOGLE_API_KEY: str | None = Field(description="The API key for Google Search")
     GOOGLE_CX_KEY: str | None = Field(description="The CX key for Google Search")
     TAVILY_API_KEY: str | None = Field(default=None, description="The API key for Tavily")
     SAFE_SEARCH: bool = Field(default=True, description="Turn on safe search if available for search engine.")
+
+    SCRAPER_MAX_CONTENT_LENGTH: int = Field(
+        description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
+    )
 
     OLLAMA_BASE_URL: Annotated[
         HttpUrl,
@@ -60,6 +66,10 @@ class Settings(BaseSettings):
 
     CHUNK_OVERLAP: int = Field(default=20, description="The number of characters search result chunks will overlap")
     MAX_EMBEDDINGS: int = Field(default=100, description="The max number of embeddings in a single request")
+
+    EMBEDDINGS_SIM_MODEL: str | None = Field(
+        default=None, description="The model ID of the embedding model used for similarity."
+    )
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation
@@ -108,13 +118,21 @@ class Settings(BaseSettings):
         default="INFO", description="Set the log level for the agent"
     )
 
+    # Search configuration
+    SEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
+        default=5, description="Controls how man search results are considered for each search query", ge=1
+    )
+    SEARCH_MAX_DOCS_PER_STEP: int = Field(
+        default=10, description="The number of documents to return from the vector store"
+    )
+
     # Research configuration
     RESEARCH_PLAN_BREADTH: int = Field(default=5, description="Controls how many search queries are executed", ge=1)
     RESEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
-        default=10, description="Controls how man search results are considered for each search query", ge=1
+        default=8, description="Controls how man search results are considered for each search query", ge=1
     )
     RESEARCH_MAX_DOCS_PER_STEP: int = Field(
-        default=15, description="The number of documents to return from the vector store"
+        default=10, description="The number of documents to return from the vector store"
     )
 
     # Inference throttle
@@ -140,6 +158,12 @@ class Settings(BaseSettings):
     )
     RATE_PERIOD_TASKS: int = Field(
         default=2, description="Rate period in seconds, use with rate limit to implement throttle"
+    )
+
+    # Citations
+    CITATIONS_MAX_STATEMENTS: int = Field(
+        default=10,
+        description="The max. number of source statements per response statement",
     )
 
     # Resource store
@@ -177,10 +201,6 @@ class Settings(BaseSettings):
         # Allows headers to be picked up by framework
         if self.LLM_API_HEADERS:
             os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
-
-        # Default structured model if not set
-        if self.LLM_STRUCTURED_MODEL is None:
-            self.LLM_STRUCTURED_MODEL = self.LLM_MODEL
 
         return self
 
