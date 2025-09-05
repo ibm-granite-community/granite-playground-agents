@@ -16,7 +16,9 @@ class Settings(BaseSettings):
 
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
-    LLM_STRUCTURED_MODEL: str | None = Field(description="The model ID of the LLM used for structured generation tasks")
+    LLM_STRUCTURED_MODEL: str | None = Field(
+        description="The model ID of the LLM used for structured generation tasks", default=None
+    )
 
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
@@ -58,6 +60,10 @@ class Settings(BaseSettings):
 
     CHUNK_OVERLAP: int = Field(default=20, description="The number of characters search result chunks will overlap")
     MAX_EMBEDDINGS: int = Field(default=100, description="The max number of embeddings in a single request")
+
+    EMBEDDINGS_SIM_MODEL: str | None = Field(
+        default=None, description="The model ID of the embedding model used for similarity."
+    )
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation
@@ -189,10 +195,6 @@ class Settings(BaseSettings):
         # Allows headers to be picked up by framework
         if self.LLM_API_HEADERS:
             os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
-
-        # Default structured model if not set
-        if self.LLM_STRUCTURED_MODEL is None:
-            self.LLM_STRUCTURED_MODEL = self.LLM_MODEL
 
         return self
 

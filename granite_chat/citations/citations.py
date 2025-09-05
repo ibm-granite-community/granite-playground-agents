@@ -234,7 +234,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
     def __init__(self) -> None:
         super().__init__()
         self.chat_model = ChatModelFactory.create("structured")
-        self.embeddings = EmbeddingsFactory.create()
+        self.embeddings = EmbeddingsFactory.create("similarity")
         self.sentence_splitter = nltk.tokenize.punkt.PunktSentenceTokenizer()
 
     async def generate(self, messages: list[Message], docs: list[Document], response: str) -> None:
@@ -322,7 +322,6 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                                 )
                                             )
                                         )
-
         except asyncio.CancelledError:
             raise
 

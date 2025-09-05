@@ -56,27 +56,28 @@ Produce citations. Be accurate, only produce a citation if there is very strong 
         doc_str = "\n".join(docs)
         response_str = "\n".join(response)
 
-        return f"""You are given a set of source statements labeled <sX>, and a set of response statements labeled <rX>.
+        return f"""You are given a set of source sentences labeled <sX>, and a set of response sentences labeled <rX>.
 
 Your task is to produce citations:
-- A citation indicates that a source statement is supported or substantiated by a response statement.
-- For each response statement <rX>, identify source statements <sX> that explicitly support the information contained in the response statement.
-- A source statement <sX> supports a response statement <rX> if and only if the source statement contains information that explicitly confirms, directly implies, or provides strong evidence for the response statement, such that a reasonable reader could see the statement as grounded by the source.
+- A citation indicates that a fact or claim expressed in a response sentence is supported or substantiated by an equivalent statement of fact contained in a source sentence.
+- For each response sentence <rX>, identify source sentence <sX> that explicitly support the fact or claim contained in the response sentence.
+- A source sentence <sX> supports a response sentence <rX> if and only if the source sentence contains information that explicitly confirms, directly implies, or provides strong evidence for the response sentence, such that a reasonable reader could see the response sentence as being grounded by the source sentence.
 
-Here are the rules:
-- Create a citation for a response statement <rX> if and only if it contains an explicit claim or fact that is not obvious or widely known.
-- Cite a source statement <rX> if and only if it contains an explicit claim or fact.
+Important rules that must be adhered to:
+- Create a citation for a response sentence <rX> if and only if it contains an explicit claim or fact that is not obvious or widely known.
+- Cite a source sentence <rX> if and only if it contains an explicit assertion or statement of fact.
 
-NEVER create a citation if the response statement <rX>:
+NEVER create a citation if the response sentence <rX>:
 - is framing or introductory content that summarizes scope or narrative (e.g., sentences about what a report/article discusses, rather than factual content).
 - is conversational filler statement that simply acknowledges, agrees, or affirms (e.g., Yes, Certainly!, That's correct), since they do not contain factual content.
 - is a question (this cannot express a claim or fact)
-- expresses the writers analysis, reasoning, or opinion.
+- expresses the writers analysis, reasoning, or opinion (not a statement of fact).
 - sets up procedural or instructional content.
 
-NEVER create a citation if the source statement <sX>:
+NEVER create a citation if the source sentence <sX>:
+- is not an explicit well formed statement of fact.
 - is a question (again this does not express a fact).
-- is not well formed or difficult to read.
+- is not well formed or difficult to read (this is of no value to the reader).
 
 Now process this input:
 
@@ -88,6 +89,14 @@ Now process this input:
 {response_str}
 </response>
 
-For each valid response statement (that express a specific claim or fact) beginning <rX> identify the best quality supporting source statements <sX>.
-Focus on quality and make sure to follow the rules. Prioritize longer source statements that contain more information. It is better to not produce a citation than to produce a low quality citation.
+For each valid response sentence (that express a specific claim or fact) beginning <rX> identify the best quality supporting source sentences <sX>.
+Focus on quality and make sure to follow the rules. Prioritize longer source sentences that contain more information.
+If a citation is not obviously correct it is better to not produce that citation at all.
+
+Output format:
+{{
+    "citations": [
+        {{"r": <number>, "s": <number>}}
+    ]
+}}
 """  # noqa: E501

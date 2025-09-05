@@ -42,7 +42,6 @@ You are provided with a set of documents that may contain relevant information.
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 You have access to realtime data, you do not have a knowledge cutoff.
-
 {ChatPrompts.chat_core_guidelines()}"""  # noqa: E501
 
     @staticmethod
@@ -139,6 +138,11 @@ Here is the search result:
 - A snippet from the page: {search_result.body}
 
 Return True if the result is likely relevant to the query; otherwise, return False. Do no produce an explanation, just True or False.
+
+Output format:
+{{
+    "is_relevant": True|False,
+}}
 """  # noqa: E501
 
     @staticmethod
