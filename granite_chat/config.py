@@ -16,7 +16,9 @@ class Settings(BaseSettings):
 
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
-    LLM_STRUCTURED_MODEL: str | None = Field(description="The model ID of the LLM used for structured generation tasks")
+    LLM_STRUCTURED_MODEL: str | None = Field(
+        default=None, description="The model ID of the LLM used for structured generation tasks"
+    )
 
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
