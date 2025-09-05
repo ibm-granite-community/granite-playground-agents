@@ -59,7 +59,9 @@ class SearchTool(SearchResultsMixin):
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
-                schema=SearchQueriesSchema, messages=[UserMessage(content=search_query_prompt)]
+                schema=SearchQueriesSchema,
+                messages=[UserMessage(content=search_query_prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
         if "search_queries" in response.object:
             return response.object["search_queries"]
@@ -71,7 +73,9 @@ class SearchTool(SearchResultsMixin):
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
-                schema=StandaloneQuerySchema, messages=[UserMessage(content=standalone_prompt)]
+                schema=StandaloneQuerySchema,
+                messages=[UserMessage(content=standalone_prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
         standalone_query = StandaloneQuerySchema(**response.object)
         return standalone_query.query

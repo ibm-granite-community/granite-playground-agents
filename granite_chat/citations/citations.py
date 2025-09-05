@@ -297,7 +297,9 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
 
                             async with chat_pool.throttle():
                                 structured_output = await self.chat_model.create_structure(
-                                    schema=ReferencingCitationsSchema, messages=[UserMessage(content=prompt)]
+                                    schema=ReferencingCitationsSchema,
+                                    messages=[UserMessage(content=prompt)],
+                                    max_retries=settings.MAX_RETRIES,
                                 )
 
                             citations = ReferencingCitationsSchema(**structured_output.object)

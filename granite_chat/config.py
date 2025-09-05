@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     )
     LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
 
+    MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
+
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
     GOOGLE_API_KEY: str | None = Field(description="The API key for Google Search")
     GOOGLE_CX_KEY: str | None = Field(description="The CX key for Google Search")

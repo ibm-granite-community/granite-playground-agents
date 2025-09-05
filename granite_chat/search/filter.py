@@ -3,6 +3,7 @@ import asyncio
 from beeai_framework.backend import ChatModel, UserMessage
 
 from granite_chat import get_logger
+from granite_chat.config import settings
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.types import SearchResult, SearchResultRelevanceSchema
 from granite_chat.work import chat_pool
@@ -23,7 +24,9 @@ class SearchResultsFilter:
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
-                schema=SearchResultRelevanceSchema, messages=[UserMessage(content=prompt)]
+                schema=SearchResultRelevanceSchema,
+                messages=[UserMessage(content=prompt)],
+                max_retries=settings.MAX_RETRIES,
             )
 
         relevance = SearchResultRelevanceSchema(**response.object)
