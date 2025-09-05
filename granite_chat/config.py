@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     )
 
     CHUNK_OVERLAP: int = Field(default=20, description="The number of characters search result chunks will overlap")
-    MAX_EMBEDDINGS: int = Field(default=100, description="The max number of embeddings in a single request")
+    MAX_EMBEDDINGS: int = Field(default=200, description="The max number of embeddings in a single request")
 
     EMBEDDINGS_SIM_MODEL: str | None = Field(
         default=None, description="The model ID of the embedding model used for similarity."
@@ -164,6 +164,10 @@ class Settings(BaseSettings):
     CITATIONS_MAX_STATEMENTS: int = Field(
         default=10,
         description="The max. number of source statements per response statement",
+    )
+    CITATIONS_SIM_THRESHOLD: float = Field(
+        default=0.7,
+        description="The similarity threshold under which citation statements are ignored.",
     )
 
     # Resource store

@@ -61,10 +61,11 @@ Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required
 
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
 The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings. Include all important keywords.
+If the user intent is mult-faceted then incorporate each facet into a query.
 
 Tips:
 - Do not assume or introduce information that is not directly mentioned in the conversation.
-- Use the date to augment queries if the user is asking of recent or latest information.
+- Use the date to augment queries if the user is asking of recent or latest information but be very precise.
 
 Here is an example:
 Conversation:
@@ -80,7 +81,7 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate {max_queries} search queries that reflect the intent of the user's last message.
+Generate {max_queries} search queries that satisfy the intent of the user's last message.
 """  # noqa: E501
 
     @staticmethod
