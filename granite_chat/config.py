@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str | None = Field(default=None, description="The API key for Tavily")
     SAFE_SEARCH: bool = Field(default=True, description="Turn on safe search if available for search engine.")
 
+    SCRAPER_MAX_CONTENT_LENGTH: int = Field(
+        description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
+    )
+
     OLLAMA_BASE_URL: Annotated[
         HttpUrl,
         Field(

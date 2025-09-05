@@ -14,6 +14,7 @@ from typing import cast
 from httpx import AsyncClient, Client
 
 from granite_chat import get_logger
+from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.events import TrajectoryEvent
 from granite_chat.search.scraping import BeautifulSoupScraper
@@ -104,7 +105,7 @@ class ContentExtractor(EventEmitter):
             return ScrapedContent(
                 search_result=search_result,
                 url=link,
-                raw_content=content,
+                raw_content=content[: settings.SCRAPER_MAX_CONTENT_LENGTH],
                 image_urls=image_urls,
                 title=title,
             )
