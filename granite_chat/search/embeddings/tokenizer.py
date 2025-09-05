@@ -1,7 +1,7 @@
 import threading
 from typing import Optional
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from granite_chat import get_logger
 from granite_chat.config import settings
@@ -33,6 +33,6 @@ class EmbeddingsTokenizer:
             # No tokenizer used if env var unset
             self.tokenizer = None
 
-    def get_tokenizer(self) -> AutoTokenizer | None:
+    def get_tokenizer(self) -> PreTrainedTokenizerBase | None:
         # Returns tokenizer or None if not set / not used
         return self.tokenizer

@@ -4,6 +4,7 @@ from itertools import chain
 from beeai_framework.backend import EmbeddingModel, EmbeddingModelOutput
 from langchain_core.embeddings import Embeddings
 
+from granite_chat.config import settings
 from granite_chat.utils import batch
 from granite_chat.work import WorkerPool
 
@@ -19,7 +20,7 @@ class WatsonxEmbeddings(Embeddings):
     async def _embed(self, texts: list[str]) -> list[list[float]]:
         """Perform embedding."""
         # TODO: Externalize batch size
-        tasks = [self._embed_doc_batch(docs) for docs in batch(texts, 200)]
+        tasks = [self._embed_doc_batch(docs) for docs in batch(texts, settings.MAX_EMBEDDINGS)]
         results = await asyncio.gather(*tasks)
         return list(chain.from_iterable(results))
 

@@ -92,6 +92,7 @@ Now process this input:
 For each valid response sentence (that express a specific claim or fact) beginning <rX> identify the best quality supporting source sentences <sX>.
 Focus on quality and make sure to follow the rules. Prioritize longer source sentences that contain more information.
 If a citation is not obviously correct it is better to not produce that citation at all.
+Avoid repeated citing of a source, assume the reader has already seen it the first time.
 
 Output format:
 {{
