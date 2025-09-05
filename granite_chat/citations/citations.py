@@ -246,6 +246,10 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
 
             doc_sentence_offsets = [list(self.sentence_splitter.span_tokenize(d.page_content)) for d in docs]
             flat_doc_sentence_offsets = [offset for offsets in doc_sentence_offsets for offset in offsets]
+            sentence_to_doc: list[int] = []
+
+            for doc_ix, doc_offsets in enumerate(doc_sentence_offsets):
+                sentence_to_doc = sentence_to_doc + ([doc_ix] * len(doc_offsets))
 
             sections = get_markdown_sections(response)
 
@@ -265,6 +269,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                         counter=counter,
                                     )
                                 )
+
                         if len(response_as_sentences):
                             response_embeddings = await self.embeddings.aembed_documents(
                                 [s.text for s in response_as_sentences]
@@ -294,13 +299,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                 )
 
                             citations = ReferencingCitationsSchema(**structured_output.object)
-
                             message_sentence_offsets = [(s.offset, s.offset + s.length) for s in response_as_sentences]
-
-                            sentence_to_doc: list[int] = []
-
-                            for doc_ix, doc_offsets in enumerate(doc_sentence_offsets):
-                                sentence_to_doc = sentence_to_doc + ([doc_ix] * len(doc_offsets))
 
                             for cite in citations.citations:
                                 if 0 <= cite.r < len(message_sentence_offsets):

@@ -55,51 +55,39 @@ Produce citations. Be accurate, only produce a citation if there is very strong 
     def generate_references_citations_prompt(response: list[str], docs: list[str]) -> str:
         doc_str = "\n".join(docs)
         response_str = "\n".join(response)
-        return f"""You are given:
-- A set of source sentences labeled <sX> that serve as evidence.
-- A set of response sentences labeled <rX> that are presented to a reader.
 
-Your task:
-For each response sentence <rX>, identify source sentences <sX> that explicitly support it.
-A source supports a response if it contains information that explicitly confirms, directly implies, or provides strong evidence for the response statement, such that a reasonable reader could see the statement as grounded in the source.
-Try to identify high quality source statements that explicitly support response statements. Do not produce too many sources for a single response statement.
-If the source statement is a question, is not a well formed coherent statement, or it is difficult to read then ignore it.
+        return f"""You are given a set of source statements labeled <sX>, and a set of response statements labeled <rX>.
 
-DO NOT link to a source if a response statement:
-- Does not express a specific verifiable claim or fact. This is important!!
-- States common knowledge (widely known, undisputed facts).
-- Expresses the writers analysis, reasoning, or opinion.
-- Sets up procedural or instructional content.
+Your task is to produce citations:
+- A citation indicates that a source statement is supported or substantiated by a response statement.
+- For each response statement <rX>, identify source statements <sX> that explicitly support the information contained in the response statement.
+- A source statement <sX> supports a response statement <rX> if and only if the source statement contains information that explicitly confirms, directly implies, or provides strong evidence for the response statement, such that a reasonable reader could see the statement as grounded by the source.
+
+Here are the rules:
+- Create a citation for a response statement <rX> if and only if it contains an explicit claim or fact that is not obvious or widely known.
+- Cite a source statement <rX> if and only if it contains an explicit claim or fact.
+
+NEVER create a citation if the response statement <rX>:
 - is framing or introductory content that summarizes scope or narrative (e.g., sentences about what a report/article discusses, rather than factual content).
-- is a conversational filler statement that simply acknowledges, agrees, or affirms (e.g., Yes, Certainly!, That's correct), since they do not contain factual content.
+- is conversational filler statement that simply acknowledges, agrees, or affirms (e.g., Yes, Certainly!, That's correct), since they do not contain factual content.
+- is a question (this cannot express a claim or fact)
+- expresses the writers analysis, reasoning, or opinion.
+- sets up procedural or instructional content.
 
-DO NOT link to a source if the source statement:
-- Is itself a question.
-
-Here is an example:
-Sources:
-<sX> Copernicus proposed that the planets, including Earth, revolve around the Sun.
-<sY> Galileo observed that Jupiter has moons orbiting around it.
-<sZ> Eratosthenes measured Earth's diameter as ~12,742 km using shadows and distances.
-Response:
-<rW> Hello!.
-<rX> The Earth is ~12,742 km in diameter and revolves around the Sun.
-<rY> Jupiter has its own moons.
-<rZ> In this article we will discuss the solar system.
-Output:
-{{"citations:[
-  {{"r": X, "s": Z}},
-  {{"r": X, "s": X}},
-  {{"r": Y, "s": Y}}
-]}}
+NEVER create a citation if the source statement <sX>:
+- is a question (again this does not express a fact).
+- is not well formed or difficult to read.
 
 Now process this input:
 
-Sources:
+<sources>
 {doc_str}
+</sources>
 
-Response:
+<response>
 {response_str}
+</response>
 
-For valid response statements (that express a specific claim or fact) beginning <rX> identify the highest quality supporting source statements <sX>. Focus on accuracy.
+For each valid response statement (that express a specific claim or fact) beginning <rX> identify the best quality supporting source statements <sX>.
+Focus on quality and make sure to follow the rules. Prioritize longer source statements that contain more information. It is better to not produce a citation than to produce a low quality citation.
 """  # noqa: E501
