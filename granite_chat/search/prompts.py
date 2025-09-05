@@ -28,7 +28,7 @@ class SearchPrompts:
         return f"""You are Granite, developed by IBM.
 Provide a comprehensive, informative, and accurate response to the user.
 
-You are provided with a set of documents that may contain relevant information.
+You are provided with a set of documents that contain relevant information.
 - Use these documents to help formulate your response.
 - Your response should stay aligned with the content and facts of the documents when possible.
 - If the information needed is not available, inform the user that the question cannot be answered based on the available data.
@@ -144,40 +144,3 @@ Output format:
     "is_relevant": True|False,
 }}
 """  # noqa: E501
-
-    @staticmethod
-    def filter_doc_prompt(query: str, doc: Document) -> str:
-        doc_str = json.dumps(
-            {"title": doc.metadata["title"], "content": doc.page_content, "url": doc.metadata["url"]}, indent=4
-        )
-
-        return f"""Given a query and a document, decide whether the document contains information relevant to the query.
-Use the title, content and url of the document to make a decision, but focus primarily on content.
-
-Example task:
-
-Query: Learn how to create a basic website using HTML and CSS.
-
-<document>
-{{
-    "title": "Getting Started with HTML and CSS",
-    "content": "This tutorial provides a step-by-step guide to creating a simple website using HTML and CSS...",
-    "url": "https://html-css-tutorial.com"
-}}
-</document>
-
-Relevance classification:
-RELEVANT
-
-Now here is the real task:
-
-Query: {query}
-
-<document>
-{doc_str}
-</document>
-
-You must respond precisely with either RELEVANT or IRRELEVANT.
-- RELEVANT
-- IRRELEVANT
-"""
