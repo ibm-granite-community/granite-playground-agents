@@ -40,6 +40,8 @@ class Settings(BaseSettings):
         description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
     )
 
+    SCRAPER_TIMEOUT: int = Field(description="Seconds elapsed before scraper task times out.", default=15)
+
     OLLAMA_BASE_URL: Annotated[
         HttpUrl,
         Field(
@@ -57,19 +59,25 @@ class Settings(BaseSettings):
         default="ibm/slate-125m-english-rtrvr-v2", description="The model ID of the embedding model"
     )
     EMBEDDINGS_HF_TOKENIZER: str = Field(default="FacebookAI/roberta-base", description="The model ID of the tokenizer")
+    EMBEDDINGS_MAX_SEQUENCE: int = Field(default=512, description="The maximum sequence length in tokens.")
+
     CHUNK_SIZE: int = Field(
-        default=500,
-        description="The maximum number of characters search result chunks will be broken into",
-        ge=10,
-        le=8192,
+        default=512,
+        description="The maximum number of characters (or tokens if configured) search result chunks are broken into",
+    )
+    CHUNK_OVERLAP: int = Field(
+        default=20, description="The number of characters or tokens search result chunks will overlap"
     )
 
-    CHUNK_OVERLAP: int = Field(default=20, description="The number of characters search result chunks will overlap")
-    MAX_EMBEDDINGS: int = Field(default=200, description="The max number of embeddings in a single request")
+    MAX_EMBEDDINGS_PER_REQUEST: int = Field(default=200, description="The max number of embeddings in a single request")
 
     EMBEDDINGS_SIM_MODEL: str | None = Field(
         default=None, description="The model ID of the embedding model used for similarity."
     )
+    EMBEDDINGS_SIM_HF_TOKENIZER: str = Field(
+        default="FacebookAI/xlm-roberta-base", description="The model ID of the tokenizer"
+    )
+    EMBEDDINGS_SIM_MAX_SEQUENCE: int = Field(default=512, description="The maximum sequence length in tokens.")
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation

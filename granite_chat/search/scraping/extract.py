@@ -24,8 +24,6 @@ from granite_chat.search.scraping.scraper import AsyncScraper, SyncScraper
 from granite_chat.search.types import ScrapedContent, SearchResult
 from granite_chat.work import task_pool
 
-SCRAPE_TIMEOUT_SEC = 20
-
 
 class ContentExtractor(EventEmitter):
     """
@@ -75,7 +73,7 @@ class ContentExtractor(EventEmitter):
                 if isinstance(scraper, AsyncScraper):
                     content, image_urls, title = await asyncio.wait_for(
                         cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
-                        timeout=SCRAPE_TIMEOUT_SEC,
+                        timeout=settings.SCRAPER_TIMEOUT,
                     )
                 else:
                     loop = asyncio.get_running_loop()
@@ -86,7 +84,7 @@ class ContentExtractor(EventEmitter):
                         title,
                     ) = await asyncio.wait_for(
                         loop.run_in_executor(task_pool.executor, lambda: sync_scraper.scrape(link, self.client)),
-                        timeout=SCRAPE_TIMEOUT_SEC,
+                        timeout=settings.SCRAPER_TIMEOUT,
                     )
 
             if len(content) < 200:
