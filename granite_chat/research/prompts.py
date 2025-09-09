@@ -14,23 +14,23 @@ class ResearchPrompts:
     @staticmethod
     def research_plan_prompt(topic: str, context: str, max_queries: int = 3) -> str:
         return f"""You are a research planner.
-Given a topic and context, generate a list of targeted research questions designed to guide and support in-depth research on the topic.
-Expect that the questions will form the basis of an in-depth report so make sure that they are diverse and have a sequential logical narrative.
-Tailor the complexity of the research to the given audience. Use the provided context as a guide for which themes to focus on.
+Given a topic and context, generate a list of targeted research questions designed to guide in-depth research on the topic.
+Expect that the questions will form the basis of a report so make sure that they are diverse and have a sequential logical narrative.
+Tailor the complexity of the research to the given audience. Use the provided context as a guide for which themes to focus on and how to sequence the research.
 
 Each research question should:
 - Be clear and concise, ideally a single short sentence.
-- Contain enough detail to be standalone (can be understood in insolation)
 - Include a standalone search query optimized for use with a search engine. Include details and contextual keywords.
 
-The plan should:
-- Cover the key aspects required to fully address the topic.
+The overall plan should:
+- Guide the reader step by step, mirroring natural reasoning.
 - Be sufficiently diverse (to prevent overlap and repetition)
-- Be Logically connected (i.e. from foundational to advanced, temporally etc.) depending on the research topic.
+- Be Logically connected (i.e. from foundational to advanced, temporally etc.) depending on the topic.
 
 Audience: General
 
 Topic: {topic}
+
 Context: {context}
 
 Generate a maximum of {max_queries} research question to guide and support in-depth research on the given topic.
@@ -53,12 +53,12 @@ Include a rationale with each question indicating how it fits into a logical nar
         return f"""You are a research assistant.
 You are given a collection of documents. Your task is to analyze the documents and produce a detailed set of findings that focus on a given theme.
 
-Rules:
-- Identify key findings, insights and evidence that *directly* related to the given theme.
+Guidelines:
+- Identify key findings, insights and evidence *directly* related to the given theme.
 - Make sure findings are specific, concise, and grounded in the documents.
-- If multiple documents mention similar points, consolidate them.
+- If multiple documents mention similar information then consolidate, do not repeat.
 - If documents disagree or provide contrasting perspectives, note the differences.
-- Do not include details that are not directly relevant to the theme. Findings should be focused on the given theme only.
+- Do not include details that are not directly relevant to the theme.
 - Do not invent facts that are not contained in the documents.
 
 <documents>
@@ -71,7 +71,7 @@ Avoid referencing or mentioning "documents" or "the documents", or alluding to t
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 
 Output format:
-- Present your findings as a set of well-structured paragraphs.
+- Present your findings as a set of well-structured paragraphs. Avoid duplicating information.
 """  # noqa: E501
 
     @staticmethod
@@ -87,15 +87,15 @@ Your task is to write a comprehensive, cohesive, and in-depth report that integr
 Use markdown output format.
 
 Here is the structure of the report:
-Title (#): Use the topic as the title, or develop a compelling variation.
-Introduction (##)
+# Title: Use the topic as the title, or develop a compelling variation.
+## Introduction
     - Provide context and set the stage for the report.
-Sections (##)
+## Sections
     - Based on findings produce a set of main sections each with a clear heading.
     - Expand on the findings: explain implications, add interpretation, connect ideas.
     - You may include subsections (###) to deepen or clarify the analysis.
     - Use paragraphs for explanations rather than numbered lists.
-Conclusion (##)
+## Conclusion
     - Summarize the overall insights and significance of the report.
     - End with forward-looking reflections or open questions.
 
@@ -110,7 +110,6 @@ Topic: {topic}
 DO NOT produce any references or citations!!
 Write with detail so that the report reads like a well-researched analysis, not just a summary.
 Use a confident, analytical, and narrative tone, making the report engaging and authoritative.
-Avoid repetition and stay true to the findings.
 """  # noqa: E501
 
     @staticmethod
