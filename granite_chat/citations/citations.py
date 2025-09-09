@@ -29,7 +29,6 @@ from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
 from granite_chat.search.embeddings.factory import EmbeddingsFactory
-from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_chat.work import chat_pool, task_pool
 
 nltk.download("punkt_tab")
@@ -221,9 +220,8 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
 
     def __init__(self) -> None:
         super().__init__()
-        self.chat_model = ChatModelFactory.create("structured")
-        self.embeddings = EmbeddingsFactory.create("similarity")
-        self.embedding_tokenizer = EmbeddingsTokenizer.get_instance()
+        self.chat_model = ChatModelFactory.create(model_type="structured")
+        self.embeddingsModel = EmbeddingsFactory.create(model_type="similarity")
         self.sentence_splitter = nltk.tokenize.punkt.PunktSentenceTokenizer()
 
     async def generate(self, messages: list[Message], docs: list[Document], response: str) -> None:
@@ -231,18 +229,23 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
             docs_as_sentences = [list(self.sentence_splitter.tokenize(d.page_content)) for d in docs]
             docs_as_sentences_flat = [s for sub in docs_as_sentences for s in sub]
 
-            # Gate the embedding model
-            strings_for_embedding = []
-            for s in docs_as_sentences_flat:
-                tokenizer = self.embedding_tokenizer.get_tokenizer()
-                token_count = len(tokenizer.encode(s)) + 2 if tokenizer else max(1, (len(s) // 4) + 2)
+            # # Gate the embedding model
+            # strings_for_embedding: list[str] = []
+            # for s in docs_as_sentences_flat:
 
-                if token_count <= settings.CHUNK_SIZE:
-                    strings_for_embedding.append(s)
-                else:
-                    strings_for_embedding.append("")  # mark as skipped
+            #     token_count = (
+            #         len(self.embeddingsModel.tokenizer.tokenize(s)) + 2
+            #         if self.embeddingsModel.tokenizer
+            #         and isinstance(self.embeddingsModel.tokenizer, PreTrainedTokenizerBase)
+            #         else max(1, (len(s) // 4) + 2)
+            #     )
 
-            src_embeddings = await self.embeddings.aembed_documents(strings_for_embedding)
+            #     if token_count <= self.embeddingsModel.max_sequence_length:
+            #         strings_for_embedding.append(s)
+            #     else:
+            #         strings_for_embedding.append("")  # mark as skipped
+
+            src_embeddings = await self.embeddingsModel.embeddings.aembed_documents(docs_as_sentences_flat)
             np_src = np.atleast_2d(np.array(src_embeddings))
 
             doc_sentence_offsets = [list(self.sentence_splitter.span_tokenize(d.page_content)) for d in docs]
@@ -272,7 +275,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                 )
 
                         if len(response_as_sentences):
-                            response_embeddings = await self.embeddings.aembed_documents(
+                            response_embeddings = await self.embeddingsModel.embeddings.aembed_documents(
                                 [s.text for s in response_as_sentences]
                             )
                             np_resp = np.atleast_2d(np.array(response_embeddings))

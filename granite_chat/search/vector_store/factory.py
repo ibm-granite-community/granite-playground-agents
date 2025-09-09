@@ -1,9 +1,8 @@
-from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
 from granite_chat.config import settings
 from granite_chat.search.embeddings.factory import EmbeddingsFactory
-from granite_chat.search.embeddings.tokenizer import EmbeddingsTokenizer
+from granite_chat.search.embeddings.model import EmbeddingsModel
 from granite_chat.search.vector_store import VectorStoreWrapper
 
 
@@ -12,16 +11,15 @@ class VectorStoreWrapperFactory:
 
     @staticmethod
     def create() -> VectorStoreWrapper:
-        embeddings: Embeddings = EmbeddingsFactory.create()
+        embeddings_model: EmbeddingsModel = EmbeddingsFactory.create(model_type="retrieval")
+        lc_vector_store = InMemoryVectorStore(embedding=embeddings_model.embeddings)
 
-        lc_vector_store = InMemoryVectorStore(embedding=embeddings)
-
-        if settings.EMBEDDINGS_HF_TOKENIZER and (tokenizer := EmbeddingsTokenizer.get_instance().get_tokenizer()):
+        if embeddings_model.tokenizer:
             vector_store_wrapper = VectorStoreWrapper(
                 vector_store=lc_vector_store,
-                chunk_size=settings.CHUNK_SIZE - 2,  # minus start/end tokens
-                chunk_overlap=int(settings.CHUNK_OVERLAP),
-                tokenizer=tokenizer,
+                chunk_size=settings.CHUNK_SIZE - 2,
+                chunk_overlap=settings.CHUNK_OVERLAP,
+                tokenizer=embeddings_model.tokenizer,
             )
         else:
             # Fall back on character chunks

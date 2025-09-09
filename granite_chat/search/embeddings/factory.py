@@ -1,11 +1,10 @@
-from typing import Literal
-
-from langchain_core.embeddings import Embeddings
 from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from pydantic import SecretStr
 
 from granite_chat.config import settings
+from granite_chat.search.embeddings.model import EmbeddingsModel
+from granite_chat.search.embeddings.types import EmbeddingsModelType
 from granite_chat.search.embeddings.watsonx import WatsonxEmbeddings
 from granite_chat.work import embeddings_pool
 
@@ -13,10 +12,8 @@ from granite_chat.work import embeddings_pool
 class EmbeddingsFactory:
     """Factory for Embeddings instances."""
 
-    ModelType = Literal["retrieval", "similarity"]
-
     @staticmethod
-    def create(model_type: ModelType = "retrieval") -> Embeddings:
+    def create(model_type: EmbeddingsModelType = "retrieval") -> EmbeddingsModel:
         provider = settings.EMBEDDINGS_PROVIDER
         model_name = settings.EMBEDDINGS_MODEL
 
@@ -24,7 +21,18 @@ class EmbeddingsFactory:
             model_name = settings.EMBEDDINGS_SIM_MODEL
 
         if provider == "watsonx":
-            return WatsonxEmbeddings(model_id=model_name, worker_pool=embeddings_pool)
+            return EmbeddingsModel(
+                embeddings=WatsonxEmbeddings(
+                    model_id=model_name,
+                    worker_pool=embeddings_pool,
+                    truncate_input_tokens=(
+                        settings.EMBEDDINGS_SIM_MAX_SEQUENCE
+                        if model_type == "similarity"
+                        else settings.EMBEDDINGS_MAX_SEQUENCE
+                    ),
+                ),
+                type=model_type,
+            )
 
         elif provider == "openai":
             # Optional extra headers for openai api
@@ -34,18 +42,21 @@ class EmbeddingsFactory:
                 else None
             )
 
-            return OpenAIEmbeddings(
-                model=model_name,
-                api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
-                base_url=str(settings.EMBEDDINGS_OPENAI_API_BASE),
-                check_embedding_ctx_length=False,
-                default_headers=extra_headers,
+            return EmbeddingsModel(
+                embeddings=OpenAIEmbeddings(
+                    model=model_name,
+                    api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
+                    base_url=str(settings.EMBEDDINGS_OPENAI_API_BASE),
+                    check_embedding_ctx_length=False,
+                    default_headers=extra_headers,
+                ),
+                type=model_type,
             )
 
         elif provider == "ollama":
-            return OllamaEmbeddings(
-                model=model_name,
-                base_url=str(settings.OLLAMA_BASE_URL),
+            return EmbeddingsModel(
+                embeddings=OllamaEmbeddings(model=model_name, base_url=str(settings.OLLAMA_BASE_URL)),
+                type=model_type,
             )
 
         else:
