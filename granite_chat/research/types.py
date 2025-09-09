@@ -2,8 +2,10 @@ from pydantic import BaseModel, Field
 
 
 class ResearchQuery(BaseModel):
-    query: str = Field(description="Optimized research question addressing an aspect of the research topic.")
-    keywords: str = Field(description="List of keywords for this question")
+    question: str = Field(description="Research question addressing a specific aspect of the research topic.")
+    search_query: str = Field(
+        description="Optimized standalone research query. Include all available contextual keywords."
+    )
     rationale: str = Field(
         description="Provide a brief rationale explaining its importance and how it contributes to the logical flow of the investigation."  # noqa: E501
     )

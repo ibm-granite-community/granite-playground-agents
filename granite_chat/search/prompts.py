@@ -122,23 +122,23 @@ Generate a standalone query that clearly and concisely reflects the user's inten
     @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
-You are given a query and a search result (which includes a title, snippet, and URL). Your task is to determine whether the web page linked in the search result is likely to contain useful information that directly addresses the query.
+You are given a topic and a search result (which includes a title, snippet, and URL). Your task is to determine whether the web page linked in the search result is likely to contain useful information that is directly relevant to the topic.
 
-Consider the following when deciding if a search result is relevant:
-- Does the page appear to cover the main topic or intent of the query?
-- Is the information likely to be specific, accurate, and up-to-date?
-- Is the information likely to contribute an interesting angle to the primary topic?
+A relevant (True) search result has the following properties:
+- The url, title or snippet indicate that the linked page contains content that is relevant to the topic.
+- It is likely that the linked page is specific, accurate, and up-to-date.
+- It is likely that the linked page contributes an interesting angle or theme to the topic
 
-If a search result looks like it may contain or promote violent, sexual, or controversial content it should be automatically marked as irrelevant.
+If a search result looks like it may contain or promote violent, hateful or pornographic content it should be automatically marked as irrelevant.
 
-Here is the query: {query}
+Here is the topic: {query}
 
 Here is the search result:
 - URL: {search_result.url}
 - Title: {search_result.title}
 - A snippet from the page: {search_result.body}
 
-Return True if the result is likely relevant to the query; otherwise, return False. Do no produce an explanation, just True or False.
+Return True if the result is likely relevant to the topic; otherwise, return False. Do no produce an explanation, just True or False.
 
 Output format:
 {{
