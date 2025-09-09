@@ -7,8 +7,10 @@ from beeai_framework.backend import (
     ChatModel,
     ChatModelNewTokenEvent,
     Message,
+    SystemMessage,
     UserMessage,
 )
+from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
@@ -26,14 +28,16 @@ from granite_chat.research.prompts import ResearchPrompts
 from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
 from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
-from granite_chat.search.mixins import SearchResultsMixin
+from granite_chat.search.mixins import ScrapedContentMixin, SearchResultsMixin
+from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
-from granite_chat.search.types import SearchResult
+from granite_chat.search.tool import SearchTool
+from granite_chat.search.types import SearchQueriesSchema, SearchResult
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
 from granite_chat.work import chat_pool, task_pool
 
 
-class Researcher(EventEmitter, SearchResultsMixin):
+class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
     def __init__(
         self,
         chat_model: ChatModel,
@@ -49,6 +53,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.logger = get_logger(__name__)
 
         self.research_topic: str | None = None
+        self.pre_research: str | None = None
 
         self.research_plan: list[ResearchQuery] = []
         self.interim_reports: list[ResearchReport] = []
@@ -68,19 +73,26 @@ class Researcher(EventEmitter, SearchResultsMixin):
         await self._emit(TrajectoryEvent(title="Research topic", content=self.research_topic.strip()))
         # await self._emit(TrajectoryEvent(title="Developing a research plan"))
 
+        # Do some pre research
+        await self._emit(TrajectoryEvent(title="Conducting preliminary research"))
+        self._context = await self._generate_research_context()
+
+        # Generate the research plan
         self.research_plan = await self._generate_research_plan()
 
-        await self._emit(TrajectoryEvent(title="Research plan", content=[s.query for s in self.research_plan]))
+        await self._emit(TrajectoryEvent(title="Research plan", content=[s.question for s in self.research_plan]))
 
         self.logger.debug(f"Research plan: {self.research_plan}")
 
         # await self._emit(TrajectoryEvent(title="Gathering information"))
 
         await self._gather_sources()
-
         await self._extract_sources()
 
         # await self._emit(TrajectoryEvent(title="Performing research"))
+
+        if self.scraped_contents:
+            await self.vector_store.load(self.scraped_contents)
 
         await self._perform_research()
 
@@ -96,9 +108,41 @@ class Researcher(EventEmitter, SearchResultsMixin):
         """Generate/extract the research topic"""
         return self.messages[-1].text
 
+    async def _generate_research_context(self) -> str:
+        """
+        Conduct Preliminary research
+        """
+        search_tool = SearchTool(chat_model=self.structured_chat_model)
+        docs: list[Document] = await search_tool.search(self.messages)
+
+        # Merge existing search results and scraped content to avoid duplication
+        self.add_search_results(search_tool.search_results)
+        self.add_scraped_contents(search_tool.scraped_contents)
+
+        search_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
+
+        async with chat_pool.throttle():
+            output = await self.chat_model.create(messages=search_messages)
+
+        return output.get_text_content()
+
+    async def _generate_search_queries(self, query: ResearchQuery, context: str) -> list[str]:
+        """
+        Generate search queries for ResearchQuery.
+        """
+        search_query_prompt = ResearchPrompts.generate_search_queries_prompt(query=query, context=context)
+
+        async with chat_pool.throttle():
+            response = await self.chat_model.create_structure(
+                schema=SearchQueriesSchema,
+                messages=[UserMessage(content=search_query_prompt)],
+                max_retries=settings.MAX_RETRIES,
+            )
+
+        return SearchQueriesSchema(**response.object).search_queries
+
     async def _gather_sources(self) -> None:
         """Gather all information sources for the research plan"""
-
         if self.research_plan is None or len(self.research_plan) == 0:
             raise ValueError("No research plan has been set!")
 
@@ -106,25 +150,23 @@ class Researcher(EventEmitter, SearchResultsMixin):
 
     async def _gather_sources_for_step(self, query: ResearchQuery) -> None:
         """Gather information for a single research plan step"""
+        search_queries = await self._generate_search_queries(query=query, context=self._context)
+        await asyncio.gather(*(self._web_search(q) for q in search_queries))
 
-        search_results = await self._search_query(
-            query.query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP
-        )
-
-        search_results = await self.search_results_filter.filter(query.query, search_results)
-
+    async def _web_search(self, query: str) -> None:
+        search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
+        filtered = [s for s in search_results if not self.contains_search_result(s.url)]
+        search_results = await self.search_results_filter.filter(query, filtered)
         for s in search_results:
             self.add_search_result(s)
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
 
-        scraped_content, _ = await scrape_urls(search_results=self.search_results, scraper="bs", emitter=self)
-
+        filtered = [s for s in self.search_results if self.contains_scraped_content(s.url)]
+        scraped_contents, _ = await scrape_urls(search_results=filtered, scraper="bs", emitter=self)
+        self.add_scraped_contents(scraped_contents)
         # await self._emit(TrajectoryEvent(title="Extracting knowledge"))
-
-        if scraped_content and len(scraped_content) > 0:
-            await self.vector_store.load(scraped_content)
 
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
@@ -139,7 +181,6 @@ class Researcher(EventEmitter, SearchResultsMixin):
         # await self._emit(TrajectoryEvent(title="Generating final report"))
 
         prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, findings=self.interim_reports)
-
         response: list[str] = []
 
         if settings.STREAMING is True:
@@ -162,7 +203,7 @@ class Researcher(EventEmitter, SearchResultsMixin):
             raise ValueError("Research topic has not been set!")
 
         prompt = ResearchPrompts.research_plan_prompt(
-            topic=self.research_topic, max_queries=settings.RESEARCH_PLAN_BREADTH
+            topic=self.research_topic, context=self._context, max_queries=settings.RESEARCH_PLAN_BREADTH
         )
         async with chat_pool.throttle():
             response = await self.structured_chat_model.create_structure(
@@ -185,10 +226,10 @@ class Researcher(EventEmitter, SearchResultsMixin):
         self.interim_reports.extend(reports)
 
     async def _research_step(self, query: ResearchQuery) -> ResearchReport:
-        await self._emit(TrajectoryEvent(title="Researching", content=query.query))
+        await self._emit(TrajectoryEvent(title="Researching", content=query.question))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=query.query, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            query=query.question, k=settings.RESEARCH_MAX_DOCS_PER_STEP
         )
 
         self.final_report_docs += docs
