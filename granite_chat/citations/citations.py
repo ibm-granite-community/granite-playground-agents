@@ -1,5 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from itertools import count
 
 import nltk
@@ -314,16 +315,30 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                     )
 
                                 citations = ReferencingCitationsSchema(**structured_output.object)
+
                                 message_sentence_offsets = [
                                     (s.offset, s.offset + s.length) for s in response_as_sentences
                                 ]
 
+                                r_to_s: dict[int, set[int]] = defaultdict(set)
+
                                 for cite in citations.citations:
-                                    if 0 <= cite.r < len(message_sentence_offsets):
-                                        response_begin, response_end = message_sentence_offsets[cite.r]
-                                        if cite.s in src_indices:
-                                            doc_num = sentence_to_doc[cite.s]
-                                            context_begin, context_end = flat_doc_sentence_offsets[cite.s]
+                                    r_to_s[cite.r].add(cite.s)
+
+                                # for cite in citations.citations:
+                                for r, s_set in r_to_s.items():
+                                    if 0 <= r < len(message_sentence_offsets):
+                                        response_begin, response_end = message_sentence_offsets[r]
+
+                                        valid_indexes = [idx for idx in s_set if 0 <= idx < len(sentence_to_doc)]
+                                        citation_index_groups = group_consecutive_context_sentence_indexes(
+                                            valid_indexes, sentence_to_doc
+                                        )
+
+                                        for citation_index_group in citation_index_groups:
+                                            doc_num = sentence_to_doc[citation_index_group[0]]
+                                            context_begin, _ = flat_doc_sentence_offsets[citation_index_group[0]]
+                                            _, context_end = flat_doc_sentence_offsets[citation_index_group[1]]
                                             context_text = docs[doc_num].page_content[context_begin:context_end]
 
                                             await self._emit(
@@ -356,3 +371,49 @@ def to_sentences(response: str, offset: int, counter: count) -> list[Sentence]:
         start = start_index + length  # advance to avoid matching earlier sentence again
 
     return results
+
+
+def group_consecutive_context_sentence_indexes(index_list: list[int], sentence_to_doc: list[int]) -> list[list[int]]:
+    """
+    Transform flat list of context sentence indexes into list of
+    context sentence index groups, where each group represents a set of
+    consecutive indexes from the same document in the original list.
+
+    A group is represented in the ouput as [x, y], where x and y are
+    the first and last context sentence indexes in the group, resp.
+
+    Example input:
+    [ 1, 3, 2, 5, 6, 8 ]
+
+    Example output:
+    (Assuming all indexes in the input correspond to sentences in the same doc)
+    [ [1, 3], [5, 6], [8, 8] ]
+
+    :param: List of context sentence indexes. The list should consist only
+            of unique indexes that also exist in the input documents
+    :param: Dictionary mapping sentence index to document index
+
+    :returns: List of sentence index groups, where each sentence index group
+    represents a set of consecutive indexes from the same document
+    in the input list
+    """
+    citation_indexes = sorted(index_list)
+    citation_index_groups = []
+
+    cur_group: list[int] = []
+    last_citation_index = -2
+    last_citation_index_doc = -2
+    for citation_index in citation_indexes:
+        if citation_index != last_citation_index + 1 or sentence_to_doc[citation_index] != last_citation_index_doc:
+            if len(cur_group) == 1:
+                cur_group.append(last_citation_index)
+                citation_index_groups.append(cur_group)
+            cur_group = [citation_index]
+        last_citation_index = citation_index
+        last_citation_index_doc = sentence_to_doc[citation_index]
+
+    if len(cur_group) == 1:
+        cur_group.append(citation_indexes[-1])
+        citation_index_groups.append(cur_group)
+
+    return citation_index_groups
