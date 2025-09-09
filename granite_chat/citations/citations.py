@@ -334,7 +334,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                         citation_index_groups = group_consecutive_context_sentence_indexes(
                                             valid_indexes, sentence_to_doc
                                         )
-                                        print(citation_index_groups)
+
                                         for citation_index_group in citation_index_groups:
                                             doc_num = sentence_to_doc[citation_index_group[0]]
                                             context_begin, _ = flat_doc_sentence_offsets[citation_index_group[0]]
