@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     )
     LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
 
+    LLM_STRUCTURED_MODEL_TIMEOUT: float = Field(description="Timeout for structured generation requests", default=60)
+
     MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
 
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
