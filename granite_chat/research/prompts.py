@@ -35,6 +35,15 @@ Context: {context}
 
 Generate a maximum of {max_queries} research question to guide and support in-depth research on the given topic.
 Include a rationale with each question indicating how it fits into a logical narrative i.e. how it flows from previous questions to add to a coherent report.
+
+Output format:
+{{
+    "questions":[{{
+        "rationale: "Brief rationale explaining the importance of the question and how it contributes to the logical flow of the investigation.",
+        "question": "Research question addressing a specific aspect of the research topic.",
+        "search_query: "An optimized standalone research query. Include all available contextual keywords."
+    }}]
+}}
 """  # noqa: E501
 
     @staticmethod
@@ -90,14 +99,17 @@ Here is the structure of the report:
 # Title: Use the topic as the title, or develop a compelling variation.
 ## Introduction
     - Provide context and set the stage for the report.
-## Sections
-    - Based on findings produce a set of main sections each with a clear heading.
+## Divide the report into multiple sections, each with a clear heading that represents a specific topic or finding.
+    - Each section heading should reflect the topic it covers.
     - Expand on the findings: explain implications, add interpretation, connect ideas.
-    - You may include subsections (###) to deepen or clarify the analysis.
+    - You may include sub sections (###) to deepen or clarify the analysis.
     - Use paragraphs for explanations rather than numbered lists.
+    - Dont duplicate information in multiple sections, try to consolidate.
 ## Conclusion
     - Summarize the overall insights and significance of the report.
     - End with forward-looking reflections or open questions.
+
+Use # for the report title, ## for Introduction, ## for each main topic section, ### for subsections that expand on a topic, and ## for Conclusion.
 
 {ChatPrompts.math_format_instructions()}
 

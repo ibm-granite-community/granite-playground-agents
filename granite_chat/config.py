@@ -134,6 +134,7 @@ class Settings(BaseSettings):
     SEARCH_MAX_DOCS_PER_STEP: int = Field(
         default=10, description="The number of documents to return from the vector store"
     )
+    SEARCH_MAX_SCRAPED_CONTENT: int = Field(default=10, description="The max scraped web results")
 
     # Research configuration
     RESEARCH_PLAN_BREADTH: int = Field(default=5, description="Controls how many search queries are executed", ge=1)
@@ -143,6 +144,8 @@ class Settings(BaseSettings):
     RESEARCH_MAX_DOCS_PER_STEP: int = Field(
         default=12, description="The number of documents to return from the vector store"
     )
+
+    RESEARCH_MAX_SCRAPED_CONTENT: int = Field(default=10, description="The max scraped web results")
 
     # Inference throttle
     MAX_CONCURRENT_INFERENCE_TASKS: int = Field(

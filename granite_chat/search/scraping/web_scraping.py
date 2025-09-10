@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 async def scrape_urls(
-    search_results: list[SearchResult], scraper: str, emitter: EventEmitter | None = None
+    search_results: list[SearchResult], scraper: str, emitter: EventEmitter | None = None, max_scraped_content: int = 10
 ) -> tuple[list[ScrapedContent], list[ImageUrl]]:
     """
     Scrapes the urls
@@ -37,7 +37,7 @@ async def scrape_urls(
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
 
     try:
-        extractor = ContentExtractor(search_results, user_agent, scraper)
+        extractor = ContentExtractor(search_results, user_agent, scraper, max_scraped_content)
         if emitter is not None:
             emitter.forward_events_from(extractor)
         scraped_data = await extractor.run()

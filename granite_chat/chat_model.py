@@ -9,6 +9,8 @@ from beeai_framework.backend import (
 
 from granite_chat.config import settings
 
+STRUCTURED_LLM_TIMEOUT = 60
+
 
 class ChatModelFactory:
     """Factory for ChatModel instances."""
@@ -49,6 +51,7 @@ class ChatModelFactory:
                 project_id=project_id,
                 region=region,
                 parameters=ChatModelParameters(max_tokens=max_tokens, temperature=temperature),
+                settings={"timeout": STRUCTURED_LLM_TIMEOUT} if model_type == "structured" else {},
             )
         else:
             raise ValueError("Unknown inference provider")

@@ -164,7 +164,12 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
         """Extract all gathered sources"""
 
         filtered = [s for s in self.search_results if self.contains_scraped_content(s.url)]
-        scraped_contents, _ = await scrape_urls(search_results=filtered, scraper="bs", emitter=self)
+        scraped_contents, _ = await scrape_urls(
+            search_results=filtered,
+            scraper="bs",
+            emitter=self,
+            max_scraped_content=settings.RESEARCH_MAX_SCRAPED_CONTENT,
+        )
         self.add_scraped_contents(scraped_contents)
         # await self._emit(TrajectoryEvent(title="Extracting knowledge"))
 
@@ -214,7 +219,7 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
 
         try:
             plan = ResearchPlanSchema(**response.object)
-            return plan.queries
+            return plan.questions
         except ValidationError as e:
             raise ValueError("Failed to generate a valid research plan!") from e
 
@@ -229,7 +234,8 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
         await self._emit(TrajectoryEvent(title="Researching", content=query.question))
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
-            query=query.question, k=settings.RESEARCH_MAX_DOCS_PER_STEP
+            query=" ".join([query.question, query.search_query]),
+            k=settings.RESEARCH_MAX_DOCS_PER_STEP,
         )
 
         self.final_report_docs += docs
@@ -253,13 +259,12 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
     async def _generate_citations(self) -> None:
         if len(self.final_report_docs) > 0:
             # Compress docs
+            await self._emit(GeneratingCitationsEvent())
             docs = self._dedup_documents_by_content(self.final_report_docs)
             input = [AcpMessage(role="user", parts=[MessagePart(name="User", content=self.research_topic)])]
-
             generator = CitationGeneratorFactory.create()
             self.forward_events_from(generator)
 
-            await self._emit(GeneratingCitationsEvent())
             await generator.generate(messages=input, docs=docs, response=self.final_report or "")
             await self._emit(GeneratingCitationsCompleteEvent())
 

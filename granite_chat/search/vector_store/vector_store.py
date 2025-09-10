@@ -5,6 +5,7 @@ Add document index
 """
 
 import asyncio
+from functools import partial
 from typing import Any
 
 from langchain.retrievers import ContextualCompressionRetriever
@@ -38,13 +39,7 @@ class VectorStoreWrapper:
         Translate to langchain doc type, split to chunks then load
         """
         langchain_documents = self._create_langchain_documents(content)
-
-        loop = asyncio.get_running_loop()
-
-        splitted_documents = await asyncio.wait_for(
-            loop.run_in_executor(task_pool.executor, lambda: self._split_documents(langchain_documents)), timeout=None
-        )
-
+        splitted_documents = await self._a_split_documents(langchain_documents)
         await self.vector_store.aadd_documents(splitted_documents)
 
     # TODO: subclass Document for better typing support
@@ -62,6 +57,23 @@ class VectorStoreWrapper:
             )
             for i, item in enumerate(scraped_content)
         ]
+
+    async def _a_split_documents(self, documents: list[Document]) -> list[Document]:
+        split_docs: list[Document] = []
+        loop = asyncio.get_running_loop()
+
+        for doc in documents:
+            splitted = await asyncio.wait_for(
+                loop.run_in_executor(
+                    task_pool.executor,
+                    partial(self._split_documents, [doc]),
+                ),
+                timeout=None,
+            )
+            split_docs.extend(splitted)
+            await asyncio.sleep(0)
+
+        return split_docs
 
     def _split_documents(self, documents: list[Document]) -> list[Document]:
         """

@@ -51,7 +51,9 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
         return docs
 
     async def _browse_urls(self, search_results: list[SearchResult]) -> None:
-        scraped_contents, _ = await scrape_urls(search_results=search_results, scraper="bs")
+        scraped_contents, _ = await scrape_urls(
+            search_results=search_results, scraper="bs", max_scraped_content=settings.SEARCH_MAX_SCRAPED_CONTENT
+        )
         self.add_scraped_contents(scraped_contents)
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
