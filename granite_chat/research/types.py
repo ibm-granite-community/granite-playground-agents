@@ -7,7 +7,7 @@ class ResearchQuery(BaseModel):
         description="Optimized standalone research query. Include all available contextual keywords."
     )
     rationale: str = Field(
-        description="Provide a brief rationale explaining its importance and how it contributes to the logical flow of the investigation."  # noqa: E501
+        description="Brief rationale explaining the importance of the question and how it contributes to the logical flow of the investigation."  # noqa: E501
     )
 
 
@@ -17,4 +17,4 @@ class ResearchReport(BaseModel):
 
 
 class ResearchPlanSchema(BaseModel):
-    queries: list[ResearchQuery] = Field(description="A list of search queries that address the research topic.")
+    questions: list[ResearchQuery] = Field(description="A list of search queries that address the research topic.")

@@ -30,7 +30,9 @@ class ContentExtractor(EventEmitter):
     Scraper class to extract the content from the links
     """
 
-    def __init__(self, search_results: list[SearchResult], user_agent: str, scraper_key: str) -> None:
+    def __init__(
+        self, search_results: list[SearchResult], user_agent: str, scraper_key: str, max_scraped_content: int = 10
+    ) -> None:
         """
         Initialize the Scraper class.
         Args:
@@ -42,7 +44,9 @@ class ContentExtractor(EventEmitter):
         self.client = Client()
         self.async_client.headers.update({"User-Agent": user_agent})
         self.client.headers.update({"User-Agent": user_agent})
-
+        self._counter_lock = asyncio.Lock()
+        self._content_count: int = 0
+        self._max_scraped_content = max_scraped_content
         self.scraper_key = scraper_key
         self.logger = get_logger(__name__)
 
@@ -58,6 +62,9 @@ class ContentExtractor(EventEmitter):
         """
         Extracts the data from the link with logging
         """
+        if self._content_count >= self._max_scraped_content:
+            self.logger.info("Max scraped content exceeded!")
+            return None
 
         try:
             link = search_result.url
@@ -99,6 +106,9 @@ class ContentExtractor(EventEmitter):
             self.logger.info("=" * 50)
 
             await self._emit(TrajectoryEvent(title="Added source", content=link))
+
+            async with self._counter_lock:
+                self._content_count += 1
 
             return ScrapedContent(
                 search_result=search_result,

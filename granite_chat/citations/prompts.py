@@ -66,17 +66,18 @@ Your task is to produce citations:
 Important rules that must be adhered to:
 - Create a citation for a response sentence <rX> if and only if it contains an explicit claim or fact that is not obvious or widely known.
 - Cite a source sentence <rX> if and only if it contains an explicit assertion or statement of fact.
+- Do not produce too many citations for a single <rX>. Limit to max 5.
 
-NEVER create a citation if the response sentence <rX>:
+NEVER cite a response sentence <rX> if it:
 - is framing or introductory content that summarizes scope or narrative (e.g., sentences about what a report/article discusses, rather than factual content).
 - is conversational filler statement that simply acknowledges, agrees, or affirms (e.g., Yes, Certainly!, That's correct), since they do not contain factual content.
 - is a question (this cannot express a claim or fact)
-- expresses the writers analysis, reasoning, or opinion (not a statement of fact).
+- expresses the writers analysis, reasoning, or opinion (not a direct assertion or statement of fact).
 - sets up procedural or instructional content.
 
-NEVER create a citation if the source sentence <sX>:
+NEVER cite a source sentence <sX> if it:
 - is not an explicit well formed statement of fact.
-- is a question (again this does not express a fact).
+- is a question (again this does not express a fact, right?).
 - is not well formed or difficult to read (this is of no value to the reader).
 
 Now process this input:
