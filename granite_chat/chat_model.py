@@ -49,7 +49,7 @@ class ChatModelFactory:
                 project_id=project_id,
                 region=region,
                 parameters=ChatModelParameters(max_tokens=max_tokens, temperature=temperature),
-                settings={"timeout": settings.LLM_STRUCTURED_MODEL_TIMEOUT} if model_type == "structured" else {},
+                settings={"timeout": settings.LLM_TIMEOUT},
             )
         else:
             raise ValueError("Unknown inference provider")

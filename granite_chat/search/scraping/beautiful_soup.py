@@ -8,12 +8,14 @@
 #
 # Changes made:
 
+import asyncio
+
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
 
 from granite_chat import get_logger
 from granite_chat.search.scraping.scraper import AsyncScraper
-from granite_chat.search.scraping.utils import clean_soup, extract_title, get_relevant_images, get_text_from_soup
+from granite_chat.search.scraping.utils import clean_soup, extract_title, get_text_from_soup
 
 logger = get_logger(__name__)
 
@@ -41,14 +43,17 @@ class BeautifulSoupScraper(AsyncScraper):
 
             soup = clean_soup(soup)
 
+            await asyncio.sleep(0)
+
             content = get_text_from_soup(soup)
 
-            image_urls = get_relevant_images(soup, link)
+            await asyncio.sleep(0)
+            # image_urls = get_relevant_images(soup, link)
 
             # Extract the title using the utility function
             title = extract_title(soup)
 
-            return content, image_urls, title
+            return content, None, title
 
         except Exception as e:
             logger.exception(f"Error! : {e!s} scraping link {link}")

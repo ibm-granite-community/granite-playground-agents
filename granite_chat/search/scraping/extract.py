@@ -101,7 +101,7 @@ class ContentExtractor(EventEmitter):
             # Log results
             self.logger.info(f"Title: {title}")
             self.logger.info(f"Content length: {len(content) if content else 0} characters")
-            self.logger.info(f"Number of images: {len(image_urls)}")
+            # self.logger.info(f"Number of images: {len(image_urls)}")
             self.logger.info(f"URL: {link}")
             self.logger.info("=" * 50)
 
@@ -114,7 +114,7 @@ class ContentExtractor(EventEmitter):
                 search_result=search_result,
                 url=link,
                 raw_content=content[: settings.SCRAPER_MAX_CONTENT_LENGTH],
-                image_urls=image_urls,
+                # image_urls=image_urls,
                 title=title,
             )
 
