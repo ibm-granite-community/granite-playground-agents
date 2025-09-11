@@ -27,9 +27,7 @@ class Settings(BaseSettings):
         description="The authorization key used to access LLM_MODEL via LLM_API_BASE", default=None
     )
     LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
-
-    LLM_STRUCTURED_MODEL_TIMEOUT: float = Field(description="Timeout for structured generation requests", default=60)
-
+    LLM_TIMEOUT: float = Field(description="Timeout for llm generation requests", default=180)
     MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
 
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
@@ -112,6 +110,7 @@ class Settings(BaseSettings):
     MAX_TOKENS: int = Field(
         default=4096, description="The maximum number of tokens the LLM will generate", ge=10, le=128_000
     )
+
     TEMPERATURE: float = Field(
         default=0.1,
         description="How predictable (low value) or creative (high value) the LLM responses are",
@@ -148,6 +147,8 @@ class Settings(BaseSettings):
     )
 
     RESEARCH_MAX_SCRAPED_CONTENT: int = Field(default=10, description="The max scraped web results")
+    RESEARCH_PRELIM_MAX_TOKENS: int = Field(default=2048, description="Token budget for preliminary research step")
+    RESEARCH_FINDINGS_MAX_TOKENS: int = Field(default=2048, description="Token budget for finding research step")
 
     # Inference throttle
     MAX_CONCURRENT_INFERENCE_TASKS: int = Field(
@@ -163,7 +164,7 @@ class Settings(BaseSettings):
 
     # General task throttle
     MAX_CONCURRENT_TASKS: int = Field(
-        default=20,
+        default=30,
         description="The max. number of tasks that can run simultaneously, excludes inference tasks",
     )
     RATE_LIMIT_TASKS: int = Field(

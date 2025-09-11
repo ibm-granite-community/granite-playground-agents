@@ -31,7 +31,9 @@ Audience: General
 
 Topic: {topic}
 
-Context: {context}
+<context>
+{context}
+</context>
 
 Generate a maximum of {max_queries} research question to guide and support in-depth research on the given topic.
 Include a rationale with each question indicating how it fits into a logical narrative i.e. how it flows from previous questions to add to a coherent report.

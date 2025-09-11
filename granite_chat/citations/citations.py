@@ -229,7 +229,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
         try:
             docs_as_sentences = [list(self.sentence_splitter.tokenize(d.page_content)) for d in docs]
             docs_as_sentences_flat = [s for sub in docs_as_sentences for s in sub]
-
+            await asyncio.sleep(0)
             # # Gate the embedding model
             # strings_for_embedding: list[str] = []
             # for s in docs_as_sentences_flat:
@@ -352,6 +352,8 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                                     )
                                                 )
                                             )
+                    await asyncio.sleep(0)
+
         except asyncio.CancelledError:
             raise
         except Exception as e:

@@ -1,4 +1,3 @@
-import asyncio
 from collections.abc import AsyncGenerator
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
@@ -132,7 +131,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                     yield MessagePart(content=event.value.get_text_content())
                 elif isinstance(event, ChatModelSuccessEvent):
                     yield create_usage_info(event.value.usage, chat_model.model_id)
-                await asyncio.sleep(0)
     else:
         async with chat_pool.throttle():
             output = await chat_model.create(messages=messages)
@@ -197,7 +195,6 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                             pass
                 elif isinstance(event, ChatModelSuccessEvent):
                     yield create_usage_info(event.value.usage, chat_model.model_id)
-                await asyncio.sleep(0)
     else:
         async with chat_pool.throttle():
             chat_output = await chat_model.create(messages=messages)
@@ -289,7 +286,6 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield MessagePart(content=content)
                     elif isinstance(event, ChatModelSuccessEvent):
                         yield create_usage_info(event.value.usage, chat_model.model_id)
-                    await asyncio.sleep(0)
         else:
             async with chat_pool.throttle():
                 output = await chat_model.create(messages=messages)
@@ -378,7 +374,6 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
                 await context.yield_async(utils.to_citation_message_part(event.citation))
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
-            await asyncio.sleep(0)
 
         researcher = Researcher(chat_model=chat_model, structured_chat_model=structured_chat_model, messages=messages)
         researcher.subscribe(handler=research_listener)
