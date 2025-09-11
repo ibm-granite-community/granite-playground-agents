@@ -28,6 +28,7 @@ from granite_chat.events import (
     TextEvent,
     TrajectoryEvent,
 )
+from granite_chat.heartbeat import Heartbeat
 from granite_chat.memory import estimate_tokens, exceeds_token_limit, token_limit_response
 from granite_chat.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
 from granite_chat.research.researcher import Researcher
@@ -248,6 +249,9 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     ),  # type: ignore[call-arg]
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
+    hb = Heartbeat(context=context)
+    hb.start()
+
     try:
         log_context(context)
         history = [message async for message in context.session.load_history()]
@@ -312,6 +316,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     except Exception as e:
         logger.exception(repr(e))
         raise e
+    finally:
+        await hb.stop()
 
 
 @server.agent(
@@ -349,6 +355,9 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     ),  # type: ignore[call-arg]
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
+    hb = Heartbeat(context=context)
+    hb.start()
+
     try:
         log_context(context)
         history = [message async for message in context.session.load_history()]
@@ -382,6 +391,8 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
     except Exception as e:
         logger.exception(repr(e))
         raise e
+    finally:
+        await hb.stop()
 
 
 @server.agent(
