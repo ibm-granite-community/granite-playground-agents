@@ -142,7 +142,6 @@ Here is the search result:
 
 Return True if the result is likely relevant to the topic; otherwise, return False.
 Produce a very brief one sentence rationale before making your decision.
-Try to pick search results that are mostly relevant and also interesting.
 
 Output format:
 {{
