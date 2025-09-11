@@ -27,7 +27,7 @@ class WatsonxEmbeddings(Embeddings):
 
     async def _embed_doc_batch(self, texts: list[str]) -> list[list[float]]:
         async with self.worker_pool.throttle():
-            response: EmbeddingModelOutput = await self.embedding_model.create(texts)
+            response: EmbeddingModelOutput = await self.embedding_model.create(texts, max_retries=settings.MAX_RETRIES)
             return response.embeddings
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
