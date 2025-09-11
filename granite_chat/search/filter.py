@@ -19,6 +19,8 @@ class SearchResultsFilter:
         return [r for r in filtered_results if r is not None]
 
     async def _filter_search_result(self, query: str, result: SearchResult) -> SearchResult | None:
+        logger.info(f"Validating search result {result.url}")
+
         prompt = SearchPrompts.filter_search_result_prompt(query=query, search_result=result)
 
         async with chat_pool.throttle():
@@ -29,6 +31,7 @@ class SearchResultsFilter:
             )
 
         relevance = SearchResultRelevanceSchema(**response.object)
+
         if relevance.is_relevant:
             return result
 

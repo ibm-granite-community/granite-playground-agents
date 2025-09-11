@@ -39,7 +39,9 @@ class VectorStoreWrapper:
         Translate to langchain doc type, split to chunks then load
         """
         langchain_documents = self._create_langchain_documents(content)
+        await asyncio.sleep(0)
         splitted_documents = await self._a_split_documents(langchain_documents)
+        await asyncio.sleep(0)
         await self.vector_store.aadd_documents(splitted_documents)
 
     # TODO: subclass Document for better typing support

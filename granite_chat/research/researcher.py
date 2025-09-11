@@ -129,7 +129,9 @@ class Researcher(
         search_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
 
         async with chat_pool.throttle():
-            output = await self.chat_model.create(messages=search_messages)
+            output = await self.chat_model.create(
+                messages=search_messages, max_tokens=settings.RESEARCH_PRELIM_MAX_TOKENS
+            )
 
         return output.get_text_content()
 
@@ -218,6 +220,7 @@ class Researcher(
         prompt = ResearchPrompts.research_plan_prompt(
             topic=self.research_topic, context=self._context, max_queries=settings.RESEARCH_PLAN_BREADTH
         )
+
         async with chat_pool.throttle():
             response = await self.structured_chat_model.create_structure(
                 schema=ResearchPlanSchema,
@@ -248,9 +251,13 @@ class Researcher(
 
         self.final_report_docs += docs
 
+        self.logger.info(f"Generating research report {query.question}")
+
         research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
         async with chat_pool.throttle():
-            response = await self.chat_model.create(messages=[UserMessage(content=research_report_prompt)])
+            response = await self.chat_model.create(
+                messages=[UserMessage(content=research_report_prompt)], max_tokens=settings.RESEARCH_FINDINGS_MAX_TOKENS
+            )
         report = response.get_text_content()
         return ResearchReport(query=query, report=report)
 
