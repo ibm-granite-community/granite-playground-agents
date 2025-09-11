@@ -130,7 +130,9 @@ class Researcher(
 
         async with chat_pool.throttle():
             output = await self.chat_model.create(
-                messages=search_messages, max_tokens=settings.RESEARCH_PRELIM_MAX_TOKENS
+                messages=search_messages,
+                max_retries=settings.MAX_RETRIES,
+                max_tokens=settings.RESEARCH_PRELIM_MAX_TOKENS,
             )
 
         return output.get_text_content()
@@ -201,13 +203,17 @@ class Researcher(
         if settings.STREAMING is True:
             # Final report is streamed
             async with chat_pool.throttle():
-                async for event, _ in self.chat_model.create(messages=[UserMessage(content=prompt)], stream=True):
+                async for event, _ in self.chat_model.create(
+                    messages=[UserMessage(content=prompt)], stream=True, max_retries=settings.MAX_RETRIES
+                ):
                     if isinstance(event, ChatModelNewTokenEvent):
                         content = event.value.get_text_content()
                         response.append(content)
                         await self._emit(TextEvent(text=content))
         else:
-            output = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+            output = await self.chat_model.create(
+                messages=[UserMessage(content=prompt)], max_retries=settings.MAX_RETRIES
+            )
             response.append(output.get_text_content())
             await self._emit(TextEvent(text="".join(response)))
 
@@ -256,7 +262,9 @@ class Researcher(
         research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
         async with chat_pool.throttle():
             response = await self.chat_model.create(
-                messages=[UserMessage(content=research_report_prompt)], max_tokens=settings.RESEARCH_FINDINGS_MAX_TOKENS
+                messages=[UserMessage(content=research_report_prompt)],
+                max_retries=settings.MAX_RETRIES,
+                max_tokens=settings.RESEARCH_FINDINGS_MAX_TOKENS,
             )
         report = response.get_text_content()
         return ResearchReport(query=query, report=report)
