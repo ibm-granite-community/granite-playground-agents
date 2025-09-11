@@ -370,7 +370,7 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
             elif isinstance(event, GeneratingCitationsEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
             elif isinstance(event, CitationEvent):
-                logger.info(f"Citation: {event.citation.url}")
+                logger.info(f"[granite_research:{context.session.id}] Citation: {event.citation.url}")
                 await context.yield_async(utils.to_citation_message_part(event.citation))
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.completed).wrapped)
