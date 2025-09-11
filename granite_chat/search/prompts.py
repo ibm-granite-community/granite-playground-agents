@@ -122,12 +122,14 @@ Generate a standalone query that clearly and concisely reflects the user's inten
     @staticmethod
     def filter_search_result_prompt(query: str, search_result: SearchResult) -> str:
         return f"""
-You are given a topic and a search result (URL, title and snippet of page content ). Your task is to determine whether the web page linked by the search result is likely to contain useful information that is directly relevant to the topic.
+You are given a topic and a search result (URL, title and snippet of page content ).
+Your task is to determine whether the web page linked by the search result is likely to contain useful information that is directly relevant to the topic.
+You need to extrapolate based on the limited details provided by the search result.
 
-A relevant (True) search result has the following properties:
-- The url, title or page snippet indicate that the linked page contains content that is relevant to the topic.
+A relevant search result has the following properties:
+- The url, title or page snippet indicate that the linked page likely contains content that is relevant to the topic.
 - It is likely that the page is specific, accurate, and up-to-date.
-- It is likely that the page contributes an interesting angle or theme.
+- It is likely that the page contributes an interesting angle or theme to the topic.
 
 If a search result looks like it may contain or promote violent, hateful or pornographic material it should be automatically marked as irrelevant.
 
@@ -139,9 +141,12 @@ Here is the search result:
 - A snippet from the page: {search_result.body}
 
 Return True if the result is likely relevant to the topic; otherwise, return False.
+Produce a very brief one sentence rationale before making your decision.
+Try to pick search results that are mostly relevant and also interesting.
 
 Output format:
 {{
+    "rationale": "Brief one sentence rationale explaining your decision.",
     "is_relevant": True|False,
 }}
 """  # noqa: E501
