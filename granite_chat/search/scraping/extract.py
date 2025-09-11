@@ -13,7 +13,7 @@ from typing import cast
 
 from httpx import AsyncClient, Client
 
-from granite_chat import get_logger
+from granite_chat import get_logger_with_prefix
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
 from granite_chat.events import TrajectoryEvent
@@ -31,7 +31,12 @@ class ContentExtractor(EventEmitter):
     """
 
     def __init__(
-        self, search_results: list[SearchResult], user_agent: str, scraper_key: str, max_scraped_content: int = 10
+        self,
+        search_results: list[SearchResult],
+        user_agent: str,
+        scraper_key: str,
+        session_id: str,
+        max_scraped_content: int = 10,
     ) -> None:
         """
         Initialize the Scraper class.
@@ -48,7 +53,7 @@ class ContentExtractor(EventEmitter):
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content
         self.scraper_key = scraper_key
-        self.logger = get_logger(__name__)
+        self.logger = get_logger_with_prefix(__name__, tool_name="ContentExtractor", session_id=session_id)
 
     async def run(self) -> list[ScrapedContent]:
         """
