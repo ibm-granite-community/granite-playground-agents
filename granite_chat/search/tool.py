@@ -4,7 +4,7 @@ from typing import Any
 from beeai_framework.backend import ChatModel, Message, UserMessage
 from langchain_core.documents import Document
 
-from granite_chat import get_logger
+from granite_chat import get_logger_with_prefix
 from granite_chat.config import settings
 from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
@@ -15,15 +15,15 @@ from granite_chat.search.types import SearchQueriesSchema, SearchResult, Standal
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
 from granite_chat.work import chat_pool, task_pool
 
-logger = get_logger(__name__)
-
 
 class SearchTool(SearchResultsMixin, ScrapedContentMixin):
-    def __init__(self, chat_model: ChatModel, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, chat_model: ChatModel, session_id: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.vector_store = VectorStoreWrapperFactory.create()
-        self.search_results_filter = SearchResultsFilter(chat_model=self.chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=self.chat_model, session_id=session_id)
+        self.logger = get_logger_with_prefix(__name__, "SearchTool", session_id)
+        self.session_id = session_id
 
     async def search(self, messages: list[Message]) -> list[Document]:
         # Generate contextualized search queries
@@ -32,7 +32,7 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
             self._generate_search_queries(messages), self._generate_standalone(messages)
         )
 
-        logger.info(f'Searching with queries => "{search_queries}"')
+        self.logger.info(f'Searching with queries => "{search_queries}"')
 
         # Perform search
         await self._perform_web_search(search_queries, max_results=settings.SEARCH_MAX_SEARCH_RESULTS_PER_STEP)
@@ -42,7 +42,7 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
         # Load scraped context into vector store
         await self.vector_store.load(self.scraped_contents)
 
-        logger.info(f'Searching for context => "{standalone_msg}"')
+        self.logger.info(f'Searching for context => "{standalone_msg}"')
 
         docs: list[Document] = await self.vector_store.asimilarity_search(
             query=standalone_msg, k=settings.SEARCH_MAX_DOCS_PER_STEP
@@ -52,7 +52,10 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
 
     async def _browse_urls(self, search_results: list[SearchResult]) -> None:
         scraped_contents, _ = await scrape_urls(
-            search_results=search_results, scraper="bs", max_scraped_content=settings.SEARCH_MAX_SCRAPED_CONTENT
+            search_results=search_results,
+            scraper="bs",
+            session_id=self.session_id,
+            max_scraped_content=settings.SEARCH_MAX_SCRAPED_CONTENT,
         )
         self.add_scraped_contents(scraped_contents)
 
@@ -97,5 +100,5 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
             for r in results:
                 self.add_search_result(r)
         except Exception as e:
-            logger.exception(repr(e))
+            self.logger.exception(repr(e))
         return None

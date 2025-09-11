@@ -14,7 +14,7 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
-from granite_chat import get_logger
+from granite_chat import get_logger_with_prefix
 from granite_chat.citations.citations import CitationGeneratorFactory
 from granite_chat.config import settings
 from granite_chat.emitter import EventEmitter
@@ -37,12 +37,17 @@ from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
 from granite_chat.work import chat_pool, task_pool
 
 
-class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
+class Researcher(
+    EventEmitter,
+    SearchResultsMixin,
+    ScrapedContentMixin,
+):
     def __init__(
         self,
         chat_model: ChatModel,
         structured_chat_model: ChatModel,
         messages: list[Message],
+        session_id: str,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -50,7 +55,8 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
         self.chat_model = chat_model
         self.structured_chat_model = structured_chat_model or chat_model
         self.messages = messages
-        self.logger = get_logger(__name__)
+        self.session_id = session_id
+        self.logger = get_logger_with_prefix(__name__, tool_name="Researcher", session_id=session_id)
 
         self.research_topic: str | None = None
         self.pre_research: str | None = None
@@ -62,7 +68,7 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
 
         self.logger.debug("Initializing Researcher")
         self.vector_store = VectorStoreWrapperFactory.create()
-        self.search_results_filter = SearchResultsFilter(chat_model=self.structured_chat_model)
+        self.search_results_filter = SearchResultsFilter(chat_model=self.structured_chat_model, session_id=session_id)
 
     async def run(self) -> None:
         """Perform research investigation"""
@@ -98,11 +104,12 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
 
         self.logger.debug(f"reports: {self.interim_reports}")
 
-        self.logger.debug("Starting report writing")
+        self.logger.info("Starting report writing")
         await self._generate_final_report()
 
-        self.logger.debug("Generating citations")
+        self.logger.info("Generating citations")
         await self._generate_citations()
+        self.logger.info("Research run complete.")
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
@@ -112,7 +119,7 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
         """
         Conduct Preliminary research
         """
-        search_tool = SearchTool(chat_model=self.structured_chat_model)
+        search_tool = SearchTool(chat_model=self.structured_chat_model, session_id=self.session_id)
         docs: list[Document] = await search_tool.search(self.messages)
 
         # Merge existing search results and scraped content to avoid duplication
@@ -169,6 +176,7 @@ class Researcher(EventEmitter, SearchResultsMixin, ScrapedContentMixin):
         scraped_contents, _ = await scrape_urls(
             search_results=filtered,
             scraper="bs",
+            session_id=self.session_id,
             emitter=self,
             max_scraped_content=settings.RESEARCH_MAX_SCRAPED_CONTENT,
         )
