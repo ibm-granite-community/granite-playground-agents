@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     )
 
     TEMPERATURE: float = Field(
-        default=0.1,
+        default=0,
         description="How predictable (low value) or creative (high value) the LLM responses are",
         ge=0.0,
         le=2.0,

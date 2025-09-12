@@ -31,7 +31,7 @@ Provide a comprehensive, informative, and accurate response to the user.
 
 You are provided with a set of documents that contain relevant information.
 - Use these documents to help formulate your response.
-- Your response should stay aligned with the content and facts of the documents when possible.
+- Your response should stay aligned with the content and facts of the documents when possible. Dont make up information!
 - If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 - Not all documents will be relevant, ignore irrelevant or low quality documents.
 - Draw on multiple documents to create a more diverse and informed response.
@@ -41,7 +41,9 @@ You are provided with a set of documents that contain relevant information.
 </documents>
 
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
-The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
+The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+Make sure that your response is accurate given the current date and time i.e. dont say that something in the future has already happened!
+Assume that the user's question is framed in the context of the current date.
 You have access to realtime data, you do not have a knowledge cutoff.
 {core_chat}"""  # noqa: E501
 
@@ -58,8 +60,6 @@ You have access to realtime data, you do not have a knowledge cutoff.
         conversation_str = "\n".join(conversation)
 
         return f"""
-Assume the current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
-
 Given the following conversation between a user and an assistant, analyze the user's last message and generate {max_queries} search engine queries that reflect the user's intent.
 The search queries should be clear, concise, and suitable for use in a web search. Include variations to cover possible angles or phrasings. Include all important keywords.
 If the user intent is mult-faceted then incorporate each facet into a query.
@@ -83,6 +83,7 @@ Conversation:
 {conversation_str}
 
 Generate {max_queries} search queries that satisfy the intent of the user's last message.
+The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
 """  # noqa: E501
 
     @staticmethod
