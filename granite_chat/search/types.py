@@ -25,7 +25,7 @@ class SearchQueriesSchema(BaseModel):
 
 
 class SearchResultRelevanceSchema(BaseModel):
-    rationale: str = Field(description="Brief one sentence rationale explaining your decision.")
+    # rationale: str = Field(description="Brief one sentence rationale explaining your decision.")
     is_relevant: bool = Field(description="Flag indicating if the search result is likely to be relevant.")
 
 

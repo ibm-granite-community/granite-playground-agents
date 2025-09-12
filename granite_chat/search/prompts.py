@@ -142,11 +142,9 @@ Here is the search result:
 - A snippet from the page: {search_result.body}
 
 Return True if the result is likely relevant to the topic; otherwise, return False.
-Produce a very brief one sentence rationale before making your decision.
 
 Output format:
 {{
-    "rationale": "Brief one sentence rationale explaining your decision.",
     "is_relevant": True|False,
 }}
 """  # noqa: E501
