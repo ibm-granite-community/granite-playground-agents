@@ -86,13 +86,13 @@ Output format:
 """  # noqa: E501
 
     @staticmethod
-    def final_report_prompt(topic: str, findings: list[ResearchReport]) -> str:
+    def final_report_prompt(topic: str, context: str, findings: list[ResearchReport]) -> str:
         findings_str = json.dumps(
-            [f.model_dump_json() for f in findings],
+            [{"theme": f.query.question, "findings": f.report} for f in findings],
             indent=4,
         )
 
-        return f"""You are given a topic and a set of detailed findings (each covering a different theme of the topic).
+        return f"""You are given a topic, some preliminary research, and a set of detailed findings (each covering a different theme of the topic).
 Your task is to write a comprehensive, cohesive, and in-depth report that integrates all findings into a single narrative.
 
 Use markdown output format.
@@ -116,6 +116,10 @@ Use # for the report title, ## for Introduction, ## for each main topic section,
 {ChatPrompts.math_format_instructions()}
 
 Topic: {topic}
+
+<preliminary_research>
+{context}
+</preliminary_research>
 
 <findings>
 {findings_str}

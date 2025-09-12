@@ -16,13 +16,14 @@ class SearchPrompts:
         pass
 
     @staticmethod
-    def search_system_prompt(docs: list[Document]) -> str:
+    def search_system_prompt(docs: list[Document], include_core_chat: bool = True) -> str:
         json_docs = [
             {"doc_id": str(i), "title": d.metadata["title"], "content": d.page_content} for i, d in enumerate(docs)
         ]
 
         doc_str = json.dumps(json_docs, indent=4)
 
+        core_chat = ChatPrompts.chat_core_guidelines() if include_core_chat else ""
         logger.debug(doc_str)
 
         return f"""You are Granite, developed by IBM.
@@ -42,7 +43,7 @@ You are provided with a set of documents that contain relevant information.
 Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
 The current date is {datetime.now(UTC).strftime("%B %d, %Y")} if required.
 You have access to realtime data, you do not have a knowledge cutoff.
-{ChatPrompts.chat_core_guidelines()}"""  # noqa: E501
+{core_chat}"""  # noqa: E501
 
     @staticmethod
     def generate_search_queries_prompt(messages: list[Message], max_queries: int = 3) -> str:
