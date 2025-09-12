@@ -60,7 +60,9 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
         self.add_scraped_contents(scraped_contents)
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
-        search_query_prompt = SearchPrompts.generate_search_queries_prompt(messages)
+        search_query_prompt = SearchPrompts.generate_search_queries_prompt(
+            messages, max_queries=settings.SEARCH_MAX_SEARCH_QUERIES_PER_STEP
+        )
 
         async with chat_pool.throttle():
             response = await self.chat_model.create_structure(
@@ -68,10 +70,9 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
                 messages=[UserMessage(content=search_query_prompt)],
                 max_retries=settings.MAX_RETRIES,
             )
-        if "search_queries" in response.object:
-            return response.object["search_queries"]
-        else:
-            raise ValueError("Failed to generate valid search queries!")
+
+        result = SearchQueriesSchema(**response.object)
+        return result.search_queries[: settings.SEARCH_MAX_SEARCH_QUERIES_PER_STEP]
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
         standalone_prompt = SearchPrompts.generate_standalone_query(messages)

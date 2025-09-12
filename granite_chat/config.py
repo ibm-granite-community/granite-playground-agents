@@ -127,6 +127,10 @@ class Settings(BaseSettings):
         default="INFO", description="Set the log level for the agent"
     )
 
+    SEARCH_MAX_SEARCH_QUERIES_PER_STEP: int = Field(
+        default=3, description="Max search queries generated per search run"
+    )
+
     # Search configuration
     SEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
         default=6, description="Controls how man search results are considered for each search query", ge=1
@@ -143,7 +147,7 @@ class Settings(BaseSettings):
         default=8, description="Controls how man search results are considered for each search query", ge=1
     )
     RESEARCH_MAX_DOCS_PER_STEP: int = Field(
-        default=12, description="The number of documents to return from the vector store"
+        default=10, description="The number of documents to return from the vector store"
     )
 
     RESEARCH_MAX_SCRAPED_CONTENT: int = Field(default=10, description="The max scraped web results")

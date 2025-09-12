@@ -32,7 +32,7 @@ from granite_chat.search.mixins import ScrapedContentMixin, SearchResultsMixin
 from granite_chat.search.prompts import SearchPrompts
 from granite_chat.search.scraping.web_scraping import scrape_urls
 from granite_chat.search.tool import SearchTool
-from granite_chat.search.types import SearchQueriesSchema, SearchResult
+from granite_chat.search.types import SearchResult
 from granite_chat.search.vector_store.factory import VectorStoreWrapperFactory
 from granite_chat.work import chat_pool, task_pool
 
@@ -92,6 +92,7 @@ class Researcher(
 
         # await self._emit(TrajectoryEvent(title="Gathering information"))
 
+        await self._emit(TrajectoryEvent(title="Searching for information"))
         await self._gather_sources()
         await self._extract_sources()
 
@@ -126,7 +127,9 @@ class Researcher(
         self.add_search_results(search_tool.search_results)
         self.add_scraped_contents(search_tool.scraped_contents)
 
-        search_messages: list[FrameworkMessage] = [SystemMessage(content=SearchPrompts.search_system_prompt(docs))]
+        search_messages: list[FrameworkMessage] = [
+            SystemMessage(content=SearchPrompts.search_system_prompt(docs, include_core_chat=False))
+        ]
 
         async with chat_pool.throttle():
             output = await self.chat_model.create(
@@ -137,21 +140,6 @@ class Researcher(
 
         return output.get_text_content()
 
-    async def _generate_search_queries(self, query: ResearchQuery, context: str) -> list[str]:
-        """
-        Generate search queries for ResearchQuery.
-        """
-        search_query_prompt = ResearchPrompts.generate_search_queries_prompt(query=query, context=context)
-
-        async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
-                schema=SearchQueriesSchema,
-                messages=[UserMessage(content=search_query_prompt)],
-                max_retries=settings.MAX_RETRIES,
-            )
-
-        return SearchQueriesSchema(**response.object).search_queries
-
     async def _gather_sources(self) -> None:
         """Gather all information sources for the research plan"""
         if self.research_plan is None or len(self.research_plan) == 0:
@@ -161,8 +149,7 @@ class Researcher(
 
     async def _gather_sources_for_step(self, query: ResearchQuery) -> None:
         """Gather information for a single research plan step"""
-        search_queries = await self._generate_search_queries(query=query, context=self._context)
-        await asyncio.gather(*(self._web_search(q) for q in search_queries))
+        await self._web_search(" ".join([query.question, query.search_query]))
 
     async def _web_search(self, query: str) -> None:
         search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
@@ -197,7 +184,9 @@ class Researcher(
 
         # await self._emit(TrajectoryEvent(title="Generating final report"))
 
-        prompt = ResearchPrompts.final_report_prompt(topic=self.research_topic, findings=self.interim_reports)
+        prompt = ResearchPrompts.final_report_prompt(
+            topic=self.research_topic, context=self._context, findings=self.interim_reports
+        )
         response: list[str] = []
 
         if settings.STREAMING is True:
