@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from typing import cast
 
 from acp_sdk import Annotations, Author, Capability, MessagePart, Metadata
 from acp_sdk.models.models import Message, TrajectoryMetadata
@@ -25,6 +26,7 @@ from granite_chat.emitter import Event
 from granite_chat.events import (
     GeneratingCitationsCompleteEvent,
     GeneratingCitationsEvent,
+    PassThroughEvent,
     TextEvent,
     TrajectoryEvent,
 )
@@ -376,6 +378,10 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
                 await context.yield_async(MessagePart(content=event.text))
+            elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+                await context.yield_async(
+                    create_usage_info(cast(ChatModelSuccessEvent, event.event).value.usage, chat_model.model_id)
+                )
             elif isinstance(event, TrajectoryEvent):
                 await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.to_markdown())))
             elif isinstance(event, GeneratingCitationsEvent):

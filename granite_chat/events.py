@@ -1,8 +1,14 @@
+from typing import Any
+
 from granite_chat.emitter import Event
 
 
 class TextEvent(Event):
     text: str
+
+
+class PassThroughEvent(Event):
+    event: Any
 
 
 class TrajectoryEvent(Event):

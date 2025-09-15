@@ -6,6 +6,7 @@ from acp_sdk import MessagePart
 from beeai_framework.backend import (
     ChatModel,
     ChatModelNewTokenEvent,
+    ChatModelSuccessEvent,
     Message,
     SystemMessage,
     UserMessage,
@@ -21,6 +22,7 @@ from granite_chat.emitter import EventEmitter
 from granite_chat.events import (
     GeneratingCitationsCompleteEvent,
     GeneratingCitationsEvent,
+    PassThroughEvent,
     TextEvent,
     TrajectoryEvent,
 )
@@ -199,12 +201,15 @@ class Researcher(
                         content = event.value.get_text_content()
                         response.append(content)
                         await self._emit(TextEvent(text=content))
+                    elif isinstance(event, ChatModelSuccessEvent):
+                        await self._emit(PassThroughEvent(event=event))
         else:
             output = await self.chat_model.create(
                 messages=[UserMessage(content=prompt)], max_retries=settings.MAX_RETRIES
             )
             response.append(output.get_text_content())
             await self._emit(TextEvent(text="".join(response)))
+            await self._emit(PassThroughEvent(event=ChatModelSuccessEvent(value=output)))
 
         self.final_report = "".join(response)
 
