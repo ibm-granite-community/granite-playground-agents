@@ -18,3 +18,9 @@ class ResearchReport(BaseModel):
 
 class ResearchPlanSchema(BaseModel):
     questions: list[ResearchQuery] = Field(description="A list of search queries that address the research topic.")
+
+
+class ResearchTopicSchema(BaseModel):
+    research_topic: str = Field(
+        description="Standalone research topic that clearly and concisely reflects the user's intent."
+    )

@@ -27,7 +27,7 @@ from granite_chat.events import (
     TrajectoryEvent,
 )
 from granite_chat.research.prompts import ResearchPrompts
-from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport
+from granite_chat.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport, ResearchTopicSchema
 from granite_chat.search.engines.factory import SearchEngineFactory
 from granite_chat.search.filter import SearchResultsFilter
 from granite_chat.search.mixins import ScrapedContentMixin, SearchResultsMixin
@@ -116,7 +116,16 @@ class Researcher(
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
-        return self.messages[-1].text
+        standalone_prompt = ResearchPrompts.interpret_research_topic(self.messages)
+
+        async with chat_pool.throttle():
+            response = await self.chat_model.create_structure(
+                schema=ResearchTopicSchema,
+                messages=[UserMessage(content=standalone_prompt)],
+                max_retries=settings.MAX_RETRIES,
+            )
+        topic = ResearchTopicSchema(**response.object)
+        return topic.research_topic
 
     async def _generate_research_context(self) -> str:
         """
