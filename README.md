@@ -65,3 +65,14 @@ podman build -t beeai-platform-granite-chat:latest .
 ```shell
 podman run --env-file .env --name beeai-platform-granite-chat -p 8000:8000 --rm localhost/beeai-platform-granite-chat:latest
 ```
+
+
+## Tests
+
+This repository currently has a stubbed out test in the `tests` directory.
+
+Tests can be run with:
+
+```bash
+uv run pytest
+```
