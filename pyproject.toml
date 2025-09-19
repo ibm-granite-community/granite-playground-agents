@@ -20,7 +20,7 @@ dependencies = [
     "granite-io>=0.5.1",
     "markdown-it-py>=3.0.0",
     "aiolimiter>=1.2.1",
-    "beeai-framework==0.1.39",
+    "beeai-framework==0.1.47",
     "scikit-learn>=1.7.1",
     "numpy>=2.2.6",
 ]
