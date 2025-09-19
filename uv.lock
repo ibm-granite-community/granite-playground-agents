@@ -244,12 +244,13 @@ wheels = [
 
 [[package]]
 name = "beeai-framework"
-version = "0.1.39"
+version = "0.1.47"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
     { name = "cachetools" },
     { name = "chevron" },
+    { name = "deprecated" },
     { name = "json-repair" },
     { name = "jsonref" },
     { name = "litellm" },
@@ -257,9 +258,9 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/73/39840dc44df122fa98ca1659499a6f91127b8c74c55afcdfa4d917657ec7/beeai_framework-0.1.39.tar.gz", hash = "sha256:76f02766243befb3a4059ac7ea94b8cccb4682edd797d7e1bb5026d305b71393", size = 134338, upload-time = "2025-08-28T19:00:21.876Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/2f/d90dc552fed71e837bd5cc2c57892f2365364d6b041efdeab2bf7863dea7/beeai_framework-0.1.47.tar.gz", hash = "sha256:cedf37ca5acd7236b988f1220d036bd06255a632aa2d752f18a28f3d00cb08c6", size = 143084, upload-time = "2025-09-19T12:13:24.425Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/8f/e0bd65c78930d6a3052c8b2fa6720fa3cb47ca9110985259528e0f906b72/beeai_framework-0.1.39-py3-none-any.whl", hash = "sha256:13dd10ed67291ced660ffd4cce180add6eefd280ac0269fc9c35b2380543d1e8", size = 249734, upload-time = "2025-08-28T19:00:19.956Z" },
+    { url = "https://files.pythonhosted.org/packages/63/fc/ce0655c1cc0ca095efb9cb19d61641865de4cb8d0221f3858f1e0e903f03/beeai_framework-0.1.47-py3-none-any.whl", hash = "sha256:aaf35c26bf41720eb99aca10bdeaa8cd660444ac40593ba73e635727670fb6f8", size = 262532, upload-time = "2025-09-19T12:13:23.191Z" },
 ]
 
 [[package]]
@@ -551,6 +552,18 @@ wheels = [
 ]
 
 [[package]]
+name = "deprecated"
+version = "1.2.18"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/98/97/06afe62762c9a8a86af0cfb7bfdab22a43ad17138b07af5b1a58442690a2/deprecated-1.2.18.tar.gz", hash = "sha256:422b6f6d859da6f2ef57857761bfb392480502a64c3028ca9bbe86085d72115d", size = 2928744, upload-time = "2025-01-27T10:46:25.7Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6e/c6/ac0b6c1e2d138f1002bcf799d330bd6d85084fece321e662a14223794041/Deprecated-1.2.18-py2.py3-none-any.whl", hash = "sha256:bd5011788200372a32418f888e326a09ff80d0214bd961147cfed01b5c018eec", size = 9998, upload-time = "2025-01-27T10:46:09.186Z" },
+]
+
+[[package]]
 name = "detect-secrets"
 version = "0.13.1+ibm.62.dss"
 source = { git = "https://github.com/ibm/detect-secrets.git?rev=master#cb803c6f7883b631b9aa9c8664b0937a9d358609" }
@@ -808,7 +821,7 @@ requires-dist = [
     { name = "acp-sdk", specifier = ">=1.0.1" },
     { name = "aiolimiter", specifier = ">=1.2.1" },
     { name = "arxiv", specifier = ">=2.2.0" },
-    { name = "beeai-framework", specifier = "==0.1.39" },
+    { name = "beeai-framework", specifier = "==0.1.47" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "colorama", specifier = ">=0.4.6" },
     { name = "granite-io", specifier = ">=0.5.1" },
