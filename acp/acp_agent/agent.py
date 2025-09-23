@@ -22,6 +22,7 @@ from granite_core.events import (
     GeneratingCitationsEvent,
     PassThroughEvent,
     TextEvent,
+    ThinkEvent,
     TrajectoryEvent,
 )
 from granite_core.logging import get_logger
@@ -34,6 +35,7 @@ from granite_core.search.tool import SearchTool
 from granite_core.thinking.prompts import ThinkingPrompts
 from granite_core.thinking.response_parser import ThinkingResponseParser
 from granite_core.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
+from granite_core.thinking.tool import ThinkingTool
 from granite_core.usage import create_usage_info
 from granite_core.work import chat_pool
 from langchain_core.documents import Document
@@ -168,53 +170,86 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
-    log_context(context)
-    history = [message async for message in context.session.load_history()]
-    messages = utils.to_beeai_framework_messages(messages=history + input)
+    hb = Heartbeat(context=context)
+    hb.start()
 
-    token_count = estimate_tokens(messages=messages)
-    if exceeds_token_limit(token_count):
-        yield token_limit_response(token_count)
-        return
+    try:
+        log_context(context)
 
-    chat_model = ChatModelFactory.create()
+        history = [message async for message in context.session.load_history()]
+        messages = utils.to_beeai_framework_messages(messages=history + input)
 
-    messages = [
-        SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
-        *messages,
-    ]
+        token_count = estimate_tokens(messages=messages)
+        if exceeds_token_limit(token_count):
+            yield token_limit_response(token_count)
+            return
 
-    handler = ThinkingStreamHandler(tags=["think", "response"])
+        chat_model = ChatModelFactory.create()
 
-    if settings.STREAMING is True:
-        async with chat_pool.throttle():
-            async for event, _ in chat_model.create(messages=messages, stream=True, max_retries=settings.MAX_RETRIES):
-                if isinstance(event, ChatModelNewTokenEvent):
-                    token = event.value.get_text_content()
-                    for output in handler.on_token(token=token):
-                        if isinstance(output, TokenEvent):
-                            content_type = "text/thinking" if output.tag == "think" else "text/plain"
-                            yield MessagePart(content_type=content_type, content=output.token)
-                        elif isinstance(output, TagStartEvent):
-                            pass
-                elif isinstance(event, ChatModelSuccessEvent):
-                    yield create_usage_info(event.value.usage, chat_model.model_id)
-    else:
-        async with chat_pool.throttle():
-            chat_output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
+        if settings.TWO_STEP_THINKING is True:
 
-        text = chat_output.get_text_content()
+            async def think_handler(event: Event) -> None:
+                if isinstance(event, ThinkEvent):
+                    await context.yield_async(MessagePart(content_type="text/thinking", content=event.text))
+                if isinstance(event, TextEvent):
+                    await context.yield_async(MessagePart(content=event.text))
+                elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+                    await context.yield_async(
+                        create_usage_info(cast(ChatModelSuccessEvent, event.event).value.usage, chat_model.model_id)
+                    )
 
-        parser = ThinkingResponseParser()
-        think_resp = parser.parse(text=text)
+            think_tool = ThinkingTool(
+                chat_model=chat_model,
+                messages=messages,
+                session_id=str(context.session.id),
+            )
+            think_tool.subscribe(handler=think_handler)
+            await think_tool.run()
+        else:
+            messages = [
+                SystemMessage(content=ThinkingPrompts.granite3_3_thinking_system_prompt()),
+                *messages,
+            ]
 
-        if think_resp.thinking is not None:
-            yield MessagePart(content_type="text/thinking", content=think_resp.thinking)
+            handler = ThinkingStreamHandler(tags=["think", "response"])
 
-        if think_resp.response is not None:
-            yield MessagePart(content_type="text/plain", content=think_resp.response)
+            if settings.STREAMING is True:
+                async with chat_pool.throttle():
+                    async for event, _ in chat_model.create(
+                        messages=messages, stream=True, max_retries=settings.MAX_RETRIES
+                    ):
+                        if isinstance(event, ChatModelNewTokenEvent):
+                            token = event.value.get_text_content()
+                            for output in handler.on_token(token=token):
+                                if isinstance(output, TokenEvent):
+                                    content_type = "text/thinking" if output.tag == "think" else "text/plain"
+                                    yield MessagePart(content_type=content_type, content=output.token)
+                                elif isinstance(output, TagStartEvent):
+                                    pass
+                        elif isinstance(event, ChatModelSuccessEvent):
+                            yield create_usage_info(event.value.usage, chat_model.model_id)
+            else:
+                async with chat_pool.throttle():
+                    chat_output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
 
-        yield create_usage_info(chat_output.usage, chat_model.model_id)
+                text = chat_output.get_text_content()
+
+                parser = ThinkingResponseParser()
+                think_resp = parser.parse(text=text)
+
+                if think_resp.thinking is not None:
+                    yield MessagePart(content_type="text/thinking", content=think_resp.thinking)
+
+                if think_resp.response is not None:
+                    yield MessagePart(content_type="text/plain", content=think_resp.response)
+
+                yield create_usage_info(chat_output.usage, chat_model.model_id)
+
+    except Exception as e:
+        logger.exception(repr(e))
+        raise e
+    finally:
+        await hb.stop()
 
 
 @server.agent(
