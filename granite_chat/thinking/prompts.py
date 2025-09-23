@@ -18,16 +18,12 @@ Respond to every user query in a comprehensive and detailed way. You can write d
     @staticmethod
     def two_step_thinking_system_prompt() -> str:
         return """
-You are a deep thinker.
+You are a problem solver.
 Before answering the user, engage in a comprehensive thought process.
-
-Take time to think deeply before answering.
 Begin by analyzing the message and capturing its core meaning.
 Explore different interpretations and possibilities, questioning assumptions along the way.
-Reflect on the implications and circle back if something doesn't add up.
-Let your reasoning flow naturally, revisiting and refining your thoughts until you reach a well-considered perspective.
-
-Do not give a final answer to the user—just write down the thinking process."""
+Let your reasoning flow naturally, revisiting and refining your thoughts until you reach a correct and well-considered perspective.
+Do not give a final answer to the user—just write down your thought process."""  # noqa: E501
 
     @staticmethod
     def two_step_thinking_answer_system_prompt(thinking: str) -> str:
@@ -38,8 +34,8 @@ The final response must be concise, coherent, and user-friendly, while still gro
 
 {ChatPrompts.math_format_instructions()}
 
-Do not restate the reasoning—just provide the polished answer informed by it.
-
 Here is your reasoning and thought process:
 {thinking}
+
+Do not restate or replay your reasoning and thought process—just provide a polished answer that is informed by it.
 """  # noqa: E501
