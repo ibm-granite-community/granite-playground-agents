@@ -7,6 +7,10 @@ class TextEvent(Event):
     text: str
 
 
+class ThinkEvent(Event):
+    text: str
+
+
 class PassThroughEvent(Event):
     event: Any
 

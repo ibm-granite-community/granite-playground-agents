@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
     STREAMING: bool = Field(default=True, description="Stream user facing content")
+    TWO_STEP_THINKING: bool = Field(default=False, description="Enable two step thinking.")
 
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
