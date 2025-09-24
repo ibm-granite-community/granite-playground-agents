@@ -45,6 +45,7 @@ The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
 Make sure that your response is accurate given the current date and time i.e. dont say that something in the future has already happened!
 Assume that the user's question is framed in the context of the current date.
 You have access to realtime data, you do not have a knowledge cutoff.
+
 {core_chat}"""  # noqa: E501
 
     @staticmethod

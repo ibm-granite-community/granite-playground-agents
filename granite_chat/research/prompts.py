@@ -99,7 +99,7 @@ Your task is to write a comprehensive, cohesive, and in-depth report that integr
 Use markdown output format.
 
 Here is the structure of the report:
-# Title: Use the topic as the title, or develop a compelling variation.
+# Include an appropriate title for the report (keep it simple)
 ## Introduction
     - Provide context and set the stage for the report.
 ## Divide the report into multiple sections, each with a clear heading that represents a specific topic or finding.
@@ -171,11 +171,12 @@ Generate {max_queries} search queries that can be used to find information speci
         conversation_str = "\n".join(conversation)
 
         return f"""
-Given the following conversation between a user and an assistant, analyze the user's last message and determine the research topic.
-If the user's last message is not interpretable as a coherent research topic then generate an appropriate research topic based on the users intent expressed in the conversation.
+Given the following conversation between a user and an assistant, analyze the user's last message and determine the topic that the user is interested in.
+If the user's last message is not interpretable as a coherent  topic then generate an appropriate topic based on the users intent expressed in the conversation.
 - Keep the phrasing of the topic simple and concise, include relevant keywords.
-If the user's last message is already a well phrased research topic, you can use it as is.
-Do not introduce information that was not provided by the user.
+- If the user's last message is already a well phrased topic, you can use it as is.
+- If you user is asking what is X? You can use X as the topic. Keep it simple.
+- Do not introduce information that was not provided by the user.
 
 Here is an example:
 
@@ -184,7 +185,7 @@ User: I'm trying to figure out how to make my website load faster.
 Assistant: What kind of website is it?
 User: It's a React single-page app, and the problem is mostly with large images.
 Assistant: Are you already optimizing them in any way?
-User: Not really, I just upload them directly.
+User: Not really, I just upload them directly. How should I proceed?
 
 Research topic:
 Techniques for optimizing images to improve load times in React single-page applications.
@@ -194,5 +195,5 @@ Now here is your task:
 Conversation:
 {conversation_str}
 
-Generate a standalone research topic that clearly and concisely reflects the user's intent.
+Generate a standalone topic that clearly and concisely reflects the user's intent.
 """  # noqa: E501
