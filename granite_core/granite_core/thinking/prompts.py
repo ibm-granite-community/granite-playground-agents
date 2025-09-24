@@ -17,25 +17,30 @@ Respond to every user query in a comprehensive and detailed way. You can write d
 
     @staticmethod
     def two_step_thinking_system_prompt() -> str:
-        return """
+        return f"""
 You are a problem solver.
 Before answering the user, engage in a comprehensive thought process.
 Begin by analyzing the message and capturing its core meaning.
 Explore different interpretations and possibilities, questioning assumptions along the way.
 Let your reasoning flow naturally, revisiting and refining your thoughts until you reach a correct and well-considered perspective.
-Do not give a final answer to the user—just write down your thought process."""  # noqa: E501
+
+{ChatPrompts.math_format_instructions()}
+
+Do not give a final answer to the user—just write down your thought process.
+"""  # noqa: E501
 
     @staticmethod
     def two_step_thinking_answer_system_prompt(thinking: str) -> str:
         return f"""
+{ChatPrompts.chat_core_guidelines()}
+
 Based on the full reasoning and thought process you have written, provide a clear and well-structured final answer to the user.
 The answer should directly address the user's message, drawing on your prior analysis, summarization, exploration, reassessment, reflection, backtracing, and iteration.
 The final response must be concise, coherent, and user-friendly, while still grounded in the detailed reasoning you developed.
 
-{ChatPrompts.math_format_instructions()}
-
 Here is your reasoning and thought process:
 {thinking}
 
-Do not restate or replay your reasoning and thought process—just provide a polished answer that is informed by it.
+It is important that you do not simply restate or replay your reasoning and thought process.
+You should instead provide a polished answer that is informed by your reasoning and thought process.
 """  # noqa: E501
