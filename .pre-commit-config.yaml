@@ -4,6 +4,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-added-large-files
+        args: ['--maxkb=600']
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-json
@@ -19,7 +20,13 @@ repos:
     rev: v1.16.1
     hooks:
     - id: mypy
-      args: [--ignore-missing-imports, --python-executable, .venv/bin/python]
+      name: mypy for acp
+      args: [--ignore-missing-imports, --python-executable, acp/.venv/bin/python]
+      files: acp
+    - id: mypy
+      name: mypy for granite_core
+      args: [--ignore-missing-imports, --python-executable, granite_core/.venv/bin/python]
+      files: granite_core
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1
     hooks:
