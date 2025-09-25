@@ -1,0 +1,63 @@
+[project]
+name = "a2a-agents"
+dynamic = ["version"]
+description = "A2A Granite Chat"
+readme = "README.md"
+requires-python = ">=3.13" # we may possibly be able to go back to 3.11 after beeai-sdk==0.3.5
+dependencies = [
+    "a2a-sdk==0.3.5",   # fixes bug in beeai-sdk, investigate whether beeai-sdk==0.3.5 has fixed this
+    "beeai-sdk>=0.3.4",
+    "granite-core",
+    "uvicorn==0.35.0",  # fixes bug in beeai-sdk, can be removed after release of beeai-sdk==0.3.5
+]
+
+[tool.ruff]
+lint.select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "UP",    # pyupgrade
+    "I",     # isort
+    "B",     # bugbear
+    "ANN",   # annotations
+    "N",     # pep8-naming
+    "C4",    # Comprehensions
+    "DTZ",   # DatetimeZ
+    "Q",     # Quotes
+    "SIM",   # Simplify
+    "RUF",   # Ruff
+    "TID",   # tidy-imports
+    "ASYNC", # async
+]
+lint.ignore = ["ANN401"]
+lint.fixable = ["ALL"]
+lint.unfixable = []
+force-exclude = true
+line-length = 120
+extend-exclude = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow all relative imports, "parents" | "all"
+ban-relative-imports = "all"
+
+[tool.uv.sources]
+detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
+granite-core = { path = "../granite_core" }
+
+[dependency-groups]
+dev = [
+    "detect-secrets",
+    "mypy>=1.16.1",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.2",
+    "ruff>=0.11.10",
+    "types-aiofiles>=24.1.0.20250801",
+    "types-cachetools>=6.1.0.20250717",
+    "types-colorama>=0.4.15.20240311",
+]
+
+[tool.pytest.ini_options]
+addopts = "--maxfail=1"
