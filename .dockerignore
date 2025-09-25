@@ -1,0 +1,17 @@
+.git
+.gitignore
+.dockerignore
+.whitesource
+.secrets.baseline
+README.md
+.mypy_cache/
+.bruno/
+.DS_Store
+
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.env.*
+**/.env
+**/.ruff_cache/
+**/Dockerfile
