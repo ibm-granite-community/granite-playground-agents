@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -40,7 +40,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "acp-sdk", specifier = "==1.0.1" },
-    { name = "granite-core", directory = "../granite_core" },
+    { name = "granite-core", editable = "../granite_core" },
 ]
 
 [package.metadata.requires-dev]
@@ -821,7 +821,7 @@ wheels = [
 [[package]]
 name = "granite-core"
 version = "0.1.0"
-source = { directory = "../granite_core" }
+source = { editable = "../granite_core" }
 dependencies = [
     { name = "aiolimiter" },
     { name = "arxiv" },

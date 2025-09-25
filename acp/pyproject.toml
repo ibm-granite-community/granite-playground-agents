@@ -43,7 +43,7 @@ ban-relative-imports = "all"
 
 [tool.uv.sources]
 detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
-granite-core = { path = "../granite_core" }
+granite-core = { path = "../granite_core", editable = true }
 
 [dependency-groups]
 dev = [
