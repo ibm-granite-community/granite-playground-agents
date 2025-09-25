@@ -15,7 +15,6 @@ from langchain_core.documents import Document
 from nltk.tokenize import sent_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
-from granite_core import get_logger
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.events import CitationEvent
 from granite_core.citations.prompts import CitationsPrompts
@@ -27,6 +26,7 @@ from granite_core.citations.types import (
 )
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
+from granite_core.logging import get_logger
 from granite_core.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
 from granite_core.search.embeddings.factory import EmbeddingsFactory
 from granite_core.work import chat_pool, task_pool

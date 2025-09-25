@@ -13,7 +13,7 @@ import asyncio
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
 
-from granite_core import get_logger
+from granite_core.logging import get_logger
 from granite_core.search.scraping.scraper import AsyncScraper
 from granite_core.search.scraping.utils import clean_soup, extract_title, get_text_from_soup
 

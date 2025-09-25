@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 
 from aiolimiter import AsyncLimiter
 
-from granite_core import get_logger, settings
+from granite_core.logging import get_logger, settings
 
 logger = get_logger(__name__)
 

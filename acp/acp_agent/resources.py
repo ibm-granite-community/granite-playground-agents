@@ -1,7 +1,7 @@
 from acp_sdk import ResourceLoader, ResourceStore, ResourceUrl
 from cachetools import LFUCache
-from granite_core import get_logger  # type: ignore[attr-defined]
 from granite_core.config import settings
+from granite_core.logging import get_logger
 from obstore.store import S3Store
 
 logger = get_logger(__name__)

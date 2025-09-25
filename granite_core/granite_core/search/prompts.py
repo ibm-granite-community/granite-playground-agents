@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 from beeai_framework.backend import Message
 from langchain_core.documents import Document
 
-from granite_core import get_logger
 from granite_core.chat.prompts import ChatPrompts
+from granite_core.logging import get_logger
 from granite_core.search.types import SearchResult
 
 logger = get_logger(__name__)

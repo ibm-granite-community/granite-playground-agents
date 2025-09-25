@@ -11,8 +11,8 @@
 
 from colorama import Fore, Style
 
-from granite_core import get_logger
 from granite_core.emitter import EventEmitter
+from granite_core.logging import get_logger
 from granite_core.search.scraping.extract import ContentExtractor
 from granite_core.search.types import ImageUrl, ScrapedContent, SearchResult
 

@@ -13,10 +13,10 @@ from typing import cast
 
 from httpx import AsyncClient, Client
 
-from granite_core import get_logger_with_prefix
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
 from granite_core.events import TrajectoryEvent
+from granite_core.logging import get_logger_with_prefix
 from granite_core.search.scraping import BeautifulSoupScraper
 from granite_core.search.scraping.arxiv import ArxivScraper
 from granite_core.search.scraping.pymupdf import PyMuPDFScraper

@@ -13,7 +13,6 @@ from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
-from granite_core import get_logger_with_prefix
 from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
@@ -24,6 +23,7 @@ from granite_core.events import (
     TextEvent,
     TrajectoryEvent,
 )
+from granite_core.logging import get_logger_with_prefix
 from granite_core.research.prompts import ResearchPrompts
 from granite_core.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport, ResearchTopicSchema
 from granite_core.search.engines.factory import SearchEngineFactory

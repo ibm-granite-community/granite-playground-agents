@@ -2,8 +2,8 @@ import asyncio
 
 from beeai_framework.backend import ChatModel, UserMessage
 
-from granite_core import get_logger_with_prefix
 from granite_core.config import settings
+from granite_core.logging import get_logger_with_prefix
 from granite_core.search.prompts import SearchPrompts
 from granite_core.search.types import SearchResult, SearchResultRelevanceSchema
 from granite_core.work import chat_pool

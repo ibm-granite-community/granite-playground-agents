@@ -4,8 +4,8 @@ from typing import Any
 from beeai_framework.backend import ChatModel, Message, UserMessage
 from langchain_core.documents import Document
 
-from granite_core import get_logger_with_prefix
 from granite_core.config import settings
+from granite_core.logging import get_logger_with_prefix
 from granite_core.search.engines.factory import SearchEngineFactory
 from granite_core.search.filter import SearchResultsFilter
 from granite_core.search.mixins import ScrapedContentMixin, SearchResultsMixin

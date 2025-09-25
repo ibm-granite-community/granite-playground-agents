@@ -8,7 +8,6 @@ from beeai_framework.backend import (
     SystemMessage,
 )
 
-from granite_core import get_logger_with_prefix
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
 from granite_core.events import (
@@ -16,6 +15,7 @@ from granite_core.events import (
     TextEvent,
     ThinkEvent,
 )
+from granite_core.logging import get_logger_with_prefix
 from granite_core.thinking.prompts import ThinkingPrompts
 from granite_core.work import chat_pool
 

@@ -16,7 +16,7 @@ import aiofiles
 from httpx import AsyncClient, TimeoutException
 from langchain_community.document_loaders import PyMuPDFLoader
 
-from granite_core import get_logger
+from granite_core.logging import get_logger
 from granite_core.search.scraping.scraper import AsyncScraper
 
 logger = get_logger(__name__)

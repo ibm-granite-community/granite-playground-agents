@@ -3,8 +3,8 @@ from typing import Literal, Optional, get_args
 
 from transformers import AutoTokenizer
 
-from granite_core import get_logger
 from granite_core.config import settings
+from granite_core.logging import get_logger
 
 ModelType = Literal["retrieval", "similarity"]
 

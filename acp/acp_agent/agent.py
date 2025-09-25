@@ -11,7 +11,6 @@ from beeai_framework.backend import (
     SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
-from granite_core import get_logger  # type: ignore[attr-defined]
 from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
@@ -25,6 +24,7 @@ from granite_core.events import (
     TextEvent,
     TrajectoryEvent,
 )
+from granite_core.logging import get_logger
 from granite_core.memory import estimate_tokens, exceeds_token_limit, token_limit_response
 from granite_core.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
 from granite_core.research.researcher import Researcher

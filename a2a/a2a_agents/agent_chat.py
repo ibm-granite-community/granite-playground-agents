@@ -11,9 +11,9 @@ from beeai_sdk.a2a.types import AgentMessage
 from beeai_sdk.server import Server
 from beeai_sdk.server.context import RunContext
 from beeai_sdk.server.store.platform_context_store import PlatformContextStore
-from granite_core import get_logger
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings
+from granite_core.logging import get_logger
 from granite_core.work import chat_pool
 
 from a2a_agents import __version__

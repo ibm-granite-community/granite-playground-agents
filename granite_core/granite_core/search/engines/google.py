@@ -12,8 +12,8 @@ import json
 
 import httpx
 
-from granite_core import get_logger
 from granite_core.config import settings
+from granite_core.logging import get_logger
 from granite_core.search.engines.engine import SearchEngine
 from granite_core.search.types import SearchResult
 
