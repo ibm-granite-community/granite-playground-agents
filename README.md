@@ -20,6 +20,21 @@ Install the pre-commit hooks prior to modifying the code:
 pre-commit install
 ```
 
+#### Debugging with vscode
+
+Due to the monorepo layout used in this repository, each agent can be used with the Python debugger in vscode by creating a `launch.json` file similar to the following example. Please note, the important piece to change is the `cwd` specification that should point to the sub-directory of the agent to be executed in the debugger:
+
+```json
+{
+  "name": "Python Debugger: Current File",
+  "type": "debugpy",
+  "request": "launch",
+  "program": "${file}",
+  "console": "integratedTerminal",
+  "cwd": "${workspaceFolder}/acp"
+}
+```
+
 ## Configuration
 
 The agent is designed to use models from Watsonx directly. Copy the `.env.template` file to `.env` and fill in the missing secrets.
