@@ -9,7 +9,7 @@ COPY acp /app/acp
 
 ENV PRODUCTION_MODE=True
 
-RUN uv --directory acp sync --no-dev --no-cache --locked --link-mode copy
+RUN uv --directory acp sync --no-dev --no-cache --locked --link-mode copy --no-editable
 
 FROM registry.access.redhat.com/ubi9/python-311 AS runner
 COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /bin/

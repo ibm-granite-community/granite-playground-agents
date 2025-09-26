@@ -28,7 +28,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.5" },
     { name = "beeai-sdk", specifier = ">=0.3.4" },
-    { name = "granite-core", directory = "../granite_core" },
+    { name = "granite-core", editable = "../granite_core" },
     { name = "uvicorn", specifier = "==0.35.0" },
 ]
 
@@ -763,7 +763,7 @@ wheels = [
 [[package]]
 name = "granite-core"
 version = "0.1.0"
-source = { directory = "../granite_core" }
+source = { editable = "../granite_core" }
 dependencies = [
     { name = "aiolimiter" },
     { name = "arxiv" },
