@@ -163,6 +163,4 @@ cython_debug/
 .idea/
 
 .DS_store
-
-.vscode
 .bruno
