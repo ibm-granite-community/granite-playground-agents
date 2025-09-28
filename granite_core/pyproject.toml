@@ -1,0 +1,75 @@
+[project]
+name = "granite-core"
+version = "0.1.0"
+description = "Granite Core Libraries"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain-ollama>=0.3.3",
+    "python-dotenv>=1.1.0",
+    "transformers>=4.52.4",
+    "trafilatura>=2.0.0",
+    "langchain-openai>=0.3.24",
+    "langchain-community>=0.3.25",
+    "bs4>=0.0.2",
+    "colorama>=0.4.6",
+    "arxiv>=2.2.0",
+    "tavily-python>=0.7.7",
+    "pymupdf>=1.26.1",
+    "granite-io>=0.5.1",
+    "markdown-it-py>=3.0.0",
+    "aiolimiter>=1.2.1",
+    "beeai-framework==0.1.47",
+    "scikit-learn>=1.7.1",
+    "numpy>=2.2.6",
+]
+
+[tool.ruff]
+lint.select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "UP",    # pyupgrade
+    "I",     # isort
+    "B",     # bugbear
+    "ANN",   # annotations
+    "N",     # pep8-naming
+    "C4",    # Comprehensions
+    "DTZ",   # DatetimeZ
+    "Q",     # Quotes
+    "SIM",   # Simplify
+    "RUF",   # Ruff
+    "TID",   # tidy-imports
+    "ASYNC", # async
+]
+lint.ignore = ["ANN401"]
+lint.fixable = ["ALL"]
+lint.unfixable = []
+force-exclude = true
+line-length = 120
+extend-exclude = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow all relative imports, "parents" | "all"
+ban-relative-imports = "all"
+
+[tool.uv.sources]
+detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
+
+[dependency-groups]
+dev = [
+    "detect-secrets",
+    "mypy>=1.16.1",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.2",
+    "ruff>=0.11.10",
+    "types-aiofiles>=24.1.0.20250801",
+    "types-cachetools>=6.1.0.20250717",
+    "types-colorama>=0.4.15.20240311",
+]
+
+[tool.pytest.ini_options]
+addopts = "--maxfail=1"

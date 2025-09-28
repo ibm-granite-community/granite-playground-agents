@@ -1,0 +1,152 @@
+# Portions of this file are derived from the Apache 2.0 licensed project "gpt-researcher"
+# Original source: https://github.com/assafelovic/gpt-researcher
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Changes made:
+
+import hashlib
+import re
+from typing import cast
+from urllib.parse import parse_qs, urljoin, urlparse
+
+from bs4 import BeautifulSoup, ResultSet, Tag
+
+from granite_core.logging import get_logger
+from granite_core.search.types import ImageUrl
+
+logger = get_logger(__name__)
+
+
+def get_relevant_images(soup: BeautifulSoup, url: str) -> list[ImageUrl]:
+    """Extract relevant images from the page"""
+    image_urls = []
+
+    try:
+        # Find all img tags with src attribute
+        all_images: ResultSet = soup.find_all("img", src=True)
+
+        for img in all_images:
+            img_src = urljoin(url, img["src"])
+            if img_src.startswith(("http://", "https://")):
+                score: float = 0
+                # Check for relevant classes
+                if any(
+                    cls in img.get("class", [])
+                    for cls in ["header", "featured", "hero", "thumbnail", "main", "content"]
+                ):
+                    score = 4  # Higher score
+                # Check for size attributes
+                elif img.get("width") and img.get("height"):
+                    width = parse_dimension(cast(str, img["width"]))
+                    height = parse_dimension(cast(str, img["height"]))
+                    if width and height:
+                        if width >= 2000 and height >= 1000:
+                            score = 3  # Medium score (very large images)
+                        elif width >= 1600 or height >= 800:
+                            score = 2  # Lower score
+                        elif width >= 800 or height >= 500:
+                            score = 1  # Lowest score
+                        elif width >= 500 or height >= 300:
+                            score = 0  # Lowest score
+                        else:
+                            continue  # Skip small images
+
+                image_urls.append(ImageUrl(url=img_src, score=score))
+
+        # Sort images by score (highest first)
+        sorted_images = sorted(image_urls, key=lambda x: x.score, reverse=True)
+
+        return sorted_images[:10]  # Ensure we don't return more than 10 images in total
+
+    except Exception:
+        logger.exception("Error in get_relevant_images")
+        return []
+
+
+def parse_dimension(value: str) -> int | None:
+    """Parse dimension value, handling px units"""
+    if value.lower().endswith("px"):
+        value = value[:-2]  # Remove 'px' suffix
+    try:
+        return int(value)  # Convert to float first to handle decimal values
+    except ValueError:
+        logger.exception(f"Error parsing dimension value {value}")
+        return None
+
+
+def extract_title(soup: BeautifulSoup) -> str:
+    """Extract the title from the BeautifulSoup object"""
+    return soup.title.string if soup.title and soup.title.string else ""
+
+
+def get_image_hash(image_url: str) -> str | None:
+    """Calculate a simple hash based on the image filename and essential query parameters"""
+    try:
+        parsed_url = urlparse(image_url)
+
+        # Extract the filename
+        filename = parsed_url.path.split("/")[-1]
+
+        # Extract essential query parameters (e.g., 'url' for CDN-served images)
+        query_params = parse_qs(parsed_url.query)
+        essential_params = query_params.get("url", [])
+
+        # Combine filename and essential parameters
+        image_identifier = filename + "".join(essential_params)
+
+        # Calculate hash
+        return hashlib.md5(image_identifier.encode()).hexdigest()
+    except Exception:
+        logger.exception(f"Error calculating image hash for {image_url}")
+        return None
+
+
+def clean_soup(soup: BeautifulSoup) -> BeautifulSoup:
+    """Clean the soup by removing unwanted tags"""
+    for tag in soup.find_all(
+        [
+            "script",
+            "style",
+            "footer",
+            "header",
+            "nav",
+            "aside",
+            "form",
+            "menu",
+            "noscript",
+            "sidebar",
+            "svg",
+        ]
+    ):
+        tag.decompose()
+
+    disallowed_class_set = {"nav", "menu", "sidebar", "footer"}
+
+    # clean tags with certain classes
+    def does_tag_have_disallowed_class(elem: Tag) -> bool:
+        if not isinstance(elem, Tag):
+            return False
+
+        classes = elem.get("class")
+
+        if classes:
+            return any(cls_name in disallowed_class_set for cls_name in classes)
+
+        return False
+
+    for tag in soup.find_all(does_tag_have_disallowed_class):
+        tag.decompose()
+
+    return soup
+
+
+def get_text_from_soup(soup: BeautifulSoup) -> str:
+    """Get the relevant text from the soup with improved filtering"""
+    text = soup.get_text(strip=True, separator=" ")
+    # Remove excess whitespace
+    text = re.sub(r"\s{2,}", " ", text)
+    return text

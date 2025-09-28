@@ -1,14 +1,15 @@
 # Granite Chat
 
-Implemented using beeai-framework and ACP, providing a variety of different agents
+Implemented using beeai-framework with agents implemented using ACP and A2a:
 
 - basic chat with Granite (no external sources)
 - chat plus search (uses an external search source such as Google/Tavily)
+- chat with Thinking (no external sources)
 - deep research (uses external search with additional planning and recursion)
 
 ## Pre-requisites
 
-- Python 3.11 or higher
+- Python (version range specified in individual `pyproject.toml` files)
 - UV package manager: https://docs.astral.sh/uv/
 
 ### Development
@@ -19,11 +20,20 @@ Install the pre-commit hooks prior to modifying the code:
 pre-commit install
 ```
 
-## Installation
+#### Debugging with vscode
 
-Install dependencies using `uv sync`
+Due to the monorepo layout used in this repository, each agent can be used with the Python debugger in vscode by creating a `launch.json` file similar to the following example. Please note, the important piece to change is the `cwd` specification that should point to the sub-directory of the agent to be executed in the debugger:
 
-Activate your virtual environment `source .venv/bin/activate`
+```json
+{
+  "name": "Python Debugger: Current File",
+  "type": "debugpy",
+  "request": "launch",
+  "program": "${file}",
+  "console": "integratedTerminal",
+  "cwd": "${workspaceFolder}/acp"
+}
+```
 
 ## Configuration
 
@@ -34,30 +44,64 @@ cp .env.template .env
 # then edit the file
 ```
 
-## Running the agent
+## Running and using the agents
 
 Run the agent locally.
 
+### ACP
+
+Run the agent
+
 ```sh
-uv run -m granite_chat.agent.py
+uv --directory acp run -m acp_agent.agent
 ```
 
-## Using the agent
+Use the agent
+
+```sh
+curl -X POST \
+  --url http://localhost:8000/runs \
+  -H 'content-type: application/json' \
+  --data '{
+  "agent_name": "granite-chat",
+  "input": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "content": "Hello"
+        }
+      ]
+    }
+  ],
+  "mode": "stream"
+}'
+```
+
+### A2A
+
+Run the agent
+
+```sh
+uv --directory a2a run -m a2a_agents.agent_chat
+```
 
 You can chat with the agent via the BeeAI Platform ui using the [beeai-cli](https://docs.beeai.dev/how-to/cli-reference)
 
 ```sh
-beeai ui
+beeai agent run "Granite Chat
 ```
-
-Go to `Agents` and look for `granite-chat`.
 
 ## Containerisation
 
 ### Build
 
 ```bash
-podman build -t beeai-platform-granite-chat:latest .
+# ACP Agent
+podman build -t beeai-platform-granite-chat:latest -f acp/Dockerfile .
+
+# A2A Agent
+podman build -t beeai-platform-granite-chat:latest -f a2a/Dockerfile .
 ```
 
 ### Run
@@ -65,7 +109,6 @@ podman build -t beeai-platform-granite-chat:latest .
 ```shell
 podman run --env-file .env --name beeai-platform-granite-chat -p 8000:8000 --rm localhost/beeai-platform-granite-chat:latest
 ```
-
 
 ## Tests
 
