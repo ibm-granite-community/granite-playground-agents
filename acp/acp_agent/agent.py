@@ -117,31 +117,43 @@ def log_context(context: Context) -> None:
     ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-    log_context(context)
+    hb = Heartbeat(context=context)
+    hb.start()
 
-    history = [message async for message in context.session.load_history()]
-    messages = utils.to_beeai_framework_messages(messages=history + input)
-    messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
+    try:
+        log_context(context)
 
-    token_count = estimate_tokens(messages=messages)
-    if exceeds_token_limit(token_count):
-        yield token_limit_response(token_count)
-        return
+        history = [message async for message in context.session.load_history()]
+        messages = utils.to_beeai_framework_messages(messages=history + input)
+        messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
-    chat_model = ChatModelFactory.create()
+        token_count = estimate_tokens(messages=messages)
+        if exceeds_token_limit(token_count):
+            yield token_limit_response(token_count)
+            return
 
-    if settings.STREAMING is True:
-        async with chat_pool.throttle():
-            async for event, _ in chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES, stream=True):
-                if isinstance(event, ChatModelNewTokenEvent):
-                    yield MessagePart(content=event.value.get_text_content())
-                elif isinstance(event, ChatModelSuccessEvent):
-                    yield create_usage_info(event.value.usage, chat_model.model_id)
-    else:
-        async with chat_pool.throttle():
-            output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
-        yield MessagePart(content=output.get_text_content())
-        yield create_usage_info(output.usage, chat_model.model_id)
+        chat_model = ChatModelFactory.create()
+
+        if settings.STREAMING is True:
+            async with chat_pool.throttle():
+                async for event, _ in chat_model.create(
+                    messages=messages, max_retries=settings.MAX_RETRIES, stream=True
+                ):
+                    if isinstance(event, ChatModelNewTokenEvent):
+                        yield MessagePart(content=event.value.get_text_content())
+                    elif isinstance(event, ChatModelSuccessEvent):
+                        yield create_usage_info(event.value.usage, chat_model.model_id)
+        else:
+            async with chat_pool.throttle():
+                output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
+            yield MessagePart(content=output.get_text_content())
+            yield create_usage_info(output.usage, chat_model.model_id)
+
+    except Exception as e:
+        logger.exception(repr(e))
+        raise e
+    finally:
+        await hb.stop()
 
 
 @server.agent(
