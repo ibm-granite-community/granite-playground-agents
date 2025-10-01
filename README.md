@@ -37,16 +37,13 @@ Due to the monorepo layout used in this repository, each agent can be used with 
 
 ## Configuration
 
-The agent is designed to use models from Watsonx directly. Copy the `.env.template` file to `.env` and fill in the missing secrets.
+The core library is designed to use Granite models that can be served from a variety of back ends. To configure the library, ensure environment variables are in place when running the code (this can be done via a `.env` file). The configuration options available are documented in the [granite_core config.py](granite_core/granite_core/config.py) file where you will find a brief description of each option, the data type it expects, potential limitations on values and a default value.
 
-```bash
-cp .env.template .env
-# then edit the file
-```
+The agents are configured in a similar way to the core, via environment variables (that can also be set via a `.env` file). The configurations are in the relevant `config.py` files for each agent. The agents will start without any additional configuration by adopting default values such as using Granite models served via a local Ollama and search provided by simple a DuckDuckGo implementation. This is sufficient for initial/early experimental usage. However, you are encouraged to explore the options to achieve better accuracy and throughput.
 
 ## Running and using the agents
 
-Run the agent locally.
+Run the agents locally.
 
 ### ACP
 
@@ -80,7 +77,7 @@ curl -X POST \
 
 ### A2A
 
-Run the agent
+Run an agent
 
 ```sh
 uv --directory a2a run -m a2a_agents.agent_chat
@@ -107,7 +104,7 @@ podman build -t beeai-platform-granite-chat:latest -f a2a/Dockerfile .
 ### Run
 
 ```shell
-podman run --env-file .env --name beeai-platform-granite-chat -p 8000:8000 --rm localhost/beeai-platform-granite-chat:latest
+podman run --env-file .env --name beeai-platform-granite-chat -p 8000:8000 --rm beeai-platform-granite-chat:latest
 ```
 
 ## Tests
