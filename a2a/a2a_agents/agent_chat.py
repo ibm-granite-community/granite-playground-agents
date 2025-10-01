@@ -12,11 +12,11 @@ from beeai_sdk.server import Server
 from beeai_sdk.server.context import RunContext
 from beeai_sdk.server.store.platform_context_store import PlatformContextStore
 from granite_core.chat_model import ChatModelFactory
-from granite_core.config import settings
 from granite_core.logging import get_logger
 from granite_core.work import chat_pool
 
 from a2a_agents import __version__
+from a2a_agents.config import settings
 
 logger = get_logger(__name__)
 server = Server()
@@ -119,8 +119,8 @@ async def chat(
 
 if __name__ == "__main__":
     server.run(
-        host=settings.host,
-        port=settings.port,
+        host=settings.HOST,
+        port=settings.PORT,
         access_log=settings.ACCESS_LOG,
         context_store=PlatformContextStore(),
     )

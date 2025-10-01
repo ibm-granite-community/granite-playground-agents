@@ -3,17 +3,13 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field, TypeAdapter, model_validator
 from pydantic.networks import HttpUrl
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    port: int = Field(default=8000, description="HTTP Port the agent will listen on")
-
-    host: str = Field(default="127.0.0.1", description="Network address the agent will bind to")
-    ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="allow")
 
     STREAMING: bool = Field(default=True, description="Stream user facing content")
-    TWO_STEP_THINKING: bool = Field(default=False, description="Enable two step thinking.")
 
     LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
     LLM_MODEL: str | None = Field(description="The model ID of the LLM")
@@ -190,17 +186,6 @@ class Settings(BaseSettings):
         description="The similarity threshold under which citation statements are ignored.",
     )
 
-    # Resource store
-    RESOURCE_STORE_PROVIDER: Literal["S3"] | None = None
-    S3_BUCKET: str | None = Field(default=None, description="S3 bucket name")
-    S3_ENDPOINT: str | None = Field(default=None, description="S3 resource store endpoint")
-    S3_ACCESS_KEY_ID: str | None = Field(default=None, description="S3 access key id")
-    S3_SECRET_ACCESS_KEY: str | None = Field(default=None, description="S3 secret access ket")
-
-    # Key Store
-    KEY_STORE_PROVIDER: Literal["redis"] | None = None
-    REDIS_CLIENT_URL: str | None = Field(default=None, description="Redis client object configured from the given URL")
-
     # MMR
     MMR_LAMBDA_MULT: float = Field(
         default=0.4,
@@ -229,9 +214,6 @@ class Settings(BaseSettings):
             os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
 
         return self
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()  # type: ignore[call-arg]

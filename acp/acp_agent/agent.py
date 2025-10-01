@@ -15,7 +15,7 @@ from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.citations.events import CitationEvent
-from granite_core.config import settings
+from granite_core.config import settings as core_settings
 from granite_core.emitter import Event
 from granite_core.events import (
     GeneratingCitationsCompleteEvent,
@@ -42,6 +42,7 @@ from langchain_core.documents import Document
 from redis.asyncio import Redis
 
 from acp_agent import utils
+from acp_agent.config import settings
 from acp_agent.heartbeat import Heartbeat
 from acp_agent.resources import AsyncCachingResourceLoader, ResourceStoreFactory
 from acp_agent.store import PrefixRouterMemoryStore
@@ -134,10 +135,10 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
         chat_model = ChatModelFactory.create()
 
-        if settings.STREAMING is True:
+        if core_settings.STREAMING is True:
             async with chat_pool.throttle():
                 async for event, _ in chat_model.create(
-                    messages=messages, max_retries=settings.MAX_RETRIES, stream=True
+                    messages=messages, max_retries=core_settings.MAX_RETRIES, stream=True
                 ):
                     if isinstance(event, ChatModelNewTokenEvent):
                         yield MessagePart(content=event.value.get_text_content())
@@ -145,7 +146,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
             async with chat_pool.throttle():
-                output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
+                output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
             yield MessagePart(content=output.get_text_content())
             yield create_usage_info(output.usage, chat_model.model_id)
 
@@ -225,10 +226,10 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
             handler = ThinkingStreamHandler(tags=["think", "response"])
 
-            if settings.STREAMING is True:
+            if core_settings.STREAMING is True:
                 async with chat_pool.throttle():
                     async for event, _ in chat_model.create(
-                        messages=messages, stream=True, max_retries=settings.MAX_RETRIES
+                        messages=messages, stream=True, max_retries=core_settings.MAX_RETRIES
                     ):
                         if isinstance(event, ChatModelNewTokenEvent):
                             token = event.value.get_text_content()
@@ -242,7 +243,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                             yield create_usage_info(event.value.usage, chat_model.model_id)
             else:
                 async with chat_pool.throttle():
-                    chat_output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
+                    chat_output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
 
                 text = chat_output.get_text_content()
 
@@ -331,10 +332,10 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         response: list[str] = []
 
-        if settings.STREAMING is True:
+        if core_settings.STREAMING is True:
             async with chat_pool.throttle():
                 async for event, _ in chat_model.create(
-                    messages=messages, stream=True, max_retries=settings.MAX_RETRIES
+                    messages=messages, stream=True, max_retries=core_settings.MAX_RETRIES
                 ):
                     if isinstance(event, ChatModelNewTokenEvent):
                         content = event.value.get_text_content()
@@ -344,7 +345,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
             async with chat_pool.throttle():
-                output = await chat_model.create(messages=messages, max_retries=settings.MAX_RETRIES)
+                output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
 
             response.append(output.get_text_content())
             yield MessagePart(content="".join(response))
@@ -509,8 +510,8 @@ resource_loader = AsyncCachingResourceLoader()
 
 server.run(
     configure_logger=False,
-    host=settings.host,
-    port=settings.port,
+    host=settings.HOST,
+    port=settings.PORT,
     access_log=settings.ACCESS_LOG,
     store=store,
     resource_store=resource_store,
