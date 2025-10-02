@@ -7,6 +7,7 @@ from beeai_framework.backend import (
     ChatModelParameters,
 )
 
+from granite_core import utils
 from granite_core.config import settings
 
 
@@ -28,7 +29,7 @@ class ChatModelFactory:
 
         if provider == "openai":
             base_url = str(settings.LLM_API_BASE)
-            api_key = settings.LLM_API_KEY
+            api_key = utils.get_secret_value(settings.LLM_API_KEY)
 
             return OpenAIChatModel(
                 model_id=model_id,
@@ -38,8 +39,8 @@ class ChatModelFactory:
             )
         elif provider == "watsonx":
             base_url = str(settings.WATSONX_API_BASE)
-            api_key = settings.WATSONX_API_KEY
-            project_id = settings.WATSONX_PROJECT_ID
+            api_key = utils.get_secret_value(settings.WATSONX_API_KEY)
+            project_id = utils.get_secret_value(settings.WATSONX_PROJECT_ID)
             region = settings.WATSONX_REGION
 
             return WatsonxChatModel(

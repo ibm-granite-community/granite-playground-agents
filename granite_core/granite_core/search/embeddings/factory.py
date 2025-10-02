@@ -1,7 +1,7 @@
 from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
-from pydantic import SecretStr
 
+from granite_core import utils
 from granite_core.config import settings
 from granite_core.search.embeddings.model import EmbeddingsModel
 from granite_core.search.embeddings.types import EmbeddingsModelType
@@ -36,16 +36,17 @@ class EmbeddingsFactory:
 
         elif provider == "openai":
             # Optional extra headers for openai api
+            embeddings_openai_api_headers = utils.get_secret_value(settings.EMBEDDINGS_OPENAI_API_HEADERS)
             extra_headers = (
-                dict(pair.split("=", 1) for pair in settings.EMBEDDINGS_OPENAI_API_HEADERS.strip('"').split(","))
-                if settings.EMBEDDINGS_OPENAI_API_HEADERS
+                dict(pair.split("=", 1) for pair in embeddings_openai_api_headers.strip('"').split(","))
+                if embeddings_openai_api_headers
                 else None
             )
 
             return EmbeddingsModel(
                 embeddings=OpenAIEmbeddings(
                     model=model_name,
-                    api_key=SecretStr(secret_value=settings.EMBEDDINGS_OPENAI_API_KEY or ""),
+                    api_key=settings.EMBEDDINGS_OPENAI_API_KEY,
                     base_url=str(settings.EMBEDDINGS_OPENAI_API_BASE),
                     check_embedding_ctx_length=False,
                     default_headers=extra_headers,

@@ -37,6 +37,7 @@ from granite_core.thinking.response_parser import ThinkingResponseParser
 from granite_core.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 from granite_core.thinking.tool import ThinkingTool
 from granite_core.usage import create_usage_info
+from granite_core.utils import log_settings
 from granite_core.work import chat_pool
 from langchain_core.documents import Document
 from redis.asyncio import Redis
@@ -48,6 +49,8 @@ from acp_agent.resources import AsyncCachingResourceLoader, ResourceStoreFactory
 from acp_agent.store import PrefixRouterMemoryStore
 
 logger = get_logger(__name__)
+log_settings(settings, name="Agent")
+log_settings(core_settings)
 
 # This will preload the embeddings tokenizer if set
 EmbeddingsTokenizer.get_instance()

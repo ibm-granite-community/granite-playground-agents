@@ -12,6 +12,7 @@ import json
 
 import httpx
 
+from granite_core import utils
 from granite_core.config import settings
 from granite_core.logging import get_logger
 from granite_core.search.engines.engine import SearchEngine
@@ -31,8 +32,8 @@ class GoogleSearch(SearchEngine):
         Args:
             query:
         """
-        self.api_key = settings.GOOGLE_API_KEY
-        self.cx_key = settings.GOOGLE_CX_KEY
+        self.api_key = utils.get_secret_value(settings.GOOGLE_API_KEY)
+        self.cx_key = utils.get_secret_value(settings.GOOGLE_CX_KEY)
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[SearchResult]:
         """

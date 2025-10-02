@@ -1,7 +1,7 @@
 import os
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, Field, TypeAdapter, model_validator
+from pydantic import AfterValidator, Field, SecretStr, TypeAdapter, model_validator
 from pydantic.networks import HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,17 +20,17 @@ class Settings(BaseSettings):
     LLM_API_BASE: Annotated[
         HttpUrl | None, Field(description="The OpenAI base URL for chat completions"), AfterValidator(str)
     ] = None
-    LLM_API_KEY: str | None = Field(
+    LLM_API_KEY: SecretStr | None = Field(
         description="The authorization key used to access LLM_MODEL via LLM_API_BASE", default=None
     )
-    LLM_API_HEADERS: str | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
+    LLM_API_HEADERS: SecretStr | None = Field(description="Additional headers to provide to LLM_API_BASE", default=None)
     LLM_TIMEOUT: float = Field(description="Timeout for llm generation requests", default=180)
     MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
 
     RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
-    GOOGLE_API_KEY: str | None = Field(description="The API key for Google Search")
-    GOOGLE_CX_KEY: str | None = Field(description="The CX key for Google Search")
-    TAVILY_API_KEY: str | None = Field(default=None, description="The API key for Tavily")
+    GOOGLE_API_KEY: SecretStr | None = Field(description="The API key for Google Search")
+    GOOGLE_CX_KEY: SecretStr | None = Field(description="The CX key for Google Search")
+    TAVILY_API_KEY: SecretStr | None = Field(default=None, description="The API key for Tavily")
     SAFE_SEARCH: bool = Field(default=True, description="Turn on safe search if available for search engine.")
 
     SCRAPER_MAX_CONTENT_LENGTH: int = Field(
@@ -82,7 +82,7 @@ class Settings(BaseSettings):
         HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
     ]
     GRANITE_IO_CITATIONS_MODEL_ID: str | None = Field(default=None, description="The model ID for citations")
-    GRANITE_IO_OPENAI_API_HEADERS: str | None = Field(
+    GRANITE_IO_OPENAI_API_HEADERS: SecretStr | None = Field(
         default=None, description="Additional headers to provide to GRANITE_IO_OPENAI_API_BASE"
     )
 
@@ -91,16 +91,20 @@ class Settings(BaseSettings):
     WATSONX_API_BASE: Annotated[
         HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
     ]
-    WATSONX_PROJECT_ID: str | None = Field(default=None, description="The project ID of your Watsonx deployment")
+    WATSONX_PROJECT_ID: SecretStr | None = Field(default=None, description="The project ID of your Watsonx deployment")
     WATSONX_REGION: str | None = Field(default=None, description="The region of your Watsonx deployment")
-    WATSONX_API_KEY: str | None = Field(default=None, description="The Cloud API Key to reach your Watsonx deployment")
+    WATSONX_API_KEY: SecretStr | None = Field(
+        default=None, description="The Cloud API Key to reach your Watsonx deployment"
+    )
 
     # openai embeddings
     EMBEDDINGS_OPENAI_API_BASE: Annotated[
         HttpUrl | None, Field(default=None, description="The OpenAI base URL for chat completions"), AfterValidator(str)
     ]
-    EMBEDDINGS_OPENAI_API_KEY: str | None = Field(default=None, description="The API key to reach your OpenAI endpoint")
-    EMBEDDINGS_OPENAI_API_HEADERS: str | None = Field(
+    EMBEDDINGS_OPENAI_API_KEY: SecretStr | None = Field(
+        default=None, description="The API key to reach your OpenAI endpoint"
+    )
+    EMBEDDINGS_OPENAI_API_HEADERS: SecretStr | None = Field(
         default=None, description="Additional headers to provide to EMBEDDINGS_OPENAI_API_BASE"
     )
 
@@ -211,7 +215,7 @@ class Settings(BaseSettings):
 
         # Allows headers to be picked up by framework
         if self.LLM_API_HEADERS:
-            os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS
+            os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS.get_secret_value()
 
         return self
 

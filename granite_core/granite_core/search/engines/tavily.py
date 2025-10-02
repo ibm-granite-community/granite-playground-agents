@@ -10,6 +10,7 @@
 
 from tavily import AsyncTavilyClient
 
+from granite_core import utils
 from granite_core.config import settings
 from granite_core.search.engines.engine import SearchEngine
 from granite_core.search.types import SearchResult
@@ -26,7 +27,7 @@ class TavilySearch(SearchEngine):
         Args:
             query:
         """
-        self.api_key = settings.TAVILY_API_KEY
+        self.api_key = utils.get_secret_value(settings.TAVILY_API_KEY)
         self.tavily_client = AsyncTavilyClient(self.api_key)
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[SearchResult]:

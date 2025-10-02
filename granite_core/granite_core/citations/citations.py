@@ -15,6 +15,7 @@ from langchain_core.documents import Document
 from nltk.tokenize import sent_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
+from granite_core import utils
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.events import CitationEvent
 from granite_core.citations.prompts import CitationsPrompts
@@ -42,9 +43,10 @@ class CitationGeneratorFactory:
     @staticmethod
     def create() -> "CitationGenerator":
         if settings.GRANITE_IO_OPENAI_API_BASE and settings.GRANITE_IO_CITATIONS_MODEL_ID:
+            granite_io_openai_api_headers = utils.get_secret_value(settings.GRANITE_IO_OPENAI_API_HEADERS)
             extra_headers = (
-                dict(pair.split("=", 1) for pair in settings.GRANITE_IO_OPENAI_API_HEADERS.strip('"').split(","))
-                if settings.GRANITE_IO_OPENAI_API_HEADERS
+                dict(pair.split("=", 1) for pair in granite_io_openai_api_headers.strip('"').split(","))
+                if granite_io_openai_api_headers
                 else None
             )
 

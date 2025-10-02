@@ -12,13 +12,18 @@ from beeai_sdk.server import Server
 from beeai_sdk.server.context import RunContext
 from beeai_sdk.server.store.platform_context_store import PlatformContextStore
 from granite_core.chat_model import ChatModelFactory
+from granite_core.config import settings as core_settings
 from granite_core.logging import get_logger
+from granite_core.utils import log_settings
 from granite_core.work import chat_pool
 
 from a2a_agents import __version__
 from a2a_agents.config import settings
 
 logger = get_logger(__name__)
+log_settings(settings, name="Agent")
+log_settings(core_settings)
+
 server = Server()
 
 
