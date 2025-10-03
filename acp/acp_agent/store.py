@@ -3,11 +3,11 @@
 
 import asyncio
 from datetime import timedelta
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from acp_sdk import AsyncIterator, BaseModel
 from acp_sdk.server import MemoryStore
-from acp_sdk.server.store.store import Store, StoreView, T
+from acp_sdk.server.store.store import Store, StoreModel, StoreView, T
 from acp_sdk.server.store.utils import Stringable
 from aiocache import Cache
 
@@ -20,7 +20,7 @@ class PrefixRouterMemoryStore(MemoryStore[T]):
         self.prefix_store_map: dict[str, Store] = {}
 
         # Use an async typed cache to avoid serialization and validation
-        self._t_cache: Cache[str, T] = Cache(Cache.MEMORY, ttl=ttl)
+        self._t_cache: Cache[str, str] = Cache(Cache.MEMORY, ttl=ttl)
 
         # Events watching on a specific key
         self._lock = asyncio.Lock()
@@ -39,14 +39,16 @@ class PrefixRouterMemoryStore(MemoryStore[T]):
             return StoreView(model=model, store=self, prefix=prefix)
 
     async def get(self, key: Stringable) -> T | None:
-        return await self._t_cache.get(str(key))
+        value = await self._t_cache.get(str(key))
+        return cast(T, StoreModel.model_validate_json(value)) if value else value
 
     async def set(self, key: Stringable, value: T | None) -> None:
         key_str = str(key)
+
         if value is None:
             await self._t_cache.pop(key_str, None)
         else:
-            await self._t_cache.set(key_str, value)
+            await self._t_cache.set(key_str, value.model_dump_json())
 
         async with self._lock:
             # schedule batch notification for this key if not already scheduled
