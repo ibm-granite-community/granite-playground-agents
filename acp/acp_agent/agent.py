@@ -495,7 +495,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         yield mp
 
 
-store: PrefixRouterMemoryStore = PrefixRouterMemoryStore()
+store: PrefixRouterMemoryStore = PrefixRouterMemoryStore(ttl=settings.MEMORY_STORE_TTL_MINS * 60)
 
 if settings.KEY_STORE_PROVIDER == "redis" and settings.REDIS_CLIENT_URL is not None:
     logger.info("Found a valid redis KEY_STORE_PROVIDER")

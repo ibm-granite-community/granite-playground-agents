@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -22,6 +22,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "acp-sdk" },
+    { name = "aiocache" },
     { name = "granite-core" },
 ]
 
@@ -40,6 +41,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "acp-sdk", specifier = "==1.0.1" },
+    { name = "aiocache", specifier = ">=0.12.3" },
     { name = "granite-core", editable = "../granite_core" },
 ]
 
@@ -78,6 +80,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/73/97/a647f4e19e1043a2c4613cf1be5882fcf316b96a7558bde2a8bd134a094a/acp_sdk-1.0.1.tar.gz", hash = "sha256:9cf6468085a0fae6cf23c809c85ac1863d74c0fdfb39e6a45b875fd6997043ff", size = 30408, upload-time = "2025-07-24T16:30:13.959Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/42/ec/cc831210db594f91a0f51381a6dc991d47984a4913eeb1bcb27ac936e4be/acp_sdk-1.0.1-py3-none-any.whl", hash = "sha256:209898228c6f5207df987d42aabf3f9aab984ae32d4823de0416849048fd438e", size = 34987, upload-time = "2025-07-24T16:30:12.646Z" },
+]
+
+[[package]]
+name = "aiocache"
+version = "0.12.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/64/b945b8025a9d1e6e2138845f4022165d3b337f55f50984fbc6a4c0a1e355/aiocache-0.12.3.tar.gz", hash = "sha256:f528b27bf4d436b497a1d0d1a8f59a542c153ab1e37c3621713cb376d44c4713", size = 132196, upload-time = "2024-09-25T13:20:23.823Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/d7/15d67e05b235d1ed8c3ce61688fe4d84130e72af1657acadfaac3479f4cf/aiocache-0.12.3-py2.py3-none-any.whl", hash = "sha256:889086fc24710f431937b87ad3720a289f7fc31c4fd8b68e9f918b9bacd8270d", size = 28199, upload-time = "2024-09-25T13:20:22.688Z" },
 ]
 
 [[package]]

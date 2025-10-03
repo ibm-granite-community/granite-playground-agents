@@ -207,6 +207,8 @@ class Settings(BaseSettings):
         description="Controls the weighting between relevance and diversity in MMR",
     )
 
+    MEMORY_STORE_TTL_MINS: int = Field(default=20, description="Memory store key timeout")
+
     @model_validator(mode="after")
     def set_secondary_env(self) -> "Settings":
         # We need OLLAMA_BASE_URL to be set in the event that ollama embeddings are used

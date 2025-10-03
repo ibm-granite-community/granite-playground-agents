@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "ACP Granite Chat"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["acp-sdk==1.0.1", "granite-core"]
+dependencies = [
+    "acp-sdk==1.0.1",
+    "aiocache>=0.12.3",
+    "granite-core",
+]
 
 [tool.ruff]
 lint.select = [
