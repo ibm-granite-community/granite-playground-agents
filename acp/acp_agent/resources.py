@@ -1,8 +1,9 @@
 from acp_sdk import ResourceLoader, ResourceStore, ResourceUrl
 from cachetools import LFUCache
-from granite_core.config import settings
 from granite_core.logging import get_logger
 from obstore.store import S3Store
+
+from acp_agent.config import settings
 
 logger = get_logger(__name__)
 
@@ -37,8 +38,8 @@ class ResourceStoreFactory:
                 store=S3Store(
                     bucket=settings.S3_BUCKET,
                     endpoint=settings.S3_ENDPOINT,
-                    access_key_id=settings.S3_ACCESS_KEY_ID,
-                    secret_access_key=settings.S3_SECRET_ACCESS_KEY,
+                    access_key_id=settings.S3_ACCESS_KEY_ID.get_secret_value(),
+                    secret_access_key=settings.S3_SECRET_ACCESS_KEY.get_secret_value(),
                 )
             )
         return None
