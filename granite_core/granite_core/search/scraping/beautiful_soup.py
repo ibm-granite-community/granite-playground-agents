@@ -8,7 +8,6 @@
 #
 # Changes made:
 
-import asyncio
 
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
@@ -42,12 +41,7 @@ class BeautifulSoupScraper(AsyncScraper):
             soup = BeautifulSoup(response.content, "lxml", from_encoding=response.encoding)
 
             soup = clean_soup(soup)
-
-            await asyncio.sleep(0)
-
             content = get_text_from_soup(soup)
-
-            await asyncio.sleep(0)
             # image_urls = get_relevant_images(soup, link)
 
             # Extract the title using the utility function

@@ -14,33 +14,20 @@ from aiocache import Cache
 U_co = TypeVar("U_co", bound=BaseModel, covariant=True)
 
 
-class PrefixRouterMemoryStore(MemoryStore[T]):
-    def __init__(self, *, limit: int = 1000, ttl: int | None = timedelta(hours=1)) -> None:  # type: ignore
+class AsyncDebouncingMemoryStory(MemoryStore[T]):
+    def __init__(
+        self,
+        *,
+        limit: int = 1000,
+        ttl: int | None = timedelta(hours=1),  # type: ignore
+        debounce: float = 0.2,
+    ) -> None:
         super().__init__(limit=limit, ttl=ttl)
-        self.prefix_store_map: dict[str, Store] = {}
-
-        # Use an async typed cache to avoid serialization and validation
         self._t_cache: Cache[str, str] = Cache(Cache.MEMORY, ttl=ttl)
-
-        # Events watching on a specific key
         self._lock = asyncio.Lock()
         self._watchers: dict[str, set[asyncio.Event]] = {}
         self._batch_tasks: dict[str, asyncio.Task] = {}
-        self._batch_delay = 0.03
-
-    def map_prefix(self, prefix: str, store: Store) -> None:
-        self.prefix_store_map[prefix] = store
-
-    def as_store(self, model: type[U_co], prefix: Stringable = "") -> "Store[U_co]":
-        if str(prefix) in self.prefix_store_map:
-            return StoreView(model=model, store=self.prefix_store_map[str(prefix)], prefix=prefix)
-        else:
-            # Default to self memory store
-            return StoreView(model=model, store=self, prefix=prefix)
-
-    async def get(self, key: Stringable) -> T | None:
-        value = await self._t_cache.get(str(key))
-        return cast(T, StoreModel.model_validate_json(value)) if value else value
+        self._batch_delay = debounce
 
     async def set(self, key: Stringable, value: T | None) -> None:
         key_str = str(key)
@@ -50,8 +37,8 @@ class PrefixRouterMemoryStore(MemoryStore[T]):
         else:
             await self._t_cache.set(key_str, value.model_dump_json())
 
+        # schedule batch notification for this key
         async with self._lock:
-            # schedule batch notification for this key if not already scheduled
             if key_str not in self._batch_tasks:
                 self._batch_tasks[key_str] = asyncio.create_task(self._notify_watchers(key_str))
 
@@ -63,6 +50,7 @@ class PrefixRouterMemoryStore(MemoryStore[T]):
                 for event in self._watchers[key_str]:
                     event.set()
                 self._watchers[key_str].clear()
+                self._watchers.pop(key_str, None)
             self._batch_tasks.pop(key_str, None)
 
     async def watch(self, key: Stringable, *, ready: asyncio.Event | None = None) -> AsyncIterator[T | None]:
@@ -80,3 +68,30 @@ class PrefixRouterMemoryStore(MemoryStore[T]):
             # Wait for key to be updated
             await event.wait()
             yield await self.get(key_str)
+
+
+class PrefixRouterMemoryStore(AsyncDebouncingMemoryStory[T]):
+    def __init__(
+        self,
+        *,
+        limit: int = 1000,
+        ttl: int | None = timedelta(hours=1),  # type: ignore
+        debounce: float = 0.2,
+    ) -> None:
+        super().__init__(limit=limit, ttl=ttl, debounce=debounce)
+        self.prefix_store_map: dict[str, Store] = {}
+        self._t_cache: Cache[str, str] = Cache(Cache.MEMORY, ttl=ttl)
+
+    def map_prefix(self, prefix: str, store: Store) -> None:
+        self.prefix_store_map[prefix] = store
+
+    def as_store(self, model: type[U_co], prefix: Stringable = "") -> "Store[U_co]":
+        if str(prefix) in self.prefix_store_map:
+            return StoreView(model=model, store=self.prefix_store_map[str(prefix)], prefix=prefix)
+        else:
+            # Default to self memory store
+            return StoreView(model=model, store=self, prefix=prefix)
+
+    async def get(self, key: Stringable) -> T | None:
+        value = await self._t_cache.get(str(key))
+        return cast(T, StoreModel.model_validate_json(value)) if value else value

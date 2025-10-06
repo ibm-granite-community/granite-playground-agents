@@ -25,5 +25,10 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY_ID: SecretStr | None = Field(default=None, description="S3 access key id")
     S3_SECRET_ACCESS_KEY: SecretStr | None = Field(default=None, description="S3 secret access ket")
 
+    # Memory store
+    MEM_STORE_NOTIFICATION_DEBOUNCE: float | None = Field(
+        default=0.2, description="Memory store notification debounce (seconds)"
+    )
+
 
 settings = Settings()
