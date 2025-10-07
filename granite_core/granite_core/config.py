@@ -27,11 +27,18 @@ class Settings(BaseSettings):
     LLM_TIMEOUT: float = Field(description="Timeout for llm generation requests", default=180)
     MAX_RETRIES: int = Field(description="Max retries for inference", default=3)
 
-    RETRIEVER: Literal["google", "tavily"] = Field(default="google", description="The search engine to use")
-    GOOGLE_API_KEY: SecretStr | None = Field(description="The API key for Google Search")
-    GOOGLE_CX_KEY: SecretStr | None = Field(description="The CX key for Google Search")
+    # Search engines
+    RETRIEVER: Literal["google", "tavily", "duckduckgo"] = Field(
+        default="duckduckgo", description="The search engine to use"
+    )
+
+    GOOGLE_API_KEY: SecretStr | None = Field(description="The API key for Google Search", default=None)
+    GOOGLE_CX_KEY: SecretStr | None = Field(description="The CX key for Google Search", default=None)
     TAVILY_API_KEY: SecretStr | None = Field(default=None, description="The API key for Tavily")
     SAFE_SEARCH: bool = Field(default=True, description="Turn on safe search if available for search engine.")
+
+    DDG_SEARCH_PROXY: str | None = Field(default=None, description="DuckDuckGo Search proxy")
+    DDG_SEARCH_VERIFY: bool = Field(default=True, description="DuckDuckGo SSL Verification")
 
     SCRAPER_MAX_CONTENT_LENGTH: int = Field(
         description="Max size of scraped content in characters, anything larger will be truncated.", default=15000

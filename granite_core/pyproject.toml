@@ -22,6 +22,7 @@ dependencies = [
     "beeai-framework==0.1.47",
     "scikit-learn>=1.7.1",
     "numpy>=2.2.6",
+    "ddgs>=9.5.2",
 ]
 
 [tool.ruff]
