@@ -11,8 +11,10 @@ class Settings(BaseSettings):
 
     STREAMING: bool = Field(default=True, description="Stream user facing content")
 
-    LLM_PROVIDER: Literal["openai", "watsonx"] = "openai"
-    LLM_MODEL: str | None = Field(description="The model ID of the LLM")
+    LLM_PROVIDER: Literal["openai", "watsonx", "ollama"] = Field(
+        default="ollama", description="Which provider to use for prompts to the LLM"
+    )
+    LLM_MODEL: str = Field(default="ibm/granite4", description="The model ID of the LLM")
     LLM_STRUCTURED_MODEL: str | None = Field(
         description="The model ID of the LLM used for structured generation tasks", default=None
     )
@@ -56,12 +58,10 @@ class Settings(BaseSettings):
     ]
 
     EMBEDDINGS_PROVIDER: Literal["watsonx", "ollama", "openai"] = Field(
-        default="watsonx", description="Which provider to use for calculating embeddings"
+        default="ollama", description="Which provider to use for calculating embeddings"
     )
 
-    EMBEDDINGS_MODEL: str = Field(
-        default="ibm/slate-125m-english-rtrvr-v2", description="The model ID of the embedding model"
-    )
+    EMBEDDINGS_MODEL: str = Field(default="nomic-embed-text", description="The model ID of the embedding model")
     EMBEDDINGS_HF_TOKENIZER: str = Field(default="FacebookAI/roberta-base", description="The model ID of the tokenizer")
     EMBEDDINGS_MAX_SEQUENCE: int = Field(default=512, description="The maximum sequence length in tokens.")
 
@@ -221,6 +221,9 @@ class Settings(BaseSettings):
         # Allows headers to be picked up by framework
         if self.LLM_API_HEADERS:
             os.environ["OPENAI_API_HEADERS"] = self.LLM_API_HEADERS.get_secret_value()
+
+        if "granite" not in self.LLM_MODEL.lower():
+            raise ValueError("LLM_MODEL must be set to an IBM Granite model ID")
 
         return self
 
