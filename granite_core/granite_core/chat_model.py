@@ -1,5 +1,6 @@
 from typing import Literal
 
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.adapters.watsonx import WatsonxChatModel
 from beeai_framework.backend import (
@@ -51,6 +52,18 @@ class ChatModelFactory:
                 region=region,
                 parameters=ChatModelParameters(max_tokens=max_tokens, temperature=temperature),
                 settings={"timeout": settings.LLM_TIMEOUT},
+            )
+        elif provider == "ollama":
+            base_url = str(settings.OLLAMA_BASE_URL) if settings.OLLAMA_BASE_URL else None  # type: ignore[assignment]
+
+            # BeeAI Framework doesn't check if the URL ends with a slash (and assumes it doesn't)
+            if base_url is not None and base_url.endswith("/"):
+                base_url = base_url[:-1]
+
+            return OllamaChatModel(
+                model_id=model_id,
+                base_url=base_url,
+                parameters=ChatModelParameters(max_tokens=max_tokens, temperature=temperature),
             )
         else:
             raise ValueError("Unknown inference provider")
