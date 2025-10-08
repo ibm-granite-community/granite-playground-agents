@@ -83,7 +83,7 @@ class ContentExtractor(EventEmitter):
             # Get content
             async with task_pool.throttle():
                 if isinstance(scraper, AsyncScraper):
-                    content, image_urls, title = await asyncio.wait_for(
+                    content, _image_urls, title = await asyncio.wait_for(
                         cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
                         timeout=settings.SCRAPER_TIMEOUT,
                     )
@@ -92,7 +92,7 @@ class ContentExtractor(EventEmitter):
                     sync_scraper = cast(SyncScraper, scraper)
                     (
                         content,
-                        image_urls,
+                        _image_urls,
                         title,
                     ) = await asyncio.wait_for(
                         loop.run_in_executor(task_pool.executor, lambda: sync_scraper.scrape(link, self.client)),

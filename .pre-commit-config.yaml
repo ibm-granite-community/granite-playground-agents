@@ -11,7 +11,7 @@ repos:
       - id: check-toml
       - id: check-yaml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.2
+    rev: v0.14.0
     hooks:
       - id: ruff-check
         args: [ --fix ]
@@ -20,13 +20,17 @@ repos:
     rev: v1.18.2
     hooks:
     - id: mypy
+      name: mypy for granite_core
+      args: [--ignore-missing-imports, --python-executable, granite_core/.venv/bin/python]
+      files: granite_core
+    - id: mypy
       name: mypy for acp
       args: [--ignore-missing-imports, --python-executable, acp/.venv/bin/python]
       files: acp
     - id: mypy
-      name: mypy for granite_core
-      args: [--ignore-missing-imports, --python-executable, granite_core/.venv/bin/python]
-      files: granite_core
+      name: mypy for a2a
+      args: [--ignore-missing-imports, --python-executable, a2a/.venv/bin/python]
+      files: a2a
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1
     hooks:
@@ -37,13 +41,24 @@ repos:
         args: [--staged, --msg-filename]
         stages: [commit-msg]
   - repo: https://github.com/ibm/detect-secrets
-    rev: 0.13.1+ibm.62.dss
+    rev: 0.13.1+ibm.64.dss
     hooks:
       - id: detect-secrets
         additional_dependencies:
         - boxsdk~=3.0
         args: [--baseline, .secrets.baseline, --use-all-plugins, --fail-on-unaudited]
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.22
+    rev: 0.9.0
     hooks:
       - id: uv-lock
+        name: uv lock granite core
+        files: granite_core/pyproject.toml
+        args: [--directory, granite_core]
+      - id: uv-lock
+        name: uv lock acp
+        files: acp/pyproject.toml
+        args: [--directory, acp]
+      - id: uv-lock
+        name: uv lock a2a
+        files: a2a/pyproject.toml
+        args: [--directory, a2a]
