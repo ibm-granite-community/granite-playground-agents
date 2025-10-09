@@ -57,20 +57,28 @@ class Settings(BaseSettings):
         AfterValidator(str),
     ]
 
+    # Embeddings
     EMBEDDINGS_PROVIDER: Literal["watsonx", "ollama", "openai"] = Field(
         default="ollama", description="Which provider to use for calculating embeddings"
     )
 
     EMBEDDINGS_MODEL: str = Field(default="nomic-embed-text", description="The model ID of the embedding model")
-    EMBEDDINGS_HF_TOKENIZER: str = Field(default="FacebookAI/roberta-base", description="The model ID of the tokenizer")
-    EMBEDDINGS_MAX_SEQUENCE: int = Field(default=512, description="The maximum sequence length in tokens.")
+    EMBEDDINGS_HF_TOKENIZER: str | None = Field(
+        default="bert-base-uncased",
+        description="The model ID of the HF tokenizer for the retrievals embeddings model",
+    )
+    EMBEDDINGS_MAX_SEQUENCE: int = Field(
+        default=512, description="The maximum sequence length in characters (or tokens if HF tokenizer configured)."
+    )
 
     CHUNK_SIZE: int = Field(
         default=512,
-        description="The maximum number of characters (or tokens if configured) search result chunks are broken into",
+        description="The maximum number of characters (or tokens if tokenizer configured) that data is chunked into for presentation to the LLM",  # noqa: E501
     )
+
     CHUNK_OVERLAP: int = Field(
-        default=20, description="The number of characters or tokens search result chunks will overlap"
+        default=20,
+        description="The number of characters (or tokens if tokenizer configured) data chunks will overlap",
     )
 
     MAX_EMBEDDINGS_PER_REQUEST: int = Field(default=200, description="The max number of embeddings in a single request")
@@ -78,10 +86,13 @@ class Settings(BaseSettings):
     EMBEDDINGS_SIM_MODEL: str | None = Field(
         default=None, description="The model ID of the embedding model used for similarity."
     )
-    EMBEDDINGS_SIM_HF_TOKENIZER: str = Field(
-        default="FacebookAI/xlm-roberta-base", description="The model ID of the tokenizer"
+    EMBEDDINGS_SIM_HF_TOKENIZER: str | None = Field(
+        default=None,
+        description="The model ID of the HF tokenizer for the similarity embeddings model",
     )
-    EMBEDDINGS_SIM_MAX_SEQUENCE: int = Field(default=512, description="The maximum sequence length in tokens.")
+    EMBEDDINGS_SIM_MAX_SEQUENCE: int = Field(
+        default=512, description="The maximum sequence length in characters (or tokens if HF tokenizer configured)."
+    )
 
     # Populate these vars to enable lora citations via granite-io
     # Otherwise agent will fall back on default implementation
