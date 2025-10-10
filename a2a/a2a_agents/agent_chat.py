@@ -1,8 +1,10 @@
 from collections.abc import AsyncGenerator
 
-from a2a.types import AgentSkill, Message, Role
+from a2a.types import AgentSkill, Role
+from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
 from beeai_framework.backend import AssistantMessage, ChatModelNewTokenEvent, UserMessage
+from beeai_framework.backend.message import AnyMessage
 from beeai_sdk.a2a.extensions import (
     AgentDetail,
     AgentDetailContributor,
@@ -27,7 +29,7 @@ log_settings(core_settings)
 server = Server()
 
 
-def to_framework_messages(history: list[Message]) -> list[UserMessage | AssistantMessage]:
+def to_framework_messages(history: list[A2AMessage]) -> list[AnyMessage]:
     """
     Converts a list of messages into a list of framework messages, separating user and agent turns.
 
@@ -35,7 +37,7 @@ def to_framework_messages(history: list[Message]) -> list[UserMessage | Assistan
         history (list[Message]): A list of messages containing user and agent turns.
 
     Returns:
-        list[UserMessage | AssistantMessage]: A list of framework messages, where each message represents
+        list[AnyMessage]: A list of framework messages, where each message represents
             either a user or an agent's input, depending on the turn.
     """
 
@@ -44,7 +46,7 @@ def to_framework_messages(history: list[Message]) -> list[UserMessage | Assistan
     # mark whether User or Agent turns are being processed, user always goes first
     current_role = Role.user
     # return a list of framework messages
-    framework_messages: list[UserMessage | AssistantMessage] = []
+    framework_messages: list[AnyMessage] = []
 
     for message in history:
         # there can be multiple message parts in any given message, join these together
@@ -65,6 +67,8 @@ def to_framework_messages(history: list[Message]) -> list[UserMessage | Assistan
                     # if switching to User, add an Agent message to the output
                     framework_messages.append(AssistantMessage(text_from_this_turn))
                     current_role = Role.user
+                case _:
+                    logger.error("Unknown user role in message history")
 
             # when switching between User and Agent, start a new buffer
             text_from_this_turn = all_parts
@@ -74,7 +78,7 @@ def to_framework_messages(history: list[Message]) -> list[UserMessage | Assistan
 
 @server.agent(
     name="Granite Chat",
-    description="This agent leverages the Granite 3.3 large language model for general chat.",
+    description="This agent leverages the IBM Granite models for general chat.",
     documentation_url="https://github.ibm.com/research-design-tech-experiences/granite-agents/",
     version=__version__,
     default_input_modes=["text/plain", "text/markdown"],
@@ -96,15 +100,14 @@ def to_framework_messages(history: list[Message]) -> list[UserMessage | Assistan
     ],
 )
 async def chat(
-    input: Message,
+    input: A2AMessage,
     context: RunContext,
 ) -> AsyncGenerator:
     user_message = get_message_text(input)
     logger.info(f"User: {user_message}")
 
-    history = [
-        message async for message in context.store.load_history() if isinstance(message, Message) and message.parts
-    ]
+    await context.store(input)
+    history = [message async for message in context.load_history() if isinstance(message, A2AMessage) and message.parts]
     messages = to_framework_messages(history)
     messages.append(UserMessage(user_message))
 
@@ -115,10 +118,13 @@ async def chat(
             async for event, _ in chat_model.create(messages=messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
                     agent_response_text = event.value.get_text_content()
-                    yield AgentMessage(text=agent_response_text)
+                    agent_message = AgentMessage(text=agent_response_text)
+                    yield agent_message
+                    await context.store(agent_message)
                     final_agent_response_text += agent_response_text
         logger.info(f"Agent: {final_agent_response_text}")
     except BaseException as e:
+        logger.exception("Chat agent error, threw exception...")
         yield AgentMessage(text=str(e))
 
 
