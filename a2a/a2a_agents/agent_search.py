@@ -9,6 +9,9 @@ from beeai_framework.backend import Message as FrameworkMessage
 from beeai_sdk.a2a.extensions import (
     AgentDetail,
     AgentDetailContributor,
+    Citation,
+    CitationExtensionServer,
+    CitationExtensionSpec,
     TrajectoryExtensionServer,
     TrajectoryExtensionSpec,
 )
@@ -18,7 +21,10 @@ from beeai_sdk.server.context import RunContext
 from beeai_sdk.server.store.platform_context_store import PlatformContextStore
 from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
+from granite_core.citations.citations import CitationGeneratorFactory
+from granite_core.citations.events import CitationEvent
 from granite_core.config import settings as core_settings
+from granite_core.emitter import Event
 from granite_core.logging import get_logger
 from granite_core.search.prompts import SearchPrompts
 from granite_core.search.tool import SearchTool
@@ -64,6 +70,7 @@ async def chat(
     input: A2AMessage,
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
 ) -> AsyncGenerator:
     user_message = get_message_text(input)
     logger.info(f"User: {user_message}")
@@ -96,11 +103,12 @@ async def chat(
         else:
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
-        # trajectory message: search start
+        # trajectory message: search complete
         metadata = trajectory.trajectory_metadata(title="Searching the web", content="complete")
         yield metadata
         await context.store(AgentMessage(metadata=metadata))
 
+        # yield response
         async with chat_pool.throttle():
             async for event, _ in chat_model.create(messages=messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
@@ -110,8 +118,47 @@ async def chat(
                     await context.store(agent_message)
                     final_agent_response_text += agent_response_text
         logger.info(f"Agent: {final_agent_response_text}")
+
+        # Yield citations
+        if len(docs) > 0:
+            # trajectory message: citations start
+            metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
+            yield metadata
+            await context.store(AgentMessage(metadata=metadata))
+
+            # generate citations
+            citations: list[Citation] = []
+
+            async def citation_handler(event: Event) -> None:
+                if isinstance(event, CitationEvent):
+                    logger.info(f"Citation: {event.citation.url}")
+                    citation = Citation(
+                        url=event.citation.url,
+                        title=event.citation.title,
+                        description=event.citation.context_text,
+                        start_index=event.citation.start_index,
+                        end_index=event.citation.end_index,
+                    )
+                    citations.append(citation)
+
+            generator = CitationGeneratorFactory.create()
+            generator.subscribe(handler=citation_handler)
+            await generator.generate(docs=docs, response=final_agent_response_text)
+
+            # yield citations
+            message = AgentMessage(
+                metadata=(citation.citation_metadata(citations=citations) if citations else None),
+            )
+            yield message
+            await context.store(message)
+
+            # trajectory message: citations complete
+            metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
+            yield metadata
+            await context.store(AgentMessage(metadata=metadata))
+
     except BaseException as e:
-        logger.exception("Chat agent error, threw exception...")
+        logger.exception("Search agent error, threw exception...")
         yield AgentMessage(text=str(e))
 
 
