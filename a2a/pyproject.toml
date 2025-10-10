@@ -49,9 +49,6 @@ dev = [
     "pre-commit>=4.2.0",
     "pytest>=8.4.2",
     "ruff>=0.11.10",
-    "types-aiofiles>=24.1.0.20250801",
-    "types-cachetools>=6.1.0.20250717",
-    "types-colorama>=0.4.15.20240311",
 ]
 
 [tool.pytest.ini_options]
