@@ -12,7 +12,6 @@ class Settings(BaseSettings):
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
     TWO_STEP_THINKING: bool = Field(default=False, description="Enable two step thinking.")
-    MEMORY_STORE_TTL_MINS: int = Field(default=20, description="Memory store key timeout")
 
     # Key Store
     KEY_STORE_PROVIDER: Literal["redis"] | None = None

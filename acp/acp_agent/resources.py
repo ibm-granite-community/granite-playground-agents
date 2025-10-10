@@ -1,26 +1,35 @@
-from acp_sdk import ResourceLoader, ResourceStore, ResourceUrl
-from cachetools import LFUCache
-from granite_core.logging import get_logger
-from obstore.store import S3Store
+from contextlib import suppress
+from datetime import timedelta
 
+from acp_sdk import ResourceLoader, ResourceStore, ResourceUrl
+from acp_sdk.models import Message
+from acp_sdk.models.types import ResourceId
+from granite_core.logging import get_logger
+from obstore.store import ObjectStore, S3Store
+from pydantic import ValidationError
+
+from acp_agent.cache import AsyncLRUCache
 from acp_agent.config import settings
 
 logger = get_logger(__name__)
 
 
 class AsyncCachingResourceLoader(ResourceLoader):
-    cache: LFUCache = LFUCache(maxsize=2000)
+    cache: AsyncLRUCache[str, bytes] = AsyncLRUCache(max_size=500)
 
     async def load(self, url: ResourceUrl) -> bytes:  # type: ignore[override]
-        if url in self.cache:
-            return self.cache[url]
+        key = str(url)
 
-        response = await self._client.get(str(url))
+        value = await self.cache.get(key)
+        if value is not None:
+            return value
+
+        response = await self._client.get(key)
         response.raise_for_status()
-        data = await response.aread()
+        value = await response.aread()
 
-        self.cache[url] = data
-        return data
+        await self.cache.set(key, value)
+        return value
 
 
 class ResourceStoreFactory:
@@ -34,7 +43,7 @@ class ResourceStoreFactory:
             and settings.S3_SECRET_ACCESS_KEY
         ):
             logger.info("Found a valid S3 RESOURCE_STORE_PROVIDER")
-            return ResourceStore(
+            return CompressingResourceStore(
                 store=S3Store(
                     bucket=settings.S3_BUCKET,
                     endpoint=settings.S3_ENDPOINT,
@@ -43,3 +52,21 @@ class ResourceStoreFactory:
                 )
             )
         return None
+
+
+class CompressingResourceStore(ResourceStore):
+    def __init__(self, *, store: ObjectStore, presigned_url_expiration: timedelta = timedelta(days=7)) -> None:
+        self._store = store
+        self._presigned_url_expiration = presigned_url_expiration
+
+    async def store(
+        self,
+        id: ResourceId,
+        data: bytes,
+    ) -> None:
+        # Compress outgoing messages
+        with suppress(ValidationError):
+            message = Message.model_validate_json(data)
+            data = message.model_dump_json().encode()
+
+        await self._store.put_async(str(id), data)

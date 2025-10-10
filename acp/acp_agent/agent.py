@@ -435,7 +435,9 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
                     create_usage_info(cast(ChatModelSuccessEvent, event.event).value.usage, chat_model.model_id)
                 )
             elif isinstance(event, TrajectoryEvent):
-                await context.yield_async(MessagePart(metadata=TrajectoryMetadata(message=event.to_markdown())))
+                await context.yield_async(
+                    MessagePart(content="", metadata=TrajectoryMetadata(message=event.to_markdown()))
+                )
             elif isinstance(event, GeneratingCitationsEvent):
                 await context.yield_async(GeneratingCitationsPhase(status=Status.active).wrapped)
             elif isinstance(event, CitationEvent):
@@ -499,9 +501,7 @@ async def granite_research_hands_off(input: list[Message], context: Context) -> 
         yield mp
 
 
-store: PrefixRouterMemoryStore = PrefixRouterMemoryStore(
-    ttl=settings.MEMORY_STORE_TTL_MINS * 60, debounce=settings.MEM_STORE_NOTIFICATION_DEBOUNCE
-)
+store: PrefixRouterMemoryStore = PrefixRouterMemoryStore(debounce=settings.MEM_STORE_NOTIFICATION_DEBOUNCE)
 
 if settings.KEY_STORE_PROVIDER == "redis" and settings.REDIS_CLIENT_URL is not None:
     logger.info("Found a valid redis KEY_STORE_PROVIDER")

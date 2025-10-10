@@ -9,12 +9,13 @@ from acp_sdk import AsyncIterator, BaseModel
 from acp_sdk.server import MemoryStore
 from acp_sdk.server.store.store import Store, StoreModel, StoreView, T
 from acp_sdk.server.store.utils import Stringable
-from aiocache import Cache
+
+from acp_agent.cache import AsyncLRUCache
 
 U_co = TypeVar("U_co", bound=BaseModel, covariant=True)
 
 
-class AsyncDebouncingMemoryStory(MemoryStore[T]):
+class AsyncDebouncingMemoryStore(MemoryStore[T]):
     def __init__(
         self,
         *,
@@ -23,19 +24,23 @@ class AsyncDebouncingMemoryStory(MemoryStore[T]):
         debounce: float = 0.2,
     ) -> None:
         super().__init__(limit=limit, ttl=ttl)
-        self._t_cache: Cache[str, str] = Cache(Cache.MEMORY, ttl=ttl)
+        self._t_cache: AsyncLRUCache[str, dict] = AsyncLRUCache(max_size=500)
         self._lock = asyncio.Lock()
         self._watchers: dict[str, set[asyncio.Event]] = {}
         self._batch_tasks: dict[str, asyncio.Task] = {}
         self._batch_delay = debounce
 
+    async def get(self, key: Stringable) -> T | None:
+        value = await self._t_cache.get(str(key))
+        return cast(T, StoreModel(**value)) if value else value
+
     async def set(self, key: Stringable, value: T | None) -> None:
         key_str = str(key)
 
         if value is None:
-            await self._t_cache.pop(key_str, None)
+            await self._t_cache.delete(key_str)
         else:
-            await self._t_cache.set(key_str, value.model_dump_json())
+            await self._t_cache.set(key_str, value.model_dump())
 
         # schedule batch notification for this key
         async with self._lock:
@@ -70,7 +75,7 @@ class AsyncDebouncingMemoryStory(MemoryStore[T]):
             yield await self.get(key_str)
 
 
-class PrefixRouterMemoryStore(AsyncDebouncingMemoryStory[T]):
+class PrefixRouterMemoryStore(AsyncDebouncingMemoryStore[T]):
     def __init__(
         self,
         *,
@@ -80,7 +85,6 @@ class PrefixRouterMemoryStore(AsyncDebouncingMemoryStory[T]):
     ) -> None:
         super().__init__(limit=limit, ttl=ttl, debounce=debounce)
         self.prefix_store_map: dict[str, Store] = {}
-        self._t_cache: Cache[str, str] = Cache(Cache.MEMORY, ttl=ttl)
 
     def map_prefix(self, prefix: str, store: Store) -> None:
         self.prefix_store_map[prefix] = store
@@ -91,7 +95,3 @@ class PrefixRouterMemoryStore(AsyncDebouncingMemoryStory[T]):
         else:
             # Default to self memory store
             return StoreView(model=model, store=self, prefix=prefix)
-
-    async def get(self, key: Stringable) -> T | None:
-        value = await self._t_cache.get(str(key))
-        return cast(T, StoreModel.model_validate_json(value)) if value else value

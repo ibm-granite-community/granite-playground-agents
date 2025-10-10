@@ -61,6 +61,7 @@ def to_citation_message_part(citation: Citation) -> MessagePart:
         MessagePart: A message part containing the CitationMetadata
     """
     return MessagePart(
+        content="",
         metadata=CitationMetadata(
             url=citation.url,
             title=citation.title,
