@@ -48,8 +48,6 @@ server = Server()
     description="This agent leverages the IBM Granite models and Internet connected search.",
     documentation_url="https://github.ibm.com/research-design-tech-experiences/granite-agents/",
     version=__version__,
-    default_input_modes=["text/plain", "text/markdown"],
-    default_output_modes=["text/plain"],
     detail=AgentDetail(
         interaction_mode="multi-turn",
         user_greeting="Hi, I'm Granite! How can I help you?",
@@ -59,14 +57,14 @@ server = Server()
     ),
     skills=[
         AgentSkill(
-            id="chat",
-            name="Chat",
+            id="search",
+            name="Search",
             description="Chat with the model that's enabled with Internet connected search",
-            tags=["chat"],
+            tags=["chat", "search"],
         )
     ],
 )
-async def chat(
+async def search(
     input: A2AMessage,
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
