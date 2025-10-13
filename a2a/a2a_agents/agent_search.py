@@ -99,7 +99,7 @@ async def search(
         await context.store(AgentMessage(metadata=metadata))
 
         # run the search
-        search_tool = SearchTool(chat_model=structured_chat_model, session_id=str(context.context_id))
+        search_tool = SearchTool(chat_model=structured_chat_model, session_id=context.context_id)
         docs: list[Document] = await search_tool.search(messages)
 
         if len(docs) > 0:
