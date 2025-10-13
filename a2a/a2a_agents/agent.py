@@ -27,6 +27,7 @@ from granite_core.utils import log_settings
 
 from a2a_agents import __version__
 from a2a_agents.agent_chat import chat
+from a2a_agents.agent_research import research
 from a2a_agents.agent_search import search
 from a2a_agents.config import settings
 
@@ -101,6 +102,9 @@ async def agent(
                 yield response
         case "search":
             async for response in search(input, context, trajectory, citation):
+                yield response
+        case "research":
+            async for response in research(input, context, trajectory, citation):
                 yield response
 
 
