@@ -8,7 +8,7 @@ from beeai_sdk.a2a.extensions import (
     AgentDetail,
     AgentDetailContributor,
 )
-from beeai_sdk.a2a.types import AgentMessage
+from beeai_sdk.a2a.types import AgentMessage, RunYield
 from beeai_sdk.server import Server
 from beeai_sdk.server.context import RunContext
 from beeai_sdk.server.store.platform_context_store import PlatformContextStore
@@ -23,9 +23,6 @@ from a2a_agents.config import settings
 from a2a_agents.utils import to_framework_messages
 
 logger = get_logger(__name__)
-log_settings(settings, name="Agent")
-log_settings(core_settings)
-
 server = Server()
 
 
@@ -50,10 +47,19 @@ server = Server()
         )
     ],
 )
+async def agent(
+    input: A2AMessage,
+    context: RunContext,
+) -> AsyncGenerator[RunYield, A2AMessage]:
+    # this allows provision of an undecorated chat function that can be imported elsewhere
+    async for response in chat(input, context):
+        yield response
+
+
 async def chat(
     input: A2AMessage,
     context: RunContext,
-) -> AsyncGenerator:
+) -> AsyncGenerator[RunYield, A2AMessage]:
     user_message = get_message_text(input)
     logger.info(f"User: {user_message}")
 
@@ -80,6 +86,8 @@ async def chat(
 
 
 if __name__ == "__main__":
+    log_settings(settings, name="Agent")
+    log_settings(core_settings)
     server.run(
         host=settings.HOST,
         port=settings.PORT,
