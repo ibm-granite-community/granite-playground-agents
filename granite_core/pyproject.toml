@@ -27,7 +27,7 @@ dependencies = [
     'scikit-learn>=1.7.1',
     'tavily-python>=0.7.7',
     'transformers>=4.49.0',
-    "uvicorn<0.36.0",
+    "uvicorn>=0.35.0",
 ]
 
 [tool.ruff]

@@ -9,6 +9,7 @@ dependencies = [
     "granite-core",
     "obstore>=0.7.0",
     "redis>=6.2.0",
+    "uvicorn<0.36.0",
 ]
 
 [tool.ruff]

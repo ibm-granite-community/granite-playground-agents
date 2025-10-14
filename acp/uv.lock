@@ -24,6 +24,7 @@ dependencies = [
     { name = "granite-core" },
     { name = "obstore" },
     { name = "redis" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -44,6 +45,7 @@ requires-dist = [
     { name = "granite-core", editable = "../granite_core" },
     { name = "obstore", specifier = ">=0.7.0" },
     { name = "redis", specifier = ">=6.2.0" },
+    { name = "uvicorn", specifier = "<0.36.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1088,7 +1090,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "tavily-python", specifier = ">=0.7.7" },
     { name = "transformers", specifier = ">=4.49.0" },
-    { name = "uvicorn", specifier = "<0.36.0" },
+    { name = "uvicorn", specifier = ">=0.35.0" },
 ]
 
 [package.metadata.requires-dev]
