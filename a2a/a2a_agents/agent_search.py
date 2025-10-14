@@ -7,8 +7,6 @@ from a2a.utils.message import get_message_text
 from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
 from beeai_framework.backend import Message as FrameworkMessage
 from beeai_sdk.a2a.extensions import (
-    AgentDetail,
-    AgentDetailContributor,
     Citation,
     CitationExtensionServer,
     CitationExtensionSpec,
@@ -33,42 +31,31 @@ from granite_core.work import chat_pool
 from langchain_core.documents import Document
 
 from a2a_agents import __version__
-from a2a_agents.config import settings
+from a2a_agents.config import agent_detail, settings
 from a2a_agents.utils import to_framework_messages
 
 logger = get_logger(__name__)
 server = Server()
 
+search_skill = AgentSkill(
+    id="search",
+    name="Search",
+    description="Chat with the model that's enabled with Internet connected search",
+    tags=["chat", "search"],
+    examples=[
+        "What are the latest innovations in long term memory for LLMs?",
+        "What is the LLM usage policy at NeurIPS?",
+        "What are the best cities to work remotely from for a month — with reliable Wi-Fi, affordable rentals, reliable infrastructure, and good coffee shops or co-working spaces? Focus on destinations in Europe.",  # noqa: E501
+    ],
+)
+
 
 @server.agent(
     name="Granite Search",
     description="This agent leverages the IBM Granite models and Internet connected search.",
-    url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-    documentation_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
     version=__version__,
-    detail=AgentDetail(
-        interaction_mode="multi-turn",
-        user_greeting="Hi, I'm Granite! How can I help you?",
-        framework="BeeAI",
-        license="Apache 2.0",
-        programming_language="Python",
-        homepage_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-        source_code_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-        author=AgentDetailContributor(name="IBM Research", url="https://www.ibm.com"),
-    ),
-    skills=[
-        AgentSkill(
-            id="search",
-            name="Search",
-            description="Chat with the model that's enabled with Internet connected search",
-            tags=["chat", "search"],
-            examples=[
-                "What are the latest innovations in long term memory for LLMs?"
-                "What is the LLM usage policy at NeurIPS?"
-                "What are the best cities to work remotely from for a month — with reliable Wi-Fi, affordable rentals, reliable infrastructure, and good coffee shops or co-working spaces? Focus on destinations in Europe."  # noqa: E501
-            ],
-        )
-    ],
+    detail=agent_detail,
+    skills=[search_skill],
 )
 async def agent(
     input: A2AMessage,

@@ -4,10 +4,6 @@ from a2a.types import AgentSkill
 from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
 from beeai_framework.backend import ChatModelNewTokenEvent, UserMessage
-from beeai_sdk.a2a.extensions import (
-    AgentDetail,
-    AgentDetailContributor,
-)
 from beeai_sdk.a2a.types import AgentMessage, RunYield
 from beeai_sdk.server import Server
 from beeai_sdk.server.context import RunContext
@@ -19,42 +15,31 @@ from granite_core.utils import log_settings
 from granite_core.work import chat_pool
 
 from a2a_agents import __version__
-from a2a_agents.config import settings
+from a2a_agents.config import agent_detail, settings
 from a2a_agents.utils import to_framework_messages
 
 logger = get_logger(__name__)
 server = Server()
 
+chat_skill = AgentSkill(
+    id="chat",
+    name="Chat",
+    description="Chat with the model with no external influence",
+    tags=["chat"],
+    examples=[
+        "Explain how RSUs work. I just got offered RSUs in a job offer — what exactly are they and how do they pay out? Break down how RSUs work, including how they vest, the tax implications at each stage, and how I might think about their long-term value compared to salary or stock options.",  # noqa: E501
+        "Write a thank you note to my colleague Elaine who is celebrating her 10-year work anniversary. Make it short but mention her important contributions to the Granite project and her valuable mentorship of new team members.",  # noqa: E501
+        "Help me ideate compelling and distinctive project names for my research work on autonomous web agents. The names should feel futuristic but grounded, relevant to AI or web infrastructure, and easy to remember. Provide 5 options with short rationale for each.",  # noqa: E501
+    ],
+)
+
 
 @server.agent(
     name="Granite Chat",
     description="This agent leverages the IBM Granite models for general chat.",
-    url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-    documentation_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
     version=__version__,
-    detail=AgentDetail(
-        interaction_mode="multi-turn",
-        user_greeting="Hi, I'm Granite! How can I help you?",
-        framework="BeeAI",
-        license="Apache 2.0",
-        programming_language="Python",
-        homepage_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-        source_code_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-        author=AgentDetailContributor(name="IBM Research", url="https://www.ibm.com"),
-    ),
-    skills=[
-        AgentSkill(
-            id="chat",
-            name="Chat",
-            description="Chat with the model with no external influence",
-            tags=["chat"],
-            examples=[
-                "Explain how RSUs work. I just got offered RSUs in a job offer — what exactly are they and how do they pay out? Break down how RSUs work, including how they vest, the tax implications at each stage, and how I might think about their long-term value compared to salary or stock options."  # noqa: E501
-                "Write a thank you note to my colleague Elaine who is celebrating her 10-year work anniversary. Make it short but mention her important contributions to the Granite project and her valuable mentorship of new team members."  # noqa: E501
-                "Help me ideate compelling and distinctive project names for my research work on autonomous web agents. The names should feel futuristic but grounded, relevant to AI or web infrastructure, and easy to remember. Provide 5 options with short rationale for each."  # noqa: E501
-            ],
-        )
-    ],
+    detail=agent_detail,
+    skills=[chat_skill],
 )
 async def agent(
     input: A2AMessage,
