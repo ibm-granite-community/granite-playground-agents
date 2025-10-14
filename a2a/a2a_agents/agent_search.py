@@ -43,14 +43,18 @@ server = Server()
 @server.agent(
     name="Granite Search",
     description="This agent leverages the IBM Granite models and Internet connected search.",
-    documentation_url="https://github.ibm.com/research-design-tech-experiences/granite-agents/",
+    url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+    documentation_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
     version=__version__,
     detail=AgentDetail(
         interaction_mode="multi-turn",
         user_greeting="Hi, I'm Granite! How can I help you?",
         framework="BeeAI",
-        author=AgentDetailContributor(name="IBM Research"),
         license="Apache 2.0",
+        programming_language="Python",
+        homepage_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+        source_code_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+        author=AgentDetailContributor(name="IBM Research", url="https://www.ibm.com"),
     ),
     skills=[
         AgentSkill(
@@ -58,6 +62,11 @@ server = Server()
             name="Search",
             description="Chat with the model that's enabled with Internet connected search",
             tags=["chat", "search"],
+            examples=[
+                "What are the latest innovations in long term memory for LLMs?"
+                "What is the LLM usage policy at NeurIPS?"
+                "What are the best cities to work remotely from for a month — with reliable Wi-Fi, affordable rentals, reliable infrastructure, and good coffee shops or co-working spaces? Focus on destinations in Europe."  # noqa: E501
+            ],
         )
     ],
 )

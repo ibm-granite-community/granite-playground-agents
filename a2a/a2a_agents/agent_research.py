@@ -43,21 +43,30 @@ server = Server()
 @server.agent(
     name="Granite Research",
     description="This agent leverages the IBM Granite models and Internet connected deep research.",
-    documentation_url="https://github.ibm.com/research-design-tech-experiences/granite-agents/",
+    url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+    documentation_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
     version=__version__,
     detail=AgentDetail(
         interaction_mode="multi-turn",
         user_greeting="Hi, I'm Granite! How can I help you?",
         framework="BeeAI",
-        author=AgentDetailContributor(name="IBM Research"),
         license="Apache 2.0",
+        programming_language="Python",
+        homepage_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+        source_code_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+        author=AgentDetailContributor(name="IBM Research", url="https://www.ibm.com"),
     ),
     skills=[
         AgentSkill(
             id="research",
             name="Research",
             description="Chat with the model that's enabled with Internet connected deep research",
-            tags=["chat", "search"],
+            tags=["research"],
+            examples=[
+                "Explain the nature and characteristics of neutron stars",
+                "How do credit card rewards influence spending behavior",
+                "Investigate the concept of the Great Filter",
+            ],
         )
     ],
 )
