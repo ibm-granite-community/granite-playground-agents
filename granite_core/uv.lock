@@ -689,7 +689,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "tavily-python", specifier = ">=0.7.7" },
     { name = "transformers", specifier = ">=4.49.0" },
-    { name = "uvicorn" },
+    { name = "uvicorn", specifier = "<0.36.0" },
 ]
 
 [package.metadata.requires-dev]
