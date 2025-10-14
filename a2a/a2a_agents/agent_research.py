@@ -63,7 +63,7 @@ async def agent(
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
 ) -> AsyncGenerator[RunYield, A2AMessage]:
-    # this allows provision of an undecorated search function that can be imported elsewhere
+    # this allows provision of an undecorated research function that can be imported elsewhere
     async for response in research(input, context, trajectory, citation):
         yield response
 
