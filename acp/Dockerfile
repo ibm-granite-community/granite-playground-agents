@@ -1,25 +1,30 @@
-FROM registry.access.redhat.com/ubi9/python-311 AS builder
-COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /bin/
+# Base
+FROM registry.access.redhat.com/ubi10-minimal AS base
 
 WORKDIR /app
 USER root
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    HOME=/tmp
+
+COPY --from=ghcr.io/astral-sh/uv:0.9.2 /uv /bin/
+RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
+    microdnf -y install python3.13
+
+# Build
+FROM base AS builder
 
 COPY granite_core /app/granite_core
 COPY acp /app/acp
 
-ENV PRODUCTION_MODE=True
+RUN uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
 
-RUN uv --directory acp sync --no-dev --no-cache --locked --link-mode copy --no-editable
+# Run
+FROM base AS runner
 
-FROM registry.access.redhat.com/ubi9/python-311 AS runner
-COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /bin/
+USER 1001
 
-WORKDIR /app
-USER root
+COPY --from=builder --chown=1001:1001 /app/acp /app
 
-COPY --from=builder /app/acp /app
-
-ENV PATH="/app/.venv/bin:$PATH" \
-    HOME=/tmp
 
 CMD ["uv", "run", "--no-sync", "-m", "acp_agent.agent"]
