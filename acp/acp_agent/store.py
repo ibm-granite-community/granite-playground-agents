@@ -23,12 +23,12 @@ class AsyncDebouncingMemoryStore(MemoryStore[T]):
     def __init__(
         self,
         *,
-        limit: int = 1000,
+        limit: int = 100,
         ttl: int | None = timedelta(hours=1),  # type: ignore
         debounce: float = 0.2,
     ) -> None:
         super().__init__(limit=limit, ttl=ttl)
-        self._t_cache: AsyncLRUCache[str, dict] = AsyncLRUCache(max_size=500)
+        self._t_cache: AsyncLRUCache[str, dict] = AsyncLRUCache(max_size=limit)
         self._lock = asyncio.Lock()
         self._watchers: dict[str, set[asyncio.Event]] = {}
         self._batch_tasks: dict[str, asyncio.Task] = {}
@@ -83,7 +83,7 @@ class PrefixRouterMemoryStore(AsyncDebouncingMemoryStore[T]):
     def __init__(
         self,
         *,
-        limit: int = 1000,
+        limit: int = 100,
         ttl: int | None = timedelta(hours=1),  # type: ignore
         debounce: float = 0.2,
     ) -> None:

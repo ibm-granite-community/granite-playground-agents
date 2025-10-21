@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 class AsyncCachingResourceLoader(ResourceLoader):
-    cache: AsyncLRUCache[str, bytes] = AsyncLRUCache(max_size=500)
+    cache: AsyncLRUCache[str, bytes] = AsyncLRUCache(max_size=100)
 
     async def load(self, url: ResourceUrl) -> bytes:  # type: ignore[override]
         key = str(url)
