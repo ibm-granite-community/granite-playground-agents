@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 from a2a.types import Message as A2AMessage
 from a2a.types import Role
 from beeai_framework.backend import AssistantMessage, UserMessage

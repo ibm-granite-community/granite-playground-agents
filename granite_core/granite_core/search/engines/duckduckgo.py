@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 from ddgs import DDGS
 
 from granite_core.config import settings

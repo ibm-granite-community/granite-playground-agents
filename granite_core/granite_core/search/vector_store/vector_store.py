@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 """
 Wrapper for langchain vector store
 Enables configurable chunk size

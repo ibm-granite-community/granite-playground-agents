@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 from abc import ABC, abstractmethod
 
 from granite_core.search.types import SearchResult

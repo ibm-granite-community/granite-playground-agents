@@ -62,3 +62,13 @@ repos:
         name: uv lock a2a
         files: a2a/pyproject.toml
         args: [--directory, a2a]
+  - repo: local
+    hooks:
+      - id: check-header
+        name: check header
+        description: Adds a standard header to Python files
+        entry: python scripts/check_header.py
+        language: python
+        types: [file, python]
+        args: [--files]
+

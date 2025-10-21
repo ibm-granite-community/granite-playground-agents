@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 from acp_sdk import CitationMetadata, MessagePart
 from acp_sdk import Message as ACPMessage
 from beeai_framework.backend import AssistantMessage, UserMessage
