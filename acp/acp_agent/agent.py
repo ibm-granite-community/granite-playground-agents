@@ -121,7 +121,7 @@ def log_context(context: Context) -> None:
     ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
-    hb = Heartbeat(context=context)
+    hb = Heartbeat(context=context, interval=settings.HEARTBEAT_INTERVAL)
     hb.start()
 
     try:
@@ -186,7 +186,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
-    hb = Heartbeat(context=context)
+    hb = Heartbeat(context=context, interval=settings.HEARTBEAT_INTERVAL)
     hb.start()
 
     try:
@@ -303,7 +303,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     ),  # type: ignore[call-arg]
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
-    hb = Heartbeat(context=context)
+    hb = Heartbeat(context=context, interval=settings.HEARTBEAT_INTERVAL)
     hb.start()
 
     try:
@@ -411,7 +411,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     ),  # type: ignore[call-arg]
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
-    hb = Heartbeat(context=context)
+    hb = Heartbeat(context=context, interval=settings.HEARTBEAT_INTERVAL)
     hb.start()
 
     try:

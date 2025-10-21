@@ -1,15 +1,18 @@
 import asyncio
+from datetime import UTC
 
+from acp_sdk import Field, datetime
 from acp_sdk.server import Context
 from pydantic import BaseModel
 
 
 class HeartBeatMessage(BaseModel):
     type: str = "heartbeat"
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Heartbeat:
-    def __init__(self, context: Context, interval: float = 30) -> None:
+    def __init__(self, context: Context, interval: float = 10) -> None:
         self._context = context
         self._interval = interval
         self._stop_event = asyncio.Event()

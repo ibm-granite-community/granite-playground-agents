@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
     TWO_STEP_THINKING: bool = Field(default=False, description="Enable two step thinking.")
+    HEARTBEAT_INTERVAL: float = Field(default=10, description="Interval between heartbeat messages.")
 
     # Key Store
     KEY_STORE_PROVIDER: Literal["redis"] | None = None
