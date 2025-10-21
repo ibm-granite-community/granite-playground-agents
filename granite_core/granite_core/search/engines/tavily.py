@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 # Portions of this file are derived from the Apache 2.0 licensed project "gpt-researcher"
 # Original source: https://github.com/assafelovic/gpt-researcher/blob/master/gpt_researcher/retrievers/tavily/tavily.py
 # Licensed under the Apache License, Version 2.0 (the "License");

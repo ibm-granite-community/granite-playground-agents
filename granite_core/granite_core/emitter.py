@@ -1,3 +1,7 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
+
 import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
