@@ -101,8 +101,8 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
             async with task_pool.throttle():
                 results = await engine.search(query=query, max_results=max_results)
 
-            results = await self.search_results_filter.filter(query=query, results=results)
-            for r in results:
+            filtered_results = await self.search_results_filter.filter(query=query, results=results)
+            for r in filtered_results:
                 self.add_search_result(r)
         except Exception as e:
             self.logger.exception(repr(e))
