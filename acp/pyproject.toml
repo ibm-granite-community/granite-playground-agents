@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "acp-sdk==1.0.1",
+    "docling-parse>=4.7.0",
     "granite-core",
     "obstore>=0.7.0",
     "redis>=6.2.0",
