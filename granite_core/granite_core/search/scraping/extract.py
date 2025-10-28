@@ -23,7 +23,7 @@ from granite_core.events import TrajectoryEvent
 from granite_core.logging import get_logger_with_prefix
 from granite_core.search.scraping import BeautifulSoupScraper
 from granite_core.search.scraping.arxiv import ArxivScraper
-from granite_core.search.scraping.pymupdf import PyMuPDFScraper
+from granite_core.search.scraping.docling import DoclingPDFScraper
 from granite_core.search.scraping.scraper import AsyncScraper, SyncScraper
 from granite_core.search.types import ScrapedContent, SearchResult
 from granite_core.work import task_pool
@@ -156,7 +156,7 @@ class ContentExtractor(EventEmitter):
         """
 
         scraper_classes: dict[str, type[AsyncScraper] | type[SyncScraper]] = {
-            "pdf": PyMuPDFScraper,
+            "pdf": DoclingPDFScraper,
             "bs": BeautifulSoupScraper,
             "arxiv": ArxivScraper,
         }

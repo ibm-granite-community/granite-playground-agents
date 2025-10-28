@@ -50,6 +50,7 @@ class DoclingPDFScraper(AsyncScraper):
                             await f.write(chunk)
                 path = temp_filename
             else:
+                # Assumes a local path
                 path = link
 
             pdf_doc: PdfDocument = await asyncio.to_thread(parser.load, path)
