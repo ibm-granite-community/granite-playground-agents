@@ -10,10 +10,10 @@ from beeai_framework.backend import (
     ChatModelNewTokenEvent,
     ChatModelSuccessEvent,
     Message,
+    Role,
     SystemMessage,
     UserMessage,
 )
-from beeai_framework.backend import Message as FrameworkMessage
 from langchain_core.documents import Document
 from pydantic import ValidationError
 
@@ -29,7 +29,13 @@ from granite_core.events import (
 )
 from granite_core.logging import get_logger_with_prefix
 from granite_core.research.prompts import ResearchPrompts
-from granite_core.research.types import ResearchPlanSchema, ResearchQuery, ResearchReport, ResearchTopicSchema
+from granite_core.research.types import (
+    LanguageIdentificationSchema,
+    ResearchPlanSchema,
+    ResearchQuery,
+    ResearchReport,
+    ResearchTopicSchema,
+)
 from granite_core.search.engines.factory import SearchEngineFactory
 from granite_core.search.filter import SearchResultsFilter
 from granite_core.search.mixins import ScrapedContentMixin, SearchResultsMixin
@@ -140,7 +146,7 @@ class Researcher(
         self.add_search_results(search_tool.search_results)
         self.add_scraped_contents(search_tool.scraped_contents)
 
-        search_messages: list[FrameworkMessage] = [
+        search_messages: list[Message] = [
             SystemMessage(content=SearchPrompts.search_system_prompt(docs, include_core_chat=False))
         ]
 
@@ -185,6 +191,27 @@ class Researcher(
         self.add_scraped_contents(scraped_contents)
         # await self._emit(TrajectoryEvent(title="Extracting knowledge"))
 
+    def _get_most_recent_user_message(self) -> Message:
+        return next((message for message in reversed(self.messages) if message.role == Role.USER), self.messages[0])
+
+    async def _get_language(self) -> str:
+        recent_user_message = self._get_most_recent_user_message()
+        async with chat_pool.throttle():
+            response = await self.structured_chat_model.create_structure(
+                schema=LanguageIdentificationSchema,
+                messages=[UserMessage(content=ResearchPrompts.language_identification(recent_user_message.text))],
+                max_retries=settings.MAX_RETRIES,
+            )
+            try:
+                identified_language = LanguageIdentificationSchema(**response.object).language.title()
+                self.logger.info(
+                    f"Writing report in {identified_language} based on the most recent user message: {recent_user_message.text}"  # noqa: E501
+                )
+                return identified_language
+            except Exception:
+                self.logger.info("Writing report in English")
+                return "English"
+
     async def _generate_final_report(self) -> None:
         if self.research_topic is None:
             raise ValueError("No research topic set!")
@@ -196,9 +223,13 @@ class Researcher(
             raise ValueError("No interim reports available!")
 
         # await self._emit(TrajectoryEvent(title="Generating final report"))
+        language = await self._get_language()
 
         prompt = ResearchPrompts.final_report_prompt(
-            topic=self.research_topic, context=self._context, findings=self.interim_reports
+            topic=self.research_topic,
+            context=self._context,
+            findings=self.interim_reports,
+            language=language,
         )
         response: list[str] = []
 

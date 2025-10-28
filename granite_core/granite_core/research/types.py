@@ -28,3 +28,7 @@ class ResearchTopicSchema(BaseModel):
     research_topic: str = Field(
         description="Standalone research topic that clearly and concisely reflects the user's intent."
     )
+
+
+class LanguageIdentificationSchema(BaseModel):
+    language: str = Field(description="The identified language.")
