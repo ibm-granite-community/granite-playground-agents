@@ -9,7 +9,6 @@ dependencies = [
     "granite-core",
     "obstore>=0.7.0",
     "redis>=6.2.0",
-    "uvicorn<0.36.0",
 ]
 
 [tool.ruff]
@@ -47,7 +46,7 @@ ban-relative-imports = "all"
 [tool.uv.sources]
 detect-secrets = { git = "https://github.com/ibm/detect-secrets.git", rev = "master" }
 granite-core = { path = "../granite_core", editable = true }
-acp-sdk = { git = "https://github.com/michael-desmond/acp.git", subdirectory = "python", rev = "v1.0.4" }
+acp-sdk = { git = "https://github.com/michael-desmond/acp.git", subdirectory = "python", tag = "v1.0.4" }
 
 [dependency-groups]
 dev = [
