@@ -170,21 +170,6 @@ pre-commit install
 
 All pre-commit hooks must be run and pass before code is accepted into the repository.
 
-## Debugging with vscode
-
-Due to the monorepo layout used in this repository, each agent can be used with the Python debugger in vscode by creating a `launch.json` file similar to the following example. Please note, the important piece to change is the `cwd` specification that should point to the sub-directory of the agent to be executed in the debugger:
-
-```json
-{
-  "name": "Python Debugger: Current File",
-  "type": "debugpy",
-  "request": "launch",
-  "program": "${file}",
-  "console": "integratedTerminal",
-  "cwd": "${workspaceFolder}/a2a"
-}
-```
-
 ## Containerisation
 
 ### Build
