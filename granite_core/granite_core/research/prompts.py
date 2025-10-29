@@ -17,6 +17,14 @@ class ResearchPrompts:
         pass
 
     @staticmethod
+    def language_identification(prompt: str) -> str:
+        return f"""Identify the following language, if you're not sure then you should say English:\n\n{prompt}"""
+
+    @staticmethod
+    def write_report_in_language(language: str) -> str:
+        return f"\nWrite the report in {language}.\n" if language != "English" else ""
+
+    @staticmethod
     def research_plan_prompt(topic: str, context: str, max_queries: int = 3) -> str:
         return f"""You are a research planner.
 Given a topic and context, generate a list of targeted research questions designed to guide in-depth research on the topic.
@@ -91,7 +99,7 @@ Output format:
 """  # noqa: E501
 
     @staticmethod
-    def final_report_prompt(topic: str, context: str, findings: list[ResearchReport]) -> str:
+    def final_report_prompt(topic: str, context: str, findings: list[ResearchReport], language: str = "English") -> str:
         findings_str = json.dumps(
             [{"theme": f.query.question, "findings": f.report} for f in findings],
             indent=4,
@@ -117,7 +125,7 @@ Here is the structure of the report:
     - End with forward-looking reflections or open questions.
 
 Use # for the report title, ## for Introduction, ## for each main topic section, ### for subsections that expand on a topic, and ## for Conclusion.
-
+{ResearchPrompts.write_report_in_language(language=language)}
 {ChatPrompts.math_format_instructions()}
 
 Topic: {topic}
