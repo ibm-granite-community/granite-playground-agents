@@ -12,15 +12,15 @@ from granite_core.config import settings
 from granite_core.logging import get_logger_with_prefix
 from granite_core.search.engines.factory import SearchEngineFactory
 from granite_core.search.filter import SearchResultsFilter
-from granite_core.search.mixins import ScrapedContentMixin, SearchResultsMixin
+from granite_core.search.mixins import ScrapedSearchResultsMixin, SearchResultsMixin
 from granite_core.search.prompts import SearchPrompts
-from granite_core.search.scraping.web_scraping import scrape_urls
+from granite_core.search.scraping import scrape_search_results
 from granite_core.search.types import SearchQueriesSchema, SearchResult, StandaloneQuerySchema
 from granite_core.search.vector_store.factory import VectorStoreWrapperFactory
 from granite_core.work import chat_pool, task_pool
 
 
-class SearchTool(SearchResultsMixin, ScrapedContentMixin):
+class SearchTool(SearchResultsMixin, ScrapedSearchResultsMixin):
     def __init__(self, chat_model: ChatModel, session_id: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
@@ -44,7 +44,7 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
         await self._browse_urls(self.search_results)
 
         # Load scraped context into vector store
-        await self.vector_store.load(self.scraped_contents)
+        await self.vector_store.load(self.scraped_search_results)
 
         self.logger.info(f'Searching for context => "{standalone_msg}"')
 
@@ -55,13 +55,13 @@ class SearchTool(SearchResultsMixin, ScrapedContentMixin):
         return docs
 
     async def _browse_urls(self, search_results: list[SearchResult]) -> None:
-        scraped_contents, _ = await scrape_urls(
+        scraped_results, _ = await scrape_search_results(
             search_results=search_results,
-            scraper="bs",
+            scraper_key="bs",
             session_id=self.session_id,
             max_scraped_content=settings.SEARCH_MAX_SCRAPED_CONTENT,
         )
-        self.add_scraped_contents(scraped_contents)
+        self.add_scraped_search_results(scraped_results)
 
     async def _generate_search_queries(self, messages: list[Message]) -> list[str]:
         search_query_prompt = SearchPrompts.generate_search_queries_prompt(

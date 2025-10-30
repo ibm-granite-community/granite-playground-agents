@@ -38,9 +38,9 @@ from granite_core.research.types import (
 )
 from granite_core.search.engines.factory import SearchEngineFactory
 from granite_core.search.filter import SearchResultsFilter
-from granite_core.search.mixins import ScrapedContentMixin, SearchResultsMixin
+from granite_core.search.mixins import ScrapedSearchResultsMixin, SearchResultsMixin
 from granite_core.search.prompts import SearchPrompts
-from granite_core.search.scraping.web_scraping import scrape_urls
+from granite_core.search.scraping import scrape_search_results
 from granite_core.search.tool import SearchTool
 from granite_core.search.types import SearchResult
 from granite_core.search.vector_store.factory import VectorStoreWrapperFactory
@@ -50,7 +50,7 @@ from granite_core.work import chat_pool, task_pool
 class Researcher(
     EventEmitter,
     SearchResultsMixin,
-    ScrapedContentMixin,
+    ScrapedSearchResultsMixin,
 ):
     def __init__(
         self,
@@ -108,8 +108,8 @@ class Researcher(
 
         # await self._emit(TrajectoryEvent(title="Performing research"))
 
-        if self.scraped_contents:
-            await self.vector_store.load(self.scraped_contents)
+        if self.scraped_search_results:
+            await self.vector_store.load(self.scraped_search_results)
 
         await self._perform_research()
 
@@ -144,7 +144,7 @@ class Researcher(
 
         # Merge existing search results and scraped content to avoid duplication
         self.add_search_results(search_tool.search_results)
-        self.add_scraped_contents(search_tool.scraped_contents)
+        self.add_scraped_search_results(search_tool.scraped_search_results)
 
         search_messages: list[Message] = [
             SystemMessage(content=SearchPrompts.search_system_prompt(docs, include_core_chat=False))
@@ -180,15 +180,15 @@ class Researcher(
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
 
-        filtered = [s for s in self.search_results if self.contains_scraped_content(s.url)]
-        scraped_contents, _ = await scrape_urls(
-            search_results=filtered,
-            scraper="bs",
+        filtered_search_results = [s for s in self.search_results if self.contains_scraped_search_result(s.url)]
+        scraped_search_results, _ = await scrape_search_results(
+            search_results=filtered_search_results,
+            scraper_key="bs",
             session_id=self.session_id,
             emitter=self,
             max_scraped_content=settings.RESEARCH_MAX_SCRAPED_CONTENT,
         )
-        self.add_scraped_contents(scraped_contents)
+        self.add_scraped_search_results(scraped_search_results)
         # await self._emit(TrajectoryEvent(title="Extracting knowledge"))
 
     def _get_most_recent_user_message(self) -> Message:

@@ -21,15 +21,16 @@ from granite_core.config import settings
 from granite_core.emitter import EventEmitter
 from granite_core.events import TrajectoryEvent
 from granite_core.logging import get_logger_with_prefix
-from granite_core.search.scraping import BeautifulSoupScraper
 from granite_core.search.scraping.arxiv import ArxivScraper
+from granite_core.search.scraping.base import AsyncScraper, SyncScraper
+from granite_core.search.scraping.beautiful_soup import BeautifulSoupScraper
 from granite_core.search.scraping.docling import DoclingPDFScraper
-from granite_core.search.scraping.scraper import AsyncScraper, SyncScraper
-from granite_core.search.types import ScrapedContent, SearchResult
+from granite_core.search.scraping.types import ScrapedSearchResult
+from granite_core.search.types import SearchResult
 from granite_core.work import task_pool
 
 
-class ContentExtractor(EventEmitter):
+class ScraperRunner(EventEmitter):
     """
     Scraper class to extract the content from the links
     """
@@ -59,15 +60,15 @@ class ContentExtractor(EventEmitter):
         self.scraper_key = scraper_key
         self.logger = get_logger_with_prefix(__name__, tool_name="ContentExtractor", session_id=session_id)
 
-    async def run(self) -> list[ScrapedContent]:
+    async def run(self) -> list[ScrapedSearchResult]:
         """
         Extracts the content from the links
         """
-        contents = await asyncio.gather(*(self.extract_data_from_url(s) for s in self.search_results))
+        contents = await asyncio.gather(*(self.scrape_data_from_url(s) for s in self.search_results))
         res = [content for content in contents if content is not None]
         return res
 
-    async def extract_data_from_url(self, search_result: SearchResult) -> ScrapedContent | None:
+    async def scrape_data_from_url(self, search_result: SearchResult) -> ScrapedSearchResult | None:
         """
         Extracts the data from the link with logging
         """
@@ -87,29 +88,29 @@ class ContentExtractor(EventEmitter):
             # Get content
             async with task_pool.throttle():
                 if isinstance(scraper, AsyncScraper):
-                    content, _image_urls, title = await asyncio.wait_for(
+                    scraped_result = await asyncio.wait_for(
                         cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
                         timeout=settings.SCRAPER_TIMEOUT,
                     )
                 else:
                     loop = asyncio.get_running_loop()
                     sync_scraper = cast(SyncScraper, scraper)
-                    (
-                        content,
-                        _image_urls,
-                        title,
-                    ) = await asyncio.wait_for(
+                    scraped_result = await asyncio.wait_for(
                         loop.run_in_executor(task_pool.executor, lambda: sync_scraper.scrape(link, self.client)),
                         timeout=settings.SCRAPER_TIMEOUT,
                     )
 
-            if len(content) < 200:
+            if scraped_result is None:
+                self.logger.warning(f"No scraped result for {link}")
+                return None
+
+            if scraped_result.content is None or len(scraped_result.content) < 200:
                 self.logger.warning(f"Content too short or empty for {link}")
                 return None
 
             # Log results
-            self.logger.info(f"Title: {title}")
-            self.logger.info(f"Content length: {len(content) if content else 0} characters")
+            self.logger.info(f"Title: {scraped_result.title}")
+            self.logger.info(f"Content length: {len(scraped_result.content)} characters")
             # self.logger.info(f"Number of images: {len(image_urls)}")
             self.logger.info(f"URL: {link}")
             self.logger.info("=" * 50)
@@ -119,12 +120,12 @@ class ContentExtractor(EventEmitter):
             async with self._counter_lock:
                 self._content_count += 1
 
-            return ScrapedContent(
+            return ScrapedSearchResult(
                 search_result=search_result,
                 url=link,
-                raw_content=content[: settings.SCRAPER_MAX_CONTENT_LENGTH],
+                raw_content=scraped_result.content[: settings.SCRAPER_MAX_CONTENT_LENGTH],
                 # image_urls=image_urls,
-                title=title,
+                title=scraped_result.title or "",
             )
 
         except TimeoutError as e:

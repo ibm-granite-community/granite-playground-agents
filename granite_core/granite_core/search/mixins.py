@@ -4,7 +4,8 @@
 
 from typing import Any
 
-from granite_core.search.types import ScrapedContent, SearchResult
+from granite_core.search.scraping.types import ScrapedSearchResult
+from granite_core.search.types import SearchResult
 
 
 class SearchResultsMixin:
@@ -28,22 +29,22 @@ class SearchResultsMixin:
         return list(self._search_results.values())
 
 
-class ScrapedContentMixin:
+class ScrapedSearchResultsMixin:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._scraped_content: dict[str, ScrapedContent] = {}
+        self._scraped_search_results: dict[str, ScrapedSearchResult] = {}
         super().__init__(*args, **kwargs)
 
-    def contains_scraped_content(self, url: str) -> bool:
-        return url in self._scraped_content
+    def contains_scraped_search_result(self, url: str) -> bool:
+        return url in self._scraped_search_results
 
-    def add_scraped_contents(self, scraped_contents: list[ScrapedContent]) -> None:
-        for s in scraped_contents:
-            self.add_scraped_content(s)
+    def add_scraped_search_results(self, scraped_search_results: list[ScrapedSearchResult]) -> None:
+        for s in scraped_search_results:
+            self.add_scraped_search_result(s)
 
-    def add_scraped_content(self, scraped_content: ScrapedContent) -> None:
-        if scraped_content.url not in self._scraped_content:
-            self._scraped_content[scraped_content.url] = scraped_content
+    def add_scraped_search_result(self, scraped_search_result: ScrapedSearchResult) -> None:
+        if scraped_search_result.url not in self._scraped_search_results:
+            self._scraped_search_results[scraped_search_result.url] = scraped_search_result
 
     @property
-    def scraped_contents(self) -> list[ScrapedContent]:
-        return list(self._scraped_content.values())
+    def scraped_search_results(self) -> list[ScrapedSearchResult]:
+        return list(self._scraped_search_results.values())

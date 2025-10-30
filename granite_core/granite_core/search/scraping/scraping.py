@@ -17,19 +17,20 @@ from colorama import Fore, Style
 
 from granite_core.emitter import EventEmitter
 from granite_core.logging import get_logger
-from granite_core.search.scraping.extract import ContentExtractor
-from granite_core.search.types import ImageUrl, ScrapedContent, SearchResult
+from granite_core.search.scraping.runner import ScraperRunner
+from granite_core.search.scraping.types import ImageUrl, ScrapedSearchResult
+from granite_core.search.types import SearchResult
 
 logger = get_logger(__name__)
 
 
-async def scrape_urls(
+async def scrape_search_results(
     search_results: list[SearchResult],
-    scraper: str,
+    scraper_key: str,
     session_id: str,
     emitter: EventEmitter | None = None,
     max_scraped_content: int = 10,
-) -> tuple[list[ScrapedContent], list[ImageUrl]]:
+) -> tuple[list[ScrapedSearchResult], list[ImageUrl]]:
     """
     Scrapes the urls
     Args:
@@ -40,15 +41,15 @@ async def scrape_urls(
         tuple[list[ScrapedContent], ç]: tuple containing scraped content and images
 
     """
-    scraped_data = []
+    scraped_data: list[ScrapedSearchResult] = []
     images = []
     user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
 
     try:
-        extractor = ContentExtractor(search_results, user_agent, scraper, session_id, max_scraped_content)
+        scraper = ScraperRunner(search_results, user_agent, scraper_key, session_id, max_scraped_content)
         if emitter is not None:
-            emitter.forward_events_from(extractor)
-        scraped_data = await extractor.run()
+            emitter.forward_events_from(scraper)
+        scraped_data = await scraper.run()
         for item in scraped_data:
             if len(item.image_urls) > 0:
                 images.extend(item.image_urls)

@@ -35,16 +35,3 @@ class SearchResultRelevanceSchema(BaseModel):
 
 class StandaloneQuerySchema(BaseModel):
     query: str = Field(description="Standalone query that clearly and concisely reflects the user's intent.")
-
-
-class ImageUrl(BaseModel):
-    score: float
-    url: str
-
-
-class ScrapedContent(BaseModel):
-    search_result: SearchResult
-    url: str
-    title: str | None = None
-    raw_content: str | None = None
-    image_urls: list[ImageUrl] = []

@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 from bs4 import BeautifulSoup, ResultSet, Tag
 
 from granite_core.logging import get_logger
-from granite_core.search.types import ImageUrl
+from granite_core.search.scraping.types import ImageUrl
 
 logger = get_logger(__name__)
 

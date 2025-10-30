@@ -13,7 +13,8 @@ from docling_parse.pdf_parser import DoclingPdfParser, PdfDocument
 from httpx import AsyncClient, TimeoutException
 
 from granite_core.logging import get_logger
-from granite_core.search.scraping.scraper import AsyncScraper
+from granite_core.search.scraping.base import AsyncScraper
+from granite_core.search.scraping.types import ScrapedContent
 
 logger = get_logger(__name__)
 
@@ -32,7 +33,7 @@ class DoclingPDFScraper(AsyncScraper):
         except Exception:
             return False
 
-    async def ascrape(self, link: str, client: AsyncClient) -> tuple:
+    async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
         parser = DoclingPdfParser()
         temp_filename: str | None = None
 
@@ -61,14 +62,14 @@ class DoclingPDFScraper(AsyncScraper):
                     lines.append(word.text)
 
             content = "\n".join(lines)
-            return content, [], lines[0] if lines else ""
+            return ScrapedContent(content=content, title=lines[0] if lines else "")
 
         except TimeoutException:
             logger.exception(f"Download timed out. Please check the link: {link}")
-            return "", [], ""
+            return None
         except Exception:
             logger.exception(f"Error loading PDF: {link}")
-            return "", [], ""
+            return None
         finally:
             if temp_filename and os.path.exists(temp_filename):
                 os.remove(temp_filename)

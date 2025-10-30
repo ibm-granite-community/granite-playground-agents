@@ -15,11 +15,12 @@
 from httpx import Client
 from langchain_community.retrievers import ArxivRetriever
 
-from granite_core.search.scraping.scraper import SyncScraper
+from granite_core.search.scraping.base import SyncScraper
+from granite_core.search.scraping.types import ScrapedContent
 
 
 class ArxivScraper(SyncScraper):
-    def scrape(self, link: str, _: Client) -> tuple:
+    def scrape(self, link: str, _: Client) -> ScrapedContent | None:
         """
         The function scrapes relevant documents from Arxiv based on a given link and returns the content
         of the first document.
@@ -35,6 +36,5 @@ class ArxivScraper(SyncScraper):
         # Include the published date and author to provide additional context,
         # aligning with APA-style formatting in the report.
         context = f"Published: {docs[0].metadata['Published']}; Author: {docs[0].metadata['Authors']}; Content: {docs[0].page_content}"  # noqa: E501
-        image: list[str] = []
 
-        return context, image, docs[0].metadata["Title"]
+        return ScrapedContent(content=context, title=docs[0].metadata["Title"])

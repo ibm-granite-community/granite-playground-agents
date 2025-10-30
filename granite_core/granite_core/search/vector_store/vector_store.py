@@ -2,11 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-"""
-Wrapper for langchain vector store
-Enables configurable chunk size
-Add document index
-"""
+# Portions of this file are derived from the Apache 2.0 licensed project "gpt-researcher"
+# Original source: https://github.com/assafelovic/gpt-researcher
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Changes made:
+# - Configurable chunk size
+# - Add document index
+
 
 import asyncio
 from functools import partial
@@ -20,7 +27,7 @@ from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
 from granite_core.config import settings
-from granite_core.search.types import ScrapedContent
+from granite_core.search.scraping.types import ScrapedSearchResult
 from granite_core.work import task_pool
 
 
@@ -37,7 +44,7 @@ class VectorStoreWrapper:
         self.chunk_overlap = chunk_overlap
         self.tokenizer = tokenizer
 
-    async def load(self, content: list[ScrapedContent]) -> None:
+    async def load(self, content: list[ScrapedSearchResult]) -> None:
         """
         Load the documents into vector_store
         Translate to langchain doc type, split to chunks then load
@@ -47,7 +54,7 @@ class VectorStoreWrapper:
         await self.vector_store.aadd_documents(splitted_documents)
 
     # TODO: subclass Document for better typing support
-    def _create_langchain_documents(self, scraped_content: list[ScrapedContent]) -> list[Document]:
+    def _create_langchain_documents(self, scraped_content: list[ScrapedSearchResult]) -> list[Document]:
         return [
             Document(
                 page_content=item.raw_content if item.raw_content else "",

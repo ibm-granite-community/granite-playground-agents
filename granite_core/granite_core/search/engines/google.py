@@ -11,6 +11,8 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Changes made:
+# - Simplified Key management
+# - Safe search settings
 
 import json
 
