@@ -56,50 +56,10 @@ logger = get_logger(__name__)
 log_settings(settings, name="Agent")
 log_settings(core_settings)
 
-# This will preload the embeddings tokenizer if set
+# Preload the embeddings tokenizer if set
 EmbeddingsTokenizer.get_instance()
 
 server = Server()
-
-base_env = [
-    {
-        "name": "LLM_MODEL",
-        "description": "Language model name",
-        "required": True,
-    },
-    {
-        "name": "LLM_API_BASE",
-        "description": "Base URL of an OpenAI endpoint where the language model is available",
-        "required": True,
-    },
-    {
-        "name": "LLM_API_KEY",
-        "description": "API Key used to access the OpenAI endpoint",
-        "required": True,
-    },
-]
-
-search_env = [
-    {
-        "name": "GOOGLE_API_KEY",
-        "description": "Google search API Key",
-    },
-    {
-        "name": "GOOGLE_CX_KEY",
-        "description": "Google search engine ID",
-    },
-    {
-        "name": "TAVILY_API_KEY",
-        "description": "Tavily search API key",
-    },
-]
-
-watsonx_env = [
-    {"name": "WATSONX_API_BASE", "description": "Watsonx api base url"},
-    {"name": "WATSONX_PROJECT_ID", "description": "Watsonx project id"},
-    {"name": "WATSONX_REGION", "description": "Watsonx region e.g us-south"},
-    {"name": "WATSONX_API_KEY", "description": "Watsonx api key"},
-]
 
 
 def log_context(context: Context) -> None:
@@ -108,7 +68,7 @@ def log_context(context: Context) -> None:
 
 @server.agent(
     name="granite-chat",
-    description="This agent leverages the Granite 3.3 large language model for general chat.",
+    description="Uses Granite models for general chat.",
     metadata=Metadata(
         annotations=Annotations(
             beeai_ui=PlatformUIAnnotation(
@@ -120,8 +80,7 @@ def log_context(context: Context) -> None:
         framework="BeeAI",
         capabilities=[Capability(name="Chat", description="Chat with the model with no external influence")],
         author=Author(name="IBM Research"),
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        env=base_env,
+        recommended_models=["ibm-granite/granite-4.0-h-small", "ibm-granite/granite-3.3-8b-instruct"],
     ),  # type: ignore[call-arg]
 )
 async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator:
@@ -166,7 +125,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
 @server.agent(
     name="granite-thinking",
-    description="This agent leverages the Granite 3.3 large language model for general chat with reasoning.",
+    description="Uses Granite models for general chat with reasoning.",
     metadata=Metadata(
         annotations=Annotations(
             beeai_ui=PlatformUIAnnotation(
@@ -186,7 +145,6 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
         ],
         author=Author(name="IBM Research"),
         recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        env=base_env,
     ),  # type: ignore[call-arg]
 )
 async def granite_think(input: list[Message], context: Context) -> AsyncGenerator:
@@ -274,7 +232,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
 @server.agent(
     name="granite-search",
-    description="This agent leverages the Granite 3.3 large language model to chat and search the web.",
+    description="Uses Granite models to chat and search the web.",
     metadata=Metadata(
         annotations=Annotations(
             beeai_ui=PlatformUIAnnotation(
@@ -294,16 +252,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
             ),
         ],
         author=Author(name="IBM Research"),
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        env=[
-            *base_env,
-            *search_env,
-            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            *watsonx_env,
-            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
-            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
-            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
-        ],
+        recommended_models=["ibm-granite/granite-4.0-h-small", "ibm-granite/granite-3.3-8b-instruct"],
     ),  # type: ignore[call-arg]
 )
 async def granite_search(input: list[Message], context: Context) -> AsyncGenerator:
@@ -382,7 +331,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
 @server.agent(
     name="granite-research",
-    description="This agent leverages the Granite 3.3 large language model to perform research.",
+    description="Uses Granite models to perform research.",
     metadata=Metadata(
         annotations=Annotations(
             beeai_ui=PlatformUIAnnotation(
@@ -402,16 +351,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             ),
         ],
         author=Author(name="IBM Research"),
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        env=[
-            *base_env,
-            *search_env,
-            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            *watsonx_env,
-            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
-            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
-            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
-        ],
+        recommended_models=["ibm-granite/granite-4.0-h-small", "ibm-granite/granite-3.3-8b-instruct"],
     ),  # type: ignore[call-arg]
 )
 async def granite_research(input: list[Message], context: Context) -> AsyncGenerator:
@@ -466,50 +406,11 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
         await hb.stop()
 
 
-@server.agent(
-    name="granite-research-hands-off",
-    description="This agent leverages the Granite 3.3 large language model to perform research.",
-    metadata=Metadata(
-        annotations=Annotations(
-            beeai_ui=PlatformUIAnnotation(
-                ui_type=PlatformUIType.HANDSOFF,
-                user_greeting="What topic do you want to research?",
-                display_name="Granite Researcher",
-                tools=[AgentToolInfo(name="Search", description="Search engine")],
-            )
-        ),
-        programming_language="Python",
-        natural_languages=["English"],
-        framework="BeeAI",
-        capabilities=[
-            Capability(
-                name="Deep Research",
-                description="Connects the model to a search engine to perform deep research.",
-            ),
-        ],
-        author=Author(name="IBM Research"),
-        recommended_models=["ibm-granite/granite-3.3-8b-instruct"],
-        env=[
-            *base_env,
-            *search_env,
-            {"name": "EMBEDDINGS_PROVIDER", "description": "The embeddings provider to use"},
-            *watsonx_env,
-            {"name": "EMBEDDINGS_OPENAI_API_KEY", "description": "OpenAI api key"},
-            {"name": "EMBEDDINGS_OPENAI_API_BASE", "description": "OpenAI api base"},
-            {"name": "EMBEDDINGS_OPENAI_API_HEADERS", "description": "OpenAI api headers"},
-        ],
-    ),  # type: ignore[call-arg]
-)
-async def granite_research_hands_off(input: list[Message], context: Context) -> AsyncGenerator:
-    async for mp in granite_research(input=input, context=context):
-        yield mp
-
-
 store: PrefixRouterMemoryStore = PrefixRouterMemoryStore(debounce=settings.MEM_STORE_NOTIFICATION_DEBOUNCE)
 
 if settings.KEY_STORE_PROVIDER == "redis" and settings.REDIS_CLIENT_URL is not None:
     logger.info("Found a valid redis KEY_STORE_PROVIDER")
-    redis = Redis().from_url(settings.REDIS_CLIENT_URL)
+    redis = Redis().from_url(settings.REDIS_CLIENT_URL.get_secret_value())
     # Sessions are stored in persistent store, everything else to memory
     store.map_prefix("session_", RedisStore(redis=redis))
 
