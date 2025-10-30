@@ -230,21 +230,6 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
         try:
             docs_as_sentences = [list(self.sentence_splitter.tokenize(d.page_content)) for d in docs]
             docs_as_sentences_flat = [s for sub in docs_as_sentences for s in sub]
-            # # Gate the embedding model
-            # strings_for_embedding: list[str] = []
-            # for s in docs_as_sentences_flat:
-
-            #     token_count = (
-            #         len(self.embeddingsModel.tokenizer.tokenize(s)) + 2
-            #         if self.embeddingsModel.tokenizer
-            #         and isinstance(self.embeddingsModel.tokenizer, PreTrainedTokenizerBase)
-            #         else max(1, (len(s) // 4) + 2)
-            #     )
-
-            #     if token_count <= self.embeddingsModel.max_sequence_length:
-            #         strings_for_embedding.append(s)
-            #     else:
-            #         strings_for_embedding.append("")  # mark as skipped
 
             src_embeddings = await self.embeddingsModel.embeddings.aembed_documents(docs_as_sentences_flat)
             np_src = np.atleast_2d(np.array(src_embeddings))
