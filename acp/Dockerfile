@@ -17,7 +17,8 @@ FROM base AS builder
 COPY granite_core /app/granite_core
 COPY acp /app/acp
 
-RUN uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
+RUN microdnf -y install git && \
+    uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
 
 # Run
 FROM base AS runner
