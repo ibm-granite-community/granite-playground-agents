@@ -8,19 +8,19 @@ from typing import Annotated
 from a2a.types import AgentSkill
 from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
-from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
-from beeai_framework.backend import Message as FrameworkMessage
-from beeai_sdk.a2a.extensions import (
+from agentstack_sdk.a2a.extensions import (
     Citation,
     CitationExtensionServer,
     CitationExtensionSpec,
     TrajectoryExtensionServer,
     TrajectoryExtensionSpec,
 )
-from beeai_sdk.a2a.types import AgentMessage, RunYield
-from beeai_sdk.server import Server
-from beeai_sdk.server.context import RunContext
-from beeai_sdk.server.store.platform_context_store import PlatformContextStore
+from agentstack_sdk.a2a.types import AgentMessage, RunYield
+from agentstack_sdk.server import Server
+from agentstack_sdk.server.context import RunContext
+from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
+from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
+from beeai_framework.backend import Message as FrameworkMessage
 from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
