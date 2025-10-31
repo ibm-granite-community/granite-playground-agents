@@ -15,7 +15,7 @@ Implemented using [beeai-framework](github.com/i-am-bee/beeai-framework/), the a
 
 - Python (version range specified in individual `pyproject.toml` files)
 - UV package manager: https://docs.astral.sh/uv/
-- An A2A client e.g. [BeeAI Platform](https://github.com/i-am-bee/beeai-platform) recommended
+- An A2A client e.g. [Agent Stack](https://github.com/i-am-bee/agentstack) recommended
 - Access to an LLM e.g. [Ollama](https://ollama.com/)
 
 # Getting Started
@@ -34,19 +34,19 @@ The default LLM provider is a local Ollama server. You need to have Ollama downl
    ollama pull nomic-embed-text:latest
    ```
 
-## Setup the BeeAI platform
+## Setup the Agent Stack platform
 
-An A2A client is required to use the agents. The agents are designed to work with the BeeAI Platform and take advantage of several A2A extensions offered by the platform. Follow these steps:
+An A2A client is required to use the agents. The agents are designed to work with the Agent Stack Platform and take advantage of several A2A extensions offered by the platform. Follow these steps:
 
-1. Refer to the [BeeAI quick start guide](https://docs.beeai.dev/introduction/quickstart) to download and install the platform
+1. Refer to the [Agent Stack quick start guide](https://agentstack.beeai.dev/introduction/quickstart) to download and install the platform
 1. Run the platform
 
    ```sh
-   beeai platform start
+   agentstack platform start
    # wait for the platform to fully start before moving on
    ```
 
-There is a [beeai-cli](https://docs.beeai.dev/how-to/cli-reference) reference you can use for further commands but the above is sufficient to get started.
+There is a [agentstack-cli](https://agentstack.beeai.dev/how-to/cli-reference) reference you can use for further commands but the above is sufficient to get started.
 
 ## Run the agents
 
@@ -60,30 +60,30 @@ uv --directory a2a run -m a2a_agents.agent_research
 uv --directory a2a run -m a2a_agents.agent
 ```
 
-After starting the agent, you will see lots of log output. If you're running the BeeAI Platform then the agent will register itself with the platform and you will see the following log message that indicates success:
+After starting the agent, you will see lots of log output. If you're running the Agent Stack Platform then the agent will register itself with the platform and you will see the following log message that indicates success:
 
 ```
-INFO     | beeai_sdk    | Agent registered successfully
+INFO     | agentstack_sdk | Agent registered successfully
 ```
 
-You can now interact with the agents via the BeeAI Platform user interface in your web browser. Run the following to start your web browser at the appropriate page:
+You can now interact with the agents via the Agent Stack Platform user interface in your web browser. Run the following to start your web browser at the appropriate page:
 
 ```sh
-beeai ui
+agentstack ui
 ```
 
 The UI will start in your web browser. Select the ☰ hamburger menu (top left) and click on the Granite agent that you are running. Once selected, you can type your prompt into the input box to run the agent.
 
 > [!TIP]
-> The first time you start the BeeAI Platform UI, you will need to select an LLM back end. Ensure your local Ollama server is running. Use the arrow keys on your keyboard to select `Ollama`. Use the default settings that you're presented with when the platform checks the Ollama connection.
+> The first time you start the Agent Stack Platform UI, you will need to select an LLM back end. Ensure your local Ollama server is running. Use the arrow keys on your keyboard to select `Ollama`. Use the default settings that you're presented with when the platform checks the Ollama connection.
 
 > [!NOTE]
-> BeeAI Platform provides agents with an A2A extension that allows them access to the LLM models provided via the platform. The agents in this repository do not use this functionality since they make their own direct connection to an LLM via their [configuration](#configuration).
+> Agent Stack Platform provides agents with an A2A extension that allows them access to the LLM models provided via the platform. The agents in this repository do not use this functionality since they make their own direct connection to an LLM via their [configuration](#configuration).
 
 <details>
 <summary>Run the ACP agent</summary>
 
-We do not recommend using the ACP version of the agents since the ACP protocol has been deprecated. Access to the ACP agents is via direct HTTP connection since these agents will not work with the BeeAI Platform.
+We do not recommend using the ACP version of the agents since the ACP protocol has been deprecated. Access to the ACP agents is via direct HTTP connection since these agents will not work with the Agent Stack Platform.
 
 Instructions for running and connecting to the ACP agents are available below:
 

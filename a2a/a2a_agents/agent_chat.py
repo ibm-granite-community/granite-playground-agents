@@ -7,11 +7,11 @@ from collections.abc import AsyncGenerator
 from a2a.types import AgentSkill
 from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
+from agentstack_sdk.a2a.types import AgentMessage, RunYield
+from agentstack_sdk.server import Server
+from agentstack_sdk.server.context import RunContext
+from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
 from beeai_framework.backend import ChatModelNewTokenEvent, UserMessage
-from beeai_sdk.a2a.types import AgentMessage, RunYield
-from beeai_sdk.server import Server
-from beeai_sdk.server.context import RunContext
-from beeai_sdk.server.store.platform_context_store import PlatformContextStore
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings as core_settings
 from granite_core.logging import get_logger

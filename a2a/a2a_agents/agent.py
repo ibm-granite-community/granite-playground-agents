@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from a2a.types import Message as A2AMessage
-from beeai_sdk.a2a.extensions import (
+from agentstack_sdk.a2a.extensions import (
     CitationExtensionServer,
     CitationExtensionSpec,
     OptionItem,
@@ -18,10 +18,10 @@ from beeai_sdk.a2a.extensions import (
     TrajectoryExtensionServer,
     TrajectoryExtensionSpec,
 )
-from beeai_sdk.a2a.types import RunYield
-from beeai_sdk.server import Server
-from beeai_sdk.server.context import RunContext
-from beeai_sdk.server.store.platform_context_store import PlatformContextStore
+from agentstack_sdk.a2a.types import RunYield
+from agentstack_sdk.server import Server
+from agentstack_sdk.server.context import RunContext
+from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
 from granite_core.config import settings as core_settings
 from granite_core.logging import get_logger
 from granite_core.utils import log_settings
