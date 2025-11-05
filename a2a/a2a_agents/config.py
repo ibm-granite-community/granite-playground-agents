@@ -21,8 +21,8 @@ agent_detail = AgentDetail(
     framework="BeeAI",
     license="Apache 2.0",
     programming_language="Python",
-    homepage_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
-    source_code_url="https://github.ibm.com/research-design-tech-experiences/beeai-platform-granite-chat/",
+    homepage_url="https://github.com/ibm-granite-community/granite-playground-agents/",
+    source_code_url="https://github.com/ibm-granite-community/granite-playground-agents/",
     author=AgentDetailContributor(name="IBM Research", url="https://www.ibm.com"),
 )
 
