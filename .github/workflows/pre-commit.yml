@@ -26,8 +26,9 @@ jobs:
            uv sync --directory granite_core --frozen --all-extras --group dev
            uv sync --directory acp --frozen --all-extras --group dev
            uv sync --directory a2a --frozen --all-extras --group dev
-    - name: Check style and run tests
-      run: pre-commit run --all-files
+    - uses: pre-commit/action@v3.0.1
+      with:
+        extra_args: --all-files
     - name: Send failure message pre-commit
       if: failure()  # This step will only run if a previous step failed
       run: echo "The quality verification failed. Please run precommit "
