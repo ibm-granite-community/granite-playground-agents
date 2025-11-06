@@ -11,6 +11,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
+    - run: python -m pip install pre-commit
+      shell: bash
+    - run: python -m pip freeze --local
+      shell: bash
     - name: Install uv and set the python version
       uses: astral-sh/setup-uv@v5
       with:
@@ -27,9 +31,8 @@ jobs:
            uv sync --directory granite_core --frozen --all-extras --group dev
            uv sync --directory acp --frozen --all-extras --group dev
            uv sync --directory a2a --frozen --all-extras --group dev
-    - uses: pre-commit/action@v3.0.1
-      with:
-        extra_args: --all-files
+    - name: Pre-commit
+      run: pre-commit --all-files
     - name: Send failure message pre-commit
       if: failure()  # This step will only run if a previous step failed
       run: echo "The quality verification failed. Please run precommit "
