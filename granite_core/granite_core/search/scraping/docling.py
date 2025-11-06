@@ -58,8 +58,9 @@ class DoclingPDFScraper(AsyncScraper):
             lines: list[str] = []
 
             for _, pred_page in pdf_doc.iterate_pages():
-                for word in pred_page.iterate_cells(unit_type=TextCellUnit.LINE):
-                    lines.append(word.text)
+                for line in pred_page.iterate_cells(unit_type=TextCellUnit.LINE):
+                    lines.append(line.text)
+                await asyncio.sleep(0)
 
             content = "\n".join(lines)
             return ScrapedContent(content=content, title=lines[0] if lines else "")
