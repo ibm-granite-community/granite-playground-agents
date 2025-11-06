@@ -32,7 +32,7 @@ jobs:
            uv sync --directory acp --frozen --all-extras --group dev
            uv sync --directory a2a --frozen --all-extras --group dev
     - name: Pre-commit
-      run: pre-commit --all-files
+      run: pre-commit run --all-files
     - name: Send failure message pre-commit
       if: failure()  # This step will only run if a previous step failed
       run: echo "The quality verification failed. Please run precommit "
