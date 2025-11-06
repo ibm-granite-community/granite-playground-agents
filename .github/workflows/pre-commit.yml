@@ -10,5 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-python@v3
-    - uses: pre-commit/action@v3.0.1
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: 3.13
+        enable-cache: true
+    - name: pre-commit cache key
+      run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
+    - name: Install dependencies
+      run: |
+           uv sync --directory granite_core --frozen --all-extras --group dev
+           uv sync --directory acp --frozen --all-extras --group dev
+           uv sync --directory a2a --frozen --all-extras --group dev
+    - name: Check style and run tests
+      run: pre-commit run --all-files
+    - name: Send failure message pre-commit
+      if: failure()  # This step will only run if a previous step failed
+      run: echo "The quality verification failed. Please run precommit "

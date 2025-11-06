@@ -36,7 +36,7 @@ class AsyncDebouncingMemoryStore(MemoryStore[T]):
 
     async def get(self, key: Stringable) -> T | None:
         value = await self._t_cache.get(str(key))
-        return cast(T, StoreModel(**value)) if value else value
+        return cast(T, StoreModel(**value)) if value else None
 
     async def set(self, key: Stringable, value: T | None) -> None:
         key_str = str(key)

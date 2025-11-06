@@ -16,21 +16,21 @@ repos:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
-    hooks:
-    - id: mypy
-      name: mypy for granite_core
-      args: [--ignore-missing-imports, --python-executable, granite_core/.venv/bin/python]
-      files: granite_core
-    - id: mypy
-      name: mypy for acp
-      args: [--ignore-missing-imports, --python-executable, acp/.venv/bin/python]
-      files: acp
-    - id: mypy
-      name: mypy for a2a
-      args: [--ignore-missing-imports, --python-executable, a2a/.venv/bin/python]
-      files: a2a
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.18.2
+  #   hooks:
+  #   - id: mypy
+  #     name: mypy for granite_core
+  #     args: [--ignore-missing-imports]
+  #     files: granite_core
+  #   - id: mypy
+  #     name: mypy for acp
+  #     args: [--ignore-missing-imports, --python-executable, acp/.venv/bin/python]
+  #     files: acp
+  #   - id: mypy
+  #     name: mypy for a2a
+  #     args: [--ignore-missing-imports, --python-executable, a2a/.venv/bin/python]
+  #     files: a2a
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1
     hooks:
@@ -71,4 +71,25 @@ repos:
         language: python
         types: [file, python]
         args: [--files]
+      - id: mypy-granite-core
+        name: mypy granite_core
+        entry: uv run --directory granite_core --no-sync mypy --ignore-missing-imports granite_core
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: granite_core
+      - id: mypy-acp
+        name: mypy acp
+        entry: uv run --directory acp --no-sync mypy --ignore-missing-imports acp_agent
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: acp
+      - id: mypy-a2a
+        name: mypy a2a
+        entry: uv run --directory a2a --no-sync mypy --ignore-missing-imports a2a_agents
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: a2a
 
