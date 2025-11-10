@@ -62,8 +62,10 @@ EmbeddingsTokenizer.get_instance()
 server = Server()
 
 
-def log_context(context: Context) -> None:
+def log_context(input: list[Message], context: Context) -> None:
     logger.info(f">>> Session ID: {context.session.id}")
+    if input:
+        logger.info(f">>> Message: {input[-1]}")
 
 
 @server.agent(
@@ -88,7 +90,7 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
     hb.start()
 
     try:
-        log_context(context)
+        log_context(input, context)
 
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
@@ -152,7 +154,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
     hb.start()
 
     try:
-        log_context(context)
+        log_context(input, context)
 
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
@@ -260,7 +262,8 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
     hb.start()
 
     try:
-        log_context(context)
+        log_context(input, context)
+
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
@@ -359,7 +362,8 @@ async def granite_research(input: list[Message], context: Context) -> AsyncGener
     hb.start()
 
     try:
-        log_context(context)
+        log_context(input, context)
+
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
