@@ -14,7 +14,7 @@ from granite_core.work import chat_pool
 
 
 class SearchResultsFilter:
-    def __init__(self, chat_model: ChatModel, session_id: str) -> None:
+    def __init__(self, chat_model: ChatModel, session_id: str = "") -> None:
         self.chat_model = chat_model
         self.logger = get_logger_with_prefix(__name__, tool_name="SearchResultsFilter", session_id=session_id)
 

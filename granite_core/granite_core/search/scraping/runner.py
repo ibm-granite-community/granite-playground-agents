@@ -22,7 +22,7 @@ from granite_core.emitter import EventEmitter
 from granite_core.events import TrajectoryEvent
 from granite_core.logging import get_logger_with_prefix
 from granite_core.search.scraping.arxiv import ArxivScraper
-from granite_core.search.scraping.base import AsyncScraper, SyncScraper
+from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.beautiful_soup import BeautifulSoupScraper
 from granite_core.search.scraping.docling import DoclingPDFScraper
 from granite_core.search.scraping.types import ScrapedSearchResult
@@ -78,7 +78,7 @@ class ScraperRunner(EventEmitter):
 
         try:
             link = search_result.url
-            scraper_cls: type[AsyncScraper] | type[SyncScraper] = self.get_scraper(link)
+            scraper_cls: type[AsyncScraper] = self.get_scraper(link)
             scraper = scraper_cls()
 
             # Get scraper name
@@ -87,18 +87,10 @@ class ScraperRunner(EventEmitter):
 
             # Get content
             async with task_pool.throttle():
-                if isinstance(scraper, AsyncScraper):
-                    scraped_result = await asyncio.wait_for(
-                        cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
-                        timeout=settings.SCRAPER_TIMEOUT,
-                    )
-                else:
-                    loop = asyncio.get_running_loop()
-                    sync_scraper = cast(SyncScraper, scraper)
-                    scraped_result = await asyncio.wait_for(
-                        loop.run_in_executor(task_pool.executor, lambda: sync_scraper.scrape(link, self.client)),
-                        timeout=settings.SCRAPER_TIMEOUT,
-                    )
+                scraped_result = await asyncio.wait_for(
+                    cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
+                    timeout=settings.SCRAPER_TIMEOUT,
+                )
 
             if scraped_result is None:
                 self.logger.warning(f"No scraped result for {link}")
@@ -139,7 +131,7 @@ class ScraperRunner(EventEmitter):
     def get_scraper(
         self,
         link: str,
-    ) -> type[AsyncScraper] | type[SyncScraper]:
+    ) -> type[AsyncScraper]:
         """
         The function `get_scraper` determines the appropriate scraper class based on the provided link
         or a default scraper if none matches.
@@ -156,7 +148,7 @@ class ScraperRunner(EventEmitter):
         `PyMuPDFScraper` class. If the link contains "arxiv.org", it selects the `ArxivScraper
         """
 
-        scraper_classes: dict[str, type[AsyncScraper] | type[SyncScraper]] = {
+        scraper_classes: dict[str, type[AsyncScraper]] = {
             "pdf": DoclingPDFScraper,
             "bs": BeautifulSoupScraper,
             "arxiv": ArxivScraper,
