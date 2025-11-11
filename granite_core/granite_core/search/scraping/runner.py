@@ -15,7 +15,7 @@
 import asyncio
 from typing import cast
 
-from httpx import AsyncClient, Client
+from httpx import AsyncClient
 
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
@@ -51,9 +51,7 @@ class ScraperRunner(EventEmitter):
         super().__init__()
         self.search_results = search_results
         self.async_client = AsyncClient()
-        self.client = Client()
         self.async_client.headers.update({"User-Agent": user_agent})
-        self.client.headers.update({"User-Agent": user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content
