@@ -19,10 +19,10 @@ import asyncio
 from functools import partial
 from typing import Any
 
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import EmbeddingsFilter
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import VectorStore
+from langchain_classic.retrievers import ContextualCompressionRetriever
+from langchain_classic.retrievers.document_compressors import EmbeddingsFilter
+from langchain_classic.text_splitter import RecursiveCharacterTextSplitter
+from langchain_classic.vectorstores import VectorStore
 from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
@@ -92,7 +92,7 @@ class VectorStoreWrapper:
         """
         if self.tokenizer:
             text_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
-                tokenizer=self.tokenizer,
+                tokenizer=self.tokenizer,  # type: ignore
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap,
             )

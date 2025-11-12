@@ -170,6 +170,22 @@ pre-commit install
 
 All pre-commit hooks must be run and pass before code is accepted into the repository.
 
+## Unit Tests
+
+Unit tests verify that individual components of the codebase work as expected, helping catch bugs early and ensuring long-term reliability.
+
+Unit tests run on the default agent configuration. To run unit tests you need to have ollama installed and the `ibm/granite4` model pulled.
+
+```sh
+uv --directory granite_core run pytest
+```
+
+Guidelines
+- Place all core library test files under granite_core/tests/.
+- Name test files as test_*.py.
+- Use clear, isolated test cases with minimal dependencies.
+- Run tests regularly before commits to maintain code quality.
+
 ## Containerisation
 
 ### Build

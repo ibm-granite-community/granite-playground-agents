@@ -58,7 +58,9 @@ def main():
     )
     args = parser.parse_args()
 
-    header = "# © Copyright IBM Corporation 2025\n# SPDX-License-Identifier: Apache-2.0\n\n\n"
+    header = (
+        "# © Copyright IBM Corporation 2025\n# SPDX-License-Identifier: Apache-2.0\n\n"
+    )
 
     # user specified a directory, search and apply headers
     if args.files is None:
