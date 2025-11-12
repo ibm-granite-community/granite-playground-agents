@@ -174,6 +174,8 @@ All pre-commit hooks must be run and pass before code is accepted into the repos
 
 Unit tests verify that individual components of the codebase work as expected, helping catch bugs early and ensuring long-term reliability.
 
+Unit tests run on the default agent configuration. To run unit tests you need to have ollama installed and the `ibm/granite4` model pulled.
+
 ```sh
 uv --directory granite_core run pytest
 ```
