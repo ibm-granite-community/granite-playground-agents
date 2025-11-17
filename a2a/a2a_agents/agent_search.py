@@ -133,30 +133,32 @@ async def search(
             await context.store(AgentMessage(metadata=metadata))
 
             # generate citations
-            citations: list[Citation] = []
-
             async def citation_handler(event: Event) -> None:
                 if isinstance(event, CitationEvent):
                     logger.info(f"Citation: {event.citation.url}")
-                    citation = Citation(
-                        url=event.citation.url,
-                        title=event.citation.title,
-                        description=event.citation.context_text,
-                        start_index=event.citation.start_index,
-                        end_index=event.citation.end_index,
+
+                    message = AgentMessage(
+                        metadata=(
+                            citation.citation_metadata(
+                                citations=[
+                                    Citation(
+                                        url=event.citation.url,
+                                        title=event.citation.title,
+                                        description=event.citation.context_text,
+                                        start_index=event.citation.start_index,
+                                        end_index=event.citation.end_index,
+                                    )
+                                ]
+                            )
+                        ),
                     )
-                    citations.append(citation)
+
+                    await context.yield_async(message)
+                    await context.store(message)
 
             generator = CitationGeneratorFactory.create()
             generator.subscribe(handler=citation_handler)
             await generator.generate(docs=docs, response=final_agent_response_text)
-
-            # yield citations
-            message = AgentMessage(
-                metadata=(citation.citation_metadata(citations=citations) if citations else None),
-            )
-            yield message
-            await context.store(message)
 
             # trajectory message: citations complete
             metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
