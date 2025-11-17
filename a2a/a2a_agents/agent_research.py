@@ -91,9 +91,6 @@ async def research(
         chat_model = ChatModelFactory.create()
         structured_chat_model = ChatModelFactory.create(model_type="structured")
 
-        # buffer for citations
-        citations: list[Citation] = []
-
         # output researcher events
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
@@ -117,14 +114,24 @@ async def research(
                 await context.store(AgentMessage(metadata=metadata))
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
-                citation = Citation(
-                    url=event.citation.url,
-                    title=event.citation.title,
-                    description=event.citation.context_text,
-                    start_index=event.citation.start_index,
-                    end_index=event.citation.end_index,
+
+                message = AgentMessage(
+                    metadata=(
+                        citation.citation_metadata(
+                            citations=[
+                                Citation(
+                                    url=event.citation.url,
+                                    title=event.citation.title,
+                                    description=event.citation.context_text,
+                                    start_index=event.citation.start_index,
+                                    end_index=event.citation.end_index,
+                                )
+                            ]
+                        )
+                    ),
                 )
-                citations.append(citation)
+                await context.yield_async(message)
+                await context.store(message)
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
                 await context.yield_async(metadata)
@@ -139,13 +146,6 @@ async def research(
         )
         researcher.subscribe(handler=research_listener)
         await researcher.run()
-
-        # yield citations
-        message = AgentMessage(
-            metadata=(citation.citation_metadata(citations=citations) if citations else None),
-        )
-        yield message
-        await context.store(message)
 
     except BaseException as e:
         logger.exception("Research agent error, threw exception...")
