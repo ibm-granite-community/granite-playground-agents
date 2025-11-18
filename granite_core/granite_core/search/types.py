@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SearchResult(BaseModel):
@@ -16,12 +16,11 @@ class SearchResult(BaseModel):
 
 
 class Source(BaseModel):
+    model_config = ConfigDict(frozen=True)  # makes it immutable and hashable
+
     url: str
     title: str
     snippet: str
-
-    class Config:
-        frozen = True  # makes it immutable and hashable
 
 
 class SearchQueriesSchema(BaseModel):
