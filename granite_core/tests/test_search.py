@@ -23,7 +23,7 @@ async def test_basic_search() -> None:
 async def test_search_filter() -> None:
     """Test search filter"""
     chat_model = ChatModelFactory.create()
-    filter = SearchResultsFilter(chat_model=chat_model)
+    filter = SearchResultsFilter(chat_model=chat_model, session_id="test_session")
     filtered_results = await filter.filter(
         "When was IBM founded?",
         [
