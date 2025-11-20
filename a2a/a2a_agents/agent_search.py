@@ -88,15 +88,14 @@ async def search(
 
     try:
         final_agent_response_text: list[str] = []
+        final_citations: list[Citation] = []
 
         # set up chat models
         chat_model = ChatModelFactory.create()
         structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         # trajectory message: search start
-        metadata = trajectory.trajectory_metadata(title="Searching the web", content="starting")
-        yield metadata
-        await context.store(AgentMessage(metadata=metadata))
+        yield trajectory.trajectory_metadata(title="Searching the web", content="starting")
 
         # run the search
         search_tool = SearchTool(chat_model=structured_chat_model, session_id=context.context_id)
@@ -110,58 +109,49 @@ async def search(
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         # trajectory message: search complete
-        metadata = trajectory.trajectory_metadata(title="Searching the web", content="complete")
-        yield metadata
-        await context.store(AgentMessage(metadata=metadata))
+        yield trajectory.trajectory_metadata(title="Searching the web", content="complete")
 
         # yield response
         async with chat_pool.throttle():
             async for event, _ in chat_model.create(messages=messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
                     agent_response_text = event.value.get_text_content()
-                    agent_message = AgentMessage(text=agent_response_text)
-                    yield agent_message
+                    yield AgentMessage(text=agent_response_text)
                     final_agent_response_text.append(agent_response_text)
 
         logger.info(f"Agent: {''.join(final_agent_response_text)}")
 
         # Yield citations
         if len(docs) > 0:
-            # trajectory message: citations start
-            metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
-            yield metadata
-            await context.store(AgentMessage(metadata=metadata))
+            yield trajectory.trajectory_metadata(title="Generating citations", content="starting")
 
             # generate citations
             async def citation_handler(event: Event) -> None:
                 if isinstance(event, CitationEvent):
                     logger.info(f"Citation: {event.citation.url}")
 
-                    cite = citation.citation_metadata(
-                        citations=[
-                            Citation(
-                                url=event.citation.url,
-                                title=event.citation.title,
-                                description=event.citation.context_text,
-                                start_index=event.citation.start_index,
-                                end_index=event.citation.end_index,
-                            )
-                        ]
+                    cite = Citation(
+                        url=event.citation.url,
+                        title=event.citation.title,
+                        description=event.citation.context_text,
+                        start_index=event.citation.start_index,
+                        end_index=event.citation.end_index,
                     )
 
-                    await context.yield_async(cite)
-                    await context.store(AgentMessage(metadata=cite))
+                    await context.yield_async(citation.citation_metadata(citations=[cite]))
+                    final_citations.append(cite)
 
             generator = CitationGeneratorFactory.create()
             generator.subscribe(handler=citation_handler)
             await generator.generate(docs=docs, response="".join(final_agent_response_text))
 
-            # trajectory message: citations complete
-            metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
-            yield metadata
-            await context.store(AgentMessage(metadata=metadata))
+            yield trajectory.trajectory_metadata(title="Generating citations", content="complete")
 
-        await context.store(AgentMessage(text="".join(final_agent_response_text)))
+        await context.store(
+            AgentMessage(
+                text="".join(final_agent_response_text), metadata=citation.citation_metadata(citations=final_citations)
+            )
+        )
 
     except BaseException as e:
         logger.exception("Search agent error, threw exception...")

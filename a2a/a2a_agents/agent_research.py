@@ -91,49 +91,42 @@ async def research(
         chat_model = ChatModelFactory.create()
         structured_chat_model = ChatModelFactory.create(model_type="structured")
         final_agent_response_text: list[str] = []
+        final_citations: list[Citation] = []
 
         # output researcher events
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
-                agent_message = AgentMessage(text=event.text)
-                await context.yield_async(agent_message)
+                await context.yield_async(AgentMessage(text=event.text))
                 final_agent_response_text.append(event.text)
             elif isinstance(event, TrajectoryEvent):
                 if event.content is None:
-                    metadata = trajectory.trajectory_metadata(title=event.title)
-                    await context.yield_async(metadata)
-                    await context.store(AgentMessage(metadata=metadata))
+                    await context.yield_async(trajectory.trajectory_metadata(title=event.title))
                 else:
                     contents = [event.content] if isinstance(event.content, str) else event.content
                     for content in contents:
-                        metadata = trajectory.trajectory_metadata(title=event.title, content=content)
-                        await context.yield_async(metadata)
-                        await context.store(AgentMessage(metadata=metadata))
+                        await context.yield_async(trajectory.trajectory_metadata(title=event.title, content=content))
             elif isinstance(event, GeneratingCitationsEvent):
-                metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
-                await context.yield_async(metadata)
-                await context.store(AgentMessage(metadata=metadata))
+                await context.yield_async(
+                    trajectory.trajectory_metadata(title="Generating citations", content="starting")
+                )
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
 
-                cite = citation.citation_metadata(
-                    citations=[
-                        Citation(
-                            url=event.citation.url,
-                            title=event.citation.title,
-                            description=event.citation.context_text,
-                            start_index=event.citation.start_index,
-                            end_index=event.citation.end_index,
-                        )
-                    ]
+                cite = Citation(
+                    url=event.citation.url,
+                    title=event.citation.title,
+                    description=event.citation.context_text,
+                    start_index=event.citation.start_index,
+                    end_index=event.citation.end_index,
                 )
 
-                await context.yield_async(cite)
-                await context.store(AgentMessage(metadata=cite))
+                await context.yield_async(citation.citation_metadata(citations=[cite]))
+                final_citations.append(cite)
+
             elif isinstance(event, GeneratingCitationsCompleteEvent):
-                metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
-                await context.yield_async(metadata)
-                await context.store(AgentMessage(metadata=metadata))
+                await context.yield_async(
+                    trajectory.trajectory_metadata(title="Generating citations", content="complete")
+                )
 
         # create and run the researcher
         researcher = Researcher(
@@ -144,7 +137,12 @@ async def research(
         )
         researcher.subscribe(handler=research_listener)
         await researcher.run()
-        await context.store(AgentMessage(text="".join(final_agent_response_text)))
+
+        await context.store(
+            AgentMessage(
+                text="".join(final_agent_response_text), metadata=citation.citation_metadata(citations=final_citations)
+            )
+        )
 
     except BaseException as e:
         logger.exception("Research agent error, threw exception...")
