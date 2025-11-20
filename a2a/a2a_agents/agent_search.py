@@ -87,7 +87,7 @@ async def search(
     messages.append(UserMessage(user_message))
 
     try:
-        final_agent_response_text = ""
+        final_agent_response_text: list[str] = []
 
         # set up chat models
         chat_model = ChatModelFactory.create()
@@ -121,9 +121,9 @@ async def search(
                     agent_response_text = event.value.get_text_content()
                     agent_message = AgentMessage(text=agent_response_text)
                     yield agent_message
-                    await context.store(agent_message)
-                    final_agent_response_text += agent_response_text
-        logger.info(f"Agent: {final_agent_response_text}")
+                    final_agent_response_text.append(agent_response_text)
+
+        logger.info(f"Agent: {''.join(final_agent_response_text)}")
 
         # Yield citations
         if len(docs) > 0:
@@ -137,37 +137,37 @@ async def search(
                 if isinstance(event, CitationEvent):
                     logger.info(f"Citation: {event.citation.url}")
 
-                    message = AgentMessage(
-                        metadata=(
-                            citation.citation_metadata(
-                                citations=[
-                                    Citation(
-                                        url=event.citation.url,
-                                        title=event.citation.title,
-                                        description=event.citation.context_text,
-                                        start_index=event.citation.start_index,
-                                        end_index=event.citation.end_index,
-                                    )
-                                ]
+                    cite = citation.citation_metadata(
+                        citations=[
+                            Citation(
+                                url=event.citation.url,
+                                title=event.citation.title,
+                                description=event.citation.context_text,
+                                start_index=event.citation.start_index,
+                                end_index=event.citation.end_index,
                             )
-                        ),
+                        ]
                     )
 
-                    await context.yield_async(message)
-                    await context.store(message)
+                    await context.yield_async(cite)
+                    await context.store(AgentMessage(metadata=cite))
 
             generator = CitationGeneratorFactory.create()
             generator.subscribe(handler=citation_handler)
-            await generator.generate(docs=docs, response=final_agent_response_text)
+            await generator.generate(docs=docs, response="".join(final_agent_response_text))
 
             # trajectory message: citations complete
             metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
             yield metadata
             await context.store(AgentMessage(metadata=metadata))
 
+        await context.store(AgentMessage(text="".join(final_agent_response_text)))
+
     except BaseException as e:
         logger.exception("Search agent error, threw exception...")
-        yield AgentMessage(text=str(e))
+        error_msg = f"Error processing request: {e!s}"
+        yield error_msg
+        await context.store(AgentMessage(text=error_msg))
 
 
 if __name__ == "__main__":

@@ -67,20 +67,23 @@ async def chat(
     messages.append(UserMessage(user_message))
 
     try:
-        final_agent_response_text = ""
+        final_agent_response_text: list[str] = []
         chat_model = ChatModelFactory.create()
         async with chat_pool.throttle():
             async for event, _ in chat_model.create(messages=messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
                     agent_response_text = event.value.get_text_content()
-                    agent_message = AgentMessage(text=agent_response_text)
-                    yield agent_message
-                    await context.store(agent_message)
-                    final_agent_response_text += agent_response_text
-        logger.info(f"Agent: {final_agent_response_text}")
+                    yield AgentMessage(text=agent_response_text)
+                    final_agent_response_text.append(agent_response_text)
+
+        logger.info(f"Agent: {''.join(final_agent_response_text)}")
+        await context.store(AgentMessage(text="".join(final_agent_response_text)))
+
     except BaseException as e:
         logger.exception("Chat agent error, threw exception...")
-        yield AgentMessage(text=str(e))
+        error_msg = f"Error processing request: {e!s}"
+        yield error_msg
+        await context.store(AgentMessage(text=error_msg))
 
 
 if __name__ == "__main__":
