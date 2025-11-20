@@ -90,13 +90,14 @@ async def research(
         # set up chat models
         chat_model = ChatModelFactory.create()
         structured_chat_model = ChatModelFactory.create(model_type="structured")
+        final_agent_response_text: list[str] = []
 
         # output researcher events
         async def research_listener(event: Event) -> None:
             if isinstance(event, TextEvent):
                 agent_message = AgentMessage(text=event.text)
                 await context.yield_async(agent_message)
-                await context.store(agent_message)
+                final_agent_response_text.append(event.text)
             elif isinstance(event, TrajectoryEvent):
                 if event.content is None:
                     metadata = trajectory.trajectory_metadata(title=event.title)
@@ -115,23 +116,20 @@ async def research(
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
 
-                message = AgentMessage(
-                    metadata=(
-                        citation.citation_metadata(
-                            citations=[
-                                Citation(
-                                    url=event.citation.url,
-                                    title=event.citation.title,
-                                    description=event.citation.context_text,
-                                    start_index=event.citation.start_index,
-                                    end_index=event.citation.end_index,
-                                )
-                            ]
+                cite = citation.citation_metadata(
+                    citations=[
+                        Citation(
+                            url=event.citation.url,
+                            title=event.citation.title,
+                            description=event.citation.context_text,
+                            start_index=event.citation.start_index,
+                            end_index=event.citation.end_index,
                         )
-                    ),
+                    ]
                 )
-                await context.yield_async(message)
-                await context.store(message)
+
+                await context.yield_async(cite)
+                await context.store(AgentMessage(metadata=cite))
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
                 await context.yield_async(metadata)
@@ -146,10 +144,13 @@ async def research(
         )
         researcher.subscribe(handler=research_listener)
         await researcher.run()
+        await context.store(AgentMessage(text="".join(final_agent_response_text)))
 
     except BaseException as e:
         logger.exception("Research agent error, threw exception...")
-        yield AgentMessage(text=str(e))
+        error_msg = f"Error processing request: {e!s}"
+        yield error_msg
+        await context.store(AgentMessage(text=error_msg))
 
 
 if __name__ == "__main__":
