@@ -81,7 +81,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-report html"
+addopts = "--cov=. --cov-report term --cov-report html"
 filterwarnings = [
     "ignore::DeprecationWarning:pydantic",
     "ignore::DeprecationWarning:litellm",
