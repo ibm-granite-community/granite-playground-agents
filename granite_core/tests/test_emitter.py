@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from granite_core.emitter import Event, EventEmitter, EventHandler
+from granite_core.events import TrajectoryEvent
 
 T = TypeVar("T", bound=Event)
 
@@ -16,6 +17,17 @@ def test_event_timestamp() -> None:
     event = Event()
     assert isinstance(event.timestamp, datetime)
     assert event.timestamp.tzinfo == UTC
+
+
+def test_trajectory_event_markdown() -> None:
+    event = TrajectoryEvent(title="Test")
+    assert "**Test**" in event.to_markdown()
+
+    event = TrajectoryEvent(title="Test", content=["Trajectory", "String"])
+    assert all(s in event.to_markdown() for s in ["**Test**", "- Trajectory\n", "- String"])
+
+    event = TrajectoryEvent(title="Test", content="Trajectory String")
+    assert all(s in event.to_markdown() for s in ["**Test**", "Trajectory String"])
 
 
 @pytest.fixture
