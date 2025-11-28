@@ -1,0 +1,26 @@
+name: pytest
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: 3.13
+        enable-cache: true
+    - name: Install dependencies
+      run: |
+           uv --directory granite_core --no-managed-python sync --frozen
+          # uv --directory a2a --no-managed-python sync --frozen --no-editable
+          # uv --directory acp --no-managed-python sync --frozen --no-editable
+    - name: Test with pytest
+      run: |
+        uv --directory granite_core run pytest
