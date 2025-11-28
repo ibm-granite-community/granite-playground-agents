@@ -1,0 +1,42 @@
+name: pytest
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: 3.13
+        enable-cache: true
+    - name: Install dependencies
+      run: |
+           uv --directory granite_core sync --frozen
+          # uv --directory a2a sync --frozen --no-editable
+          # uv --directory acp sync --frozen --no-editable
+    - name: Test with pytest
+      env:
+        WATSONX_API_KEY: ${{ secrets.WATSONX_API_KEY }}
+        WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        GOOGLE_CX_KEY: ${{ secrets.GOOGLE_CX_KEY }}
+        EMBEDDINGS_HF_TOKENIZER: ${{ vars.EMBEDDINGS_HF_TOKENIZER }}
+        EMBEDDINGS_MODEL: ${{ vars.EMBEDDINGS_MODEL }}
+        EMBEDDINGS_PROVIDER: ${{ vars.EMBEDDINGS_PROVIDER }}
+        LLM_MODEL: ${{ vars.LLM_MODEL }}
+        LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+        LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+        RETRIEVER: ${{ vars.RETRIEVER }}
+        WATSONX_API_BASE: ${{ vars.WATSONX_API_BASE }}
+        WATSONX_REGION: ${{ vars.WATSONX_REGION }}
+      run: |
+        uv --directory granite_core run pytest
