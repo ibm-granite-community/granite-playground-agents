@@ -100,15 +100,17 @@ async def research(
                 final_agent_response_text.append(event.text)
             elif isinstance(event, TrajectoryEvent):
                 if event.content is None:
-                    await context.yield_async(trajectory.trajectory_metadata(title=event.title))
+                    trajectory_metadata = trajectory.trajectory_metadata(title=event.title)
+                    await context.yield_async(trajectory_metadata)
+                    await context.store(AgentMessage(metadata=trajectory_metadata))
                 else:
                     contents = [event.content] if isinstance(event.content, str) else event.content
                     for content in contents:
                         await context.yield_async(trajectory.trajectory_metadata(title=event.title, content=content))
             elif isinstance(event, GeneratingCitationsEvent):
-                await context.yield_async(
-                    trajectory.trajectory_metadata(title="Generating citations", content="starting")
-                )
+                trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
+                await context.yield_async(trajectory_metadata)
+                await context.store(AgentMessage(metadata=trajectory_metadata))
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
 
@@ -124,9 +126,9 @@ async def research(
                 final_citations.append(cite)
 
             elif isinstance(event, GeneratingCitationsCompleteEvent):
-                await context.yield_async(
-                    trajectory.trajectory_metadata(title="Generating citations", content="complete")
-                )
+                trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
+                await context.yield_async(trajectory_metadata)
+                await context.store(AgentMessage(metadata=trajectory_metadata))
 
         # create and run the researcher
         researcher = Researcher(
