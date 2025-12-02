@@ -11,7 +11,7 @@ from agentstack_sdk.a2a.types import AgentMessage, Metadata
 from agentstack_sdk.server.context import RunContext
 
 
-class TrajectoryBuffer:
+class TrajectoryHandler:
     def __init__(self, trajectory: TrajectoryExtensionServer, context: RunContext) -> None:
         self.trajectory = trajectory
         self.context = context
