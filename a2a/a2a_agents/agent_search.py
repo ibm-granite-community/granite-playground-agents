@@ -36,6 +36,7 @@ from langchain_core.documents import Document
 
 from a2a_agents import __version__
 from a2a_agents.config import agent_detail, settings
+from a2a_agents.trajectory import TrajectoryBuffer
 from a2a_agents.utils import to_framework_messages
 
 logger = get_logger(__name__)
@@ -86,6 +87,8 @@ async def search(
     messages = to_framework_messages(history)
     messages.append(UserMessage(user_message))
 
+    trajectory_buffer = TrajectoryBuffer(trajectory=trajectory, context=context)
+
     try:
         final_agent_response_text: list[str] = []
         final_citations: list[Citation] = []
@@ -95,9 +98,7 @@ async def search(
         structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         # trajectory message: search start
-        trajectory_metadata = trajectory.trajectory_metadata(title="Searching the web", content="starting")
-        yield trajectory_metadata
-        await context.store(AgentMessage(metadata=trajectory_metadata))
+        await trajectory_buffer.yield_trajectory(title="Searching the web", content="starting")
 
         # run the search
         search_tool = SearchTool(chat_model=structured_chat_model, session_id=context.context_id)
@@ -111,9 +112,7 @@ async def search(
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         # trajectory message: search complete
-        trajectory_metadata = trajectory.trajectory_metadata(title="Searching the web", content="complete")
-        yield trajectory_metadata
-        await context.store(AgentMessage(metadata=trajectory_metadata))
+        await trajectory_buffer.yield_trajectory(title="Searching the web", content="complete")
 
         # yield response
         async with chat_pool.throttle():
@@ -127,9 +126,7 @@ async def search(
 
         # Yield citations
         if len(docs) > 0:
-            trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
-            yield trajectory_metadata
-            await context.store(AgentMessage(metadata=trajectory_metadata))
+            await trajectory_buffer.yield_trajectory(title="Generating citations", content="starting")
 
             # generate citations
             async def citation_handler(event: Event) -> None:
@@ -150,11 +147,9 @@ async def search(
             generator = CitationGeneratorFactory.create()
             generator.subscribe(handler=citation_handler)
             await generator.generate(docs=docs, response="".join(final_agent_response_text))
+            await trajectory_buffer.yield_trajectory(title="Generating citations", content="complete")
 
-            trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
-            yield trajectory_metadata
-            await context.store(AgentMessage(metadata=trajectory_metadata))
-
+        await trajectory_buffer.store()
         await context.store(
             AgentMessage(
                 text="".join(final_agent_response_text), metadata=citation.citation_metadata(citations=final_citations)

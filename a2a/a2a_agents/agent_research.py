@@ -36,6 +36,7 @@ from granite_core.utils import log_settings
 
 from a2a_agents import __version__
 from a2a_agents.config import agent_detail, settings
+from a2a_agents.trajectory import TrajectoryBuffer
 from a2a_agents.utils import to_framework_messages
 
 logger = get_logger(__name__)
@@ -86,6 +87,8 @@ async def research(
     messages = to_framework_messages(history)
     messages.append(UserMessage(user_message))
 
+    trajectory_buffer = TrajectoryBuffer(trajectory=trajectory, context=context)
+
     try:
         # set up chat models
         chat_model = ChatModelFactory.create()
@@ -100,17 +103,14 @@ async def research(
                 final_agent_response_text.append(event.text)
             elif isinstance(event, TrajectoryEvent):
                 if event.content is None:
-                    trajectory_metadata = trajectory.trajectory_metadata(title=event.title)
-                    await context.yield_async(trajectory_metadata)
-                    await context.store(AgentMessage(metadata=trajectory_metadata))
+                    await trajectory_buffer.yield_trajectory(title=event.title)
                 else:
                     contents = [event.content] if isinstance(event.content, str) else event.content
                     for content in contents:
-                        await context.yield_async(trajectory.trajectory_metadata(title=event.title, content=content))
+                        await trajectory_buffer.yield_trajectory(title=event.title, content=content)
+
             elif isinstance(event, GeneratingCitationsEvent):
-                trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="starting")
-                await context.yield_async(trajectory_metadata)
-                await context.store(AgentMessage(metadata=trajectory_metadata))
+                await trajectory_buffer.yield_trajectory(title="Generating citations", content="starting")
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
 
@@ -126,9 +126,7 @@ async def research(
                 final_citations.append(cite)
 
             elif isinstance(event, GeneratingCitationsCompleteEvent):
-                trajectory_metadata = trajectory.trajectory_metadata(title="Generating citations", content="complete")
-                await context.yield_async(trajectory_metadata)
-                await context.store(AgentMessage(metadata=trajectory_metadata))
+                await trajectory_buffer.yield_trajectory(title="Generating citations", content="complete")
 
         # create and run the researcher
         researcher = Researcher(
@@ -139,7 +137,7 @@ async def research(
         )
         researcher.subscribe(handler=research_listener)
         await researcher.run()
-
+        await trajectory_buffer.store()
         await context.store(
             AgentMessage(
                 text="".join(final_agent_response_text), metadata=citation.citation_metadata(citations=final_citations)
