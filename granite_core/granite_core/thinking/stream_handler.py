@@ -39,6 +39,8 @@ class ThinkingStreamHandler:
                     self.buffer = self.buffer.split(st, 1)[1]
                     self.current_tag = st
                     yield TagStartEvent(tag=self.tag_names[self.current_tag])
+                    self.lookahead.append(self.buffer)
+                    return
         else:
             self.lookahead.append(token)
             # Build current string from lookahead
