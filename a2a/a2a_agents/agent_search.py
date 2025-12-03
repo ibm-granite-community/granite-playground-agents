@@ -87,7 +87,7 @@ async def search(
     messages = to_framework_messages(history)
     messages.append(UserMessage(user_message))
 
-    trajectory_handler = TrajectoryHandler(trajectory=trajectory, context=context)
+    trajectory_handler = TrajectoryHandler(trajectory, context)
 
     try:
         final_agent_response_text: list[str] = []
