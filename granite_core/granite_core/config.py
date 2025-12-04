@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     DDG_SEARCH_PROXY: str | None = Field(default=None, description="DuckDuckGo Search proxy")
     DDG_SEARCH_VERIFY: bool = Field(default=True, description="DuckDuckGo SSL Verification")
 
+    CHECK_ROBOTS_TXT: bool = Field(default=True, description="Check robots.txt before scraping")
+
     SCRAPER_MAX_CONTENT_LENGTH: int = Field(
         description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
     )

@@ -40,6 +40,7 @@ from granite_core.search.engines.factory import SearchEngineFactory
 from granite_core.search.filter import SearchResultsFilter
 from granite_core.search.mixins import ScrapedSearchResultsMixin, SearchResultsMixin
 from granite_core.search.prompts import SearchPrompts
+from granite_core.search.robots import RobotsTxtFilter
 from granite_core.search.scraping import scrape_search_results
 from granite_core.search.tool import SearchTool
 from granite_core.search.types import SearchResult
@@ -78,6 +79,7 @@ class Researcher(
 
         self.logger.debug("Initializing Researcher")
         self.vector_store = VectorStoreWrapperFactory.create()
+        self.robots_txt_filter = RobotsTxtFilter(session_id=session_id)
         self.search_results_filter = SearchResultsFilter(chat_model=self.structured_chat_model, session_id=session_id)
 
     async def run(self) -> None:
@@ -172,8 +174,12 @@ class Researcher(
 
     async def _web_search(self, query: str) -> None:
         search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
-        filtered = [s for s in search_results if not self.contains_search_result(s.url)]
-        search_results = await self.search_results_filter.filter(query, filtered)
+        search_results = [s for s in search_results if not self.contains_search_result(s.url)]
+
+        if settings.CHECK_ROBOTS_TXT:
+            search_results = await self.robots_txt_filter.filter(search_results)
+
+        search_results = await self.search_results_filter.filter(query, search_results)
         for s in search_results:
             self.add_search_result(s)
 

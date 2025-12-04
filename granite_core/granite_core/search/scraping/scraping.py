@@ -20,6 +20,7 @@ from granite_core.logging import get_logger
 from granite_core.search.scraping.runner import ScraperRunner
 from granite_core.search.scraping.types import ImageUrl, ScrapedSearchResult
 from granite_core.search.types import SearchResult
+from granite_core.search.user_agent import UserAgent
 
 logger = get_logger(__name__)
 
@@ -43,10 +44,8 @@ async def scrape_search_results(
     """
     scraped_data: list[ScrapedSearchResult] = []
     images = []
-    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
-
     try:
-        scraper = ScraperRunner(search_results, user_agent, scraper_key, session_id, max_scraped_content)
+        scraper = ScraperRunner(search_results, UserAgent().user_agent(), scraper_key, session_id, max_scraped_content)
         if emitter is not None:
             emitter.forward_events_from(scraper)
         scraped_data = await scraper.run()
