@@ -16,10 +16,13 @@
 from bs4 import BeautifulSoup
 from httpx import AsyncClient
 
+from granite_core.config import settings
 from granite_core.logging import get_logger
+from granite_core.search.robots import can_fetch
 from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.types import ScrapedContent
 from granite_core.search.scraping.utils import clean_soup, extract_title, get_text_from_soup
+from granite_core.search.user_agent import UserAgent
 
 logger = get_logger(__name__)
 
@@ -37,6 +40,13 @@ class BeautifulSoupScraper(AsyncScraper):
         occurs during the process, an error message is printed and an empty string is returned.
         """
         try:
+            if settings.CHECK_ROBOTS_TXT:
+                allowed = await can_fetch(user_agent=UserAgent().user_agent(), url=link)
+
+                if not allowed:
+                    logger.info(f"Not allowed to scrape {link} due to robots.txt")
+                    return None
+
             response = await client.get(link, timeout=5)
 
             if response.status_code == 403:
