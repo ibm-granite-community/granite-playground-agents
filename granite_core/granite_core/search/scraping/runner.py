@@ -26,7 +26,9 @@ from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.beautiful_soup import BeautifulSoupScraper
 from granite_core.search.scraping.docling import DoclingPDFScraper
 from granite_core.search.scraping.types import ScrapedSearchResult
+from granite_core.search.scraping.wikipedia import WikipediaScraper
 from granite_core.search.types import SearchResult
+from granite_core.search.user_agent import UserAgent
 from granite_core.work import task_pool
 
 
@@ -38,7 +40,6 @@ class ScraperRunner(EventEmitter):
     def __init__(
         self,
         search_results: list[SearchResult],
-        user_agent: str,
         scraper_key: str,
         session_id: str,
         max_scraped_content: int = 10,
@@ -51,12 +52,12 @@ class ScraperRunner(EventEmitter):
         super().__init__()
         self.search_results = search_results
         self.async_client = AsyncClient()
-        self.async_client.headers.update({"User-Agent": user_agent})
+        self.async_client.headers.update({"User-Agent": UserAgent().user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content
         self.scraper_key = scraper_key
-        self.logger = get_logger_with_prefix(__name__, tool_name="ContentExtractor", session_id=session_id)
+        self.logger = get_logger_with_prefix(__name__, tool_name=__name__, session_id=session_id)
 
     async def run(self) -> list[ScrapedSearchResult]:
         """
@@ -76,6 +77,7 @@ class ScraperRunner(EventEmitter):
 
         try:
             link = search_result.url
+
             scraper_cls: type[AsyncScraper] = self.get_scraper(link)
             scraper = scraper_cls()
 
@@ -150,6 +152,7 @@ class ScraperRunner(EventEmitter):
             "pdf": DoclingPDFScraper,
             "bs": BeautifulSoupScraper,
             "arxiv": ArxivScraper,
+            "wikipedia": WikipediaScraper,
         }
 
         scraper_key = None
@@ -158,6 +161,8 @@ class ScraperRunner(EventEmitter):
             scraper_key = "pdf"
         elif "arxiv.org" in link:
             scraper_key = "arxiv"
+        elif "en.wikipedia.org/wiki/" in link:
+            scraper_key = "wikipedia"
         else:
             scraper_key = self.scraper_key
 

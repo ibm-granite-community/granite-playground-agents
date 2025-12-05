@@ -13,8 +13,7 @@ from acp_sdk import AsyncIterator, BaseModel
 from acp_sdk.server import MemoryStore
 from acp_sdk.server.store.store import Store, StoreModel, StoreView, T
 from acp_sdk.server.store.utils import Stringable
-
-from acp_agent.cache import AsyncLRUCache
+from granite_core.cache import AsyncLRUCache
 
 U_co = TypeVar("U_co", bound=BaseModel, covariant=True)
 

@@ -34,6 +34,9 @@ class DoclingPDFScraper(AsyncScraper):
             return False
 
     async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
+        if not await self.can_scrape(link):
+            return None
+
         parser = DoclingPdfParser()
         temp_filename: str | None = None
 

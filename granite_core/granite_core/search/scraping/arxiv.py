@@ -29,6 +29,10 @@ class ArxivScraper(AsyncScraper):
           The code is returning the page content of the first document retrieved by the ArxivRetriever
         for a given query extracted from the link.
         """
+
+        if not self.can_scrape(link):
+            return None
+
         query = link.split("/")[-1]
         retriever = ArxivRetriever(load_max_docs=2, doc_content_chars_max=None)  # type: ignore[call-arg]
         docs = await retriever.ainvoke(query)

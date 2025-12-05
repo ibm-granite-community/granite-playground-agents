@@ -8,11 +8,11 @@ from datetime import timedelta
 from acp_sdk import ResourceLoader, ResourceStore, ResourceUrl
 from acp_sdk.models import Message
 from acp_sdk.models.types import ResourceId
+from granite_core.cache import AsyncLRUCache
 from granite_core.logging import get_logger
 from obstore.store import ObjectStore, S3Store
 from pydantic import ValidationError
 
-from acp_agent.cache import AsyncLRUCache
 from acp_agent.config import settings
 
 logger = get_logger(__name__)
