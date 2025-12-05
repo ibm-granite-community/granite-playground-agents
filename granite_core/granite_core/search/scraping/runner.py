@@ -52,7 +52,7 @@ class ScraperRunner(EventEmitter):
         super().__init__()
         self.search_results = search_results
         self.async_client = AsyncClient()
-        self.async_client.headers.update({"User-Agent": UserAgent.user_agent})
+        self.async_client.headers.update({"User-Agent": UserAgent().user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content
