@@ -27,8 +27,8 @@ class CopyrightViolationGuardrail(Guardrail):
 Evalute the dialog for copyright risk. Pay close attention to the user's last message and decide if the assistant could potentially risk copyright law by answering.
 
 Criteria:
-When evaluating an input, treat it as a copyright risk if the user is requesting long or verbatim reproduction of copyrighted text they have not provided; requests for summaries, analyses, paraphrases, explanations, or short excerpts are allowed. Requests to output substantial portions of modern books, songs, poems, scripts, or other creative works should be flagged, unless the user includes the text themselves. In short: if the user wants you to produce copyrighted text you don’t already have in the prompt, it’s disallowed; if they want you to explain or transform provided text, it’s allowed.
-"""  # noqa: E501, RUF001
+When evaluating an input, treat it as a copyright risk if the user is requesting long or verbatim reproduction of copyrighted text they have not provided; requests for summaries, analyses, paraphrases, explanations, or short excerpts are allowed. Requests to output substantial portions of modern books, songs, poems, scripts, or other creative works should be flagged, unless the user includes the text themselves. In short: if the user wants you to produce copyrighted text you don't already have in the prompt, it's disallowed; if they want you to explain or transform provided text, it's allowed.
+"""  # noqa: E501
 
     async def evaluate(self, messages: list[AnyMessage]) -> GuardrailResult:
         async with chat_pool.throttle():
