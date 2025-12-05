@@ -19,14 +19,12 @@ from httpx import AsyncClient, QueryParams
 from granite_core.logging import get_logger
 from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.types import ScrapedContent
-from granite_core.search.user_agent import UserAgent
 
 logger = get_logger(__name__)
 
 
 class WikipediaScraper(AsyncScraper):
     wikipedia_api_url = "https://en.wikipedia.org/w/api.php"
-    user_agent = UserAgent().user_agent
 
     async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
         path = urlparse(link).path
@@ -36,7 +34,6 @@ class WikipediaScraper(AsyncScraper):
             {"action": "query", "format": "json", "titles": title, "prop": "extracts", "explaintext": 1}
         )
 
-        client.headers.update({"User-Agent": self.user_agent})
         response = await client.get(self.wikipedia_api_url, timeout=10, params=params)
 
         if response.status_code == 403:
