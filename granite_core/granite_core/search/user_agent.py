@@ -1,15 +1,24 @@
 # © Copyright IBM Corporation 2025
 # SPDX-License-Identifier: Apache-2.0
 
-import random
-from typing import ClassVar, Self
+from typing import Any, Self
+
+from granite_core.config import settings
 
 
 class UserAgent:
-    _user_agents: ClassVar[list[str]] = [
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"  # noqa: E501
-    ]
+    """
+    Singleton class to provide user agent string
+    """
 
-    @classmethod
-    def user_agent(cls: type[Self]) -> str:
-        return random.choice(cls._user_agents)
+    instance = None
+    user_agent = "GranitePlayground/1.0 (https://www.ibm.com/granite/playground)"
+
+    def __new__(cls, *args: tuple, **kwargs: dict[str, Any]) -> Self:
+        if not cls.instance:
+            cls.instance = super().__new__(cls, *args, **kwargs)
+            if settings.USER_AGENT_CONTACT:
+                cls.instance.user_agent = (
+                    f"GranitePlayground/1.0 (https://www.ibm.com/granite/playground; {settings.USER_AGENT_CONTACT})"
+                )
+        return cls.instance

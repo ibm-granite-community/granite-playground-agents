@@ -28,6 +28,7 @@ from granite_core.search.scraping.docling import DoclingPDFScraper
 from granite_core.search.scraping.types import ScrapedSearchResult
 from granite_core.search.scraping.wikipedia import WikipediaScraper
 from granite_core.search.types import SearchResult
+from granite_core.search.user_agent import UserAgent
 from granite_core.work import task_pool
 
 
@@ -39,7 +40,6 @@ class ScraperRunner(EventEmitter):
     def __init__(
         self,
         search_results: list[SearchResult],
-        user_agent: str,
         scraper_key: str,
         session_id: str,
         max_scraped_content: int = 10,
@@ -52,7 +52,7 @@ class ScraperRunner(EventEmitter):
         super().__init__()
         self.search_results = search_results
         self.async_client = AsyncClient()
-        self.async_client.headers.update({"User-Agent": user_agent})
+        self.async_client.headers.update({"User-Agent": UserAgent.user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content

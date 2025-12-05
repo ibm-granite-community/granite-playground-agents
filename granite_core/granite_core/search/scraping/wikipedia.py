@@ -19,15 +19,19 @@ from httpx import AsyncClient, QueryParams
 from granite_core.logging import get_logger
 from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.types import ScrapedContent
+from granite_core.search.user_agent import UserAgent
 
 logger = get_logger(__name__)
 
 
 class WikipediaScraper(AsyncScraper):
     wikipedia_api_url = "https://en.wikipedia.org/w/api.php"
-    user_agent = "GranitePlayground/1.0 (https://www.ibm.com/granite/playground; mdesmond@us.ibm.com)"
+    user_agent = UserAgent().user_agent
 
     async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
+        if not self.can_scrape(link):
+            return None
+
         path = urlparse(link).path
         title = unquote(path.split("/wiki/")[1])
 

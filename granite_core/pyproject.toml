@@ -13,6 +13,7 @@ dependencies = [
     'colorama>=0.4.6',
     'ddgs>=9.5.2',
     "docling-parse>=4.7.0",
+    "email-validator>=2.3.0",
     'granite-io>=0.5.1',
     'httpx>=0.28.1',
     "langchain-classic==1.0.0",

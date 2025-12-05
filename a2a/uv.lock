@@ -677,6 +677,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dnspython"
+version = "2.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f", size = 368251, upload-time = "2025-09-07T18:58:00.022Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af", size = 331094, upload-time = "2025-09-07T18:57:58.071Z" },
+]
+
+[[package]]
 name = "docling-core"
 version = "2.49.0"
 source = { registry = "https://pypi.org/simple" }
@@ -730,6 +739,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/2e/109fe8f3bc8a151c81d5ceb6ce59bcc07c32b63ab7a0e9e29c41fd112f20/docling_parse-4.7.0-cp314-cp314-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6776f0d06eeb4896366532c08a89e5b2acf772e8717e537a69f707f3dff36ab3", size = 14978758, upload-time = "2025-10-20T13:45:16.077Z" },
     { url = "https://files.pythonhosted.org/packages/55/94/e62ffe81ba269ba8ab7de94f083f390463a13c5ced715506e63106459bb2/docling_parse-4.7.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cf3a103c9b84295cd0dc032f05d65ed14dc80a155e0a0a2e2f0b7e2bb007efb7", size = 15089390, upload-time = "2025-10-20T13:45:18.67Z" },
     { url = "https://files.pythonhosted.org/packages/31/f3/039520544492e4015703880df3475973bd9ed1b35d20674616f96fc07268/docling_parse-4.7.0-cp314-cp314-win_amd64.whl", hash = "sha256:c9add2fdd93cfc6ef14f82085af8d26444711255569e6fffb661a7f5f878f9a8", size = 16783637, upload-time = "2025-10-20T13:45:21.561Z" },
+]
+
+[[package]]
+name = "email-validator"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dnspython" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f5/22/900cb125c76b7aaa450ce02fd727f452243f2e91a61af068b40adba60ea9/email_validator-2.3.0.tar.gz", hash = "sha256:9fc05c37f2f6cf439ff414f8fc46d917929974a82244c20eb10231ba60c54426", size = 51238, upload-time = "2025-08-26T13:09:06.831Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/15/545e2b6cf2e3be84bc1ed85613edd75b8aea69807a71c26f4ca6a9258e82/email_validator-2.3.0-py3-none-any.whl", hash = "sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4", size = 35604, upload-time = "2025-08-26T13:09:05.858Z" },
 ]
 
 [[package]]
@@ -929,6 +951,7 @@ dependencies = [
     { name = "colorama" },
     { name = "ddgs" },
     { name = "docling-parse" },
+    { name = "email-validator" },
     { name = "granite-io" },
     { name = "httpx" },
     { name = "langchain-classic" },
@@ -957,6 +980,7 @@ requires-dist = [
     { name = "colorama", specifier = ">=0.4.6" },
     { name = "ddgs", specifier = ">=9.5.2" },
     { name = "docling-parse", specifier = ">=4.7.0" },
+    { name = "email-validator", specifier = ">=2.3.0" },
     { name = "granite-io", specifier = ">=0.5.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-classic", specifier = "==1.0.0" },

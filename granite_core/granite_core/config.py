@@ -6,7 +6,7 @@ import os
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field, SecretStr, TypeAdapter, model_validator
-from pydantic.networks import HttpUrl
+from pydantic.networks import EmailStr, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     DDG_SEARCH_VERIFY: bool = Field(default=True, description="DuckDuckGo SSL Verification")
 
     CHECK_ROBOTS_TXT: bool = Field(default=True, description="Check robots.txt before scraping")
+    USER_AGENT_CONTACT: EmailStr | None = Field(default=None, description="Contact email for user-agent string")
 
     SCRAPER_MAX_CONTENT_LENGTH: int = Field(
         description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
