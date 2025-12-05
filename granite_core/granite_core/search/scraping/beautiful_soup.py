@@ -37,7 +37,7 @@ class BeautifulSoupScraper(AsyncScraper):
         occurs during the process, an error message is printed and an empty string is returned.
         """
         try:
-            if not self.can_scrape(link):
+            if not await self.can_scrape(link):
                 return None
 
             response = await client.get(link, timeout=5)
