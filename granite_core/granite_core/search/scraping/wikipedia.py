@@ -29,9 +29,6 @@ class WikipediaScraper(AsyncScraper):
     user_agent = UserAgent().user_agent
 
     async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
-        if not self.can_scrape(link):
-            return None
-
         path = urlparse(link).path
         title = unquote(path.split("/wiki/")[1])
 

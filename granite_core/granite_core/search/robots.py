@@ -17,7 +17,7 @@ async def can_fetch(url: str, user_agent: str = "*") -> bool:
         rp = RobotFileParser()
         try:
             rp.set_url(robots_url)
-            await asyncio.to_thread(rp.read)
+            await asyncio.wait_for(asyncio.to_thread(rp.read), timeout=5)
         except Exception:
             # If robots.txt is unreachable, treat as allowed (common crawler behavior)
             return True
