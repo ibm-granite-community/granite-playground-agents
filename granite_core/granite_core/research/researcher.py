@@ -172,8 +172,8 @@ class Researcher(
 
     async def _web_search(self, query: str) -> None:
         search_results = await self._search_query(query, max_results=settings.RESEARCH_MAX_SEARCH_RESULTS_PER_STEP)
-        filtered = [s for s in search_results if not self.contains_search_result(s.url)]
-        search_results = await self.search_results_filter.filter(query, filtered)
+        search_results = [s for s in search_results if not self.contains_search_result(s.url)]
+        search_results = await self.search_results_filter.filter(query, search_results)
         for s in search_results:
             self.add_search_result(s)
 

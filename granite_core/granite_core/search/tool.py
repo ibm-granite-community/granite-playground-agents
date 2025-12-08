@@ -25,7 +25,9 @@ class SearchTool(SearchResultsMixin, ScrapedSearchResultsMixin):
         super().__init__(*args, **kwargs)
         self.chat_model = chat_model
         self.vector_store = VectorStoreWrapperFactory.create()
-        self.search_results_filter = SearchResultsFilter(chat_model=self.chat_model, session_id=session_id)
+
+        self.llmaaj_search_filter = SearchResultsFilter(chat_model=self.chat_model, session_id=session_id)
+
         self.logger = get_logger_with_prefix(__name__, "SearchTool", session_id)
         self.session_id = session_id
 
@@ -101,8 +103,10 @@ class SearchTool(SearchResultsMixin, ScrapedSearchResultsMixin):
             async with task_pool.throttle():
                 results = await engine.search(query=query, max_results=max_results)
 
-            filtered_results = await self.search_results_filter.filter(query=query, results=results)
-            for r in filtered_results:
+            # llmaaj filtering
+            results = await self.llmaaj_search_filter.filter(query=query, results=results)
+
+            for r in results:
                 self.add_search_result(r)
         except Exception as e:
             self.logger.exception(repr(e))
