@@ -30,7 +30,7 @@ class ArxivScraper(AsyncScraper):
         for a given query extracted from the link.
         """
 
-        if not self.can_scrape(link):
+        if not await self.can_scrape(link):
             return None
 
         query = link.split("/")[-1]
