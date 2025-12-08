@@ -43,8 +43,8 @@ class ThinkingTool(EventEmitter):
         thinking_tokens: list[str] = []
 
         async with chat_pool.throttle():
-            async for event, _ in self.chat_model.create(
-                messages=[
+            async for event, _ in self.chat_model.run(
+                [
                     SystemMessage(content=ThinkingPrompts.two_step_thinking_system_prompt()),
                     *self.messages,
                 ],
@@ -59,8 +59,8 @@ class ThinkingTool(EventEmitter):
         thinking_str = "".join(thinking_tokens)
 
         async with chat_pool.throttle():
-            async for event, _ in self.chat_model.create(
-                messages=[
+            async for event, _ in self.chat_model.run(
+                [
                     SystemMessage(
                         content=ThinkingPrompts.two_step_thinking_answer_system_prompt(thinking=thinking_str)
                     ),

@@ -9,7 +9,7 @@ dependencies = [
     'aiolimiter>=1.2.1',
     "arxiv==2.3.0",
     'beautifulsoup4>=4.13.4',
-    'beeai-framework==0.1.47',
+    "beeai-framework==0.1.72",
     'colorama>=0.4.6',
     'ddgs>=9.5.2',
     "docling-parse>=4.7.0",
