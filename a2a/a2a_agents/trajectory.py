@@ -28,7 +28,7 @@ class TrajectoryHandler:
         logger.debug(formatted_log_msg)
         trajectory_metadata = self.trajectory.trajectory_metadata(title=title, content=content)
         await self.context.yield_async(trajectory_metadata)
-        self.log.insert(0, trajectory_metadata)
+        self.log.append(trajectory_metadata)
 
     async def store(self) -> None:
         for metadata in self.log:
