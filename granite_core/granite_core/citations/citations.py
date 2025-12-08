@@ -189,11 +189,13 @@ class DefaultCitationGenerator(CitationGenerator):
             prompt = CitationsPrompts.generate_citations_prompt(sentences=sentences, docs=docs)
 
             async with chat_pool.throttle():
-                structured_output = await self.chat_model.create_structure(
-                    schema=CitationsSchema, messages=[UserMessage(content=prompt)]
+                st_response = await self.chat_model.run(
+                    [UserMessage(content=prompt)],
+                    response_format=CitationsSchema,
                 )
 
-            citations = CitationsSchema(**structured_output.object)
+            assert isinstance(st_response.output_structured, CitationsSchema)
+            citations = st_response.output_structured
 
             for cite in citations.citations:
                 if cite.sentence_id in sent_index and cite.source_id in doc_index:
@@ -293,13 +295,14 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
                                 )
 
                                 async with chat_pool.throttle():
-                                    structured_output = await self.chat_model.create_structure(
-                                        schema=ReferencingCitationsSchema,
-                                        messages=[UserMessage(content=prompt)],
+                                    structured_output = await self.chat_model.run(
+                                        [UserMessage(content=prompt)],
+                                        response_format=ReferencingCitationsSchema,
                                         max_retries=settings.MAX_RETRIES,
                                     )
 
-                                citations = ReferencingCitationsSchema(**structured_output.object)
+                                assert isinstance(structured_output.output_structured, ReferencingCitationsSchema)
+                                citations = structured_output.output_structured
 
                                 message_sentence_offsets = [
                                     (s.offset, s.offset + s.length) for s in response_as_sentences

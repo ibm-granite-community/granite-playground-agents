@@ -105,16 +105,14 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
         if core_settings.STREAMING is True:
             async with chat_pool.throttle():
-                async for event, _ in chat_model.create(
-                    messages=messages, max_retries=core_settings.MAX_RETRIES, stream=True
-                ):
+                async for event, _ in chat_model.run(messages, max_retries=core_settings.MAX_RETRIES, stream=True):
                     if isinstance(event, ChatModelNewTokenEvent):
                         yield MessagePart(content=event.value.get_text_content())
                     elif isinstance(event, ChatModelSuccessEvent):
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
             async with chat_pool.throttle():
-                output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
+                output = await chat_model.run(messages, max_retries=core_settings.MAX_RETRIES)
             yield MessagePart(content=output.get_text_content())
             yield create_usage_info(output.usage, chat_model.model_id)
 
@@ -195,9 +193,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
 
             if core_settings.STREAMING is True:
                 async with chat_pool.throttle():
-                    async for event, _ in chat_model.create(
-                        messages=messages, stream=True, max_retries=core_settings.MAX_RETRIES
-                    ):
+                    async for event, _ in chat_model.run(messages, stream=True, max_retries=core_settings.MAX_RETRIES):
                         if isinstance(event, ChatModelNewTokenEvent):
                             token = event.value.get_text_content()
                             for output in handler.on_token(token=token):
@@ -210,7 +206,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
                             yield create_usage_info(event.value.usage, chat_model.model_id)
             else:
                 async with chat_pool.throttle():
-                    chat_output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
+                    chat_output = await chat_model.run(messages, max_retries=core_settings.MAX_RETRIES)
 
                 text = chat_output.get_text_content()
 
@@ -293,9 +289,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         if core_settings.STREAMING is True:
             async with chat_pool.throttle():
-                async for event, _ in chat_model.create(
-                    messages=messages, stream=True, max_retries=core_settings.MAX_RETRIES
-                ):
+                async for event, _ in chat_model.run(messages, stream=True, max_retries=core_settings.MAX_RETRIES):
                     if isinstance(event, ChatModelNewTokenEvent):
                         content = event.value.get_text_content()
                         response.append(content)
@@ -304,7 +298,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
                         yield create_usage_info(event.value.usage, chat_model.model_id)
         else:
             async with chat_pool.throttle():
-                output = await chat_model.create(messages=messages, max_retries=core_settings.MAX_RETRIES)
+                output = await chat_model.run(messages, max_retries=core_settings.MAX_RETRIES)
 
             response.append(output.get_text_content())
             yield MessagePart(content="".join(response))

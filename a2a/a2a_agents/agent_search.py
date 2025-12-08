@@ -116,7 +116,7 @@ async def search(
 
         # yield response
         async with chat_pool.throttle():
-            async for event, _ in chat_model.create(messages=messages, stream=True):
+            async for event, _ in chat_model.run(messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
                     agent_response_text = event.value.get_text_content()
                     yield AgentMessage(text=agent_response_text)

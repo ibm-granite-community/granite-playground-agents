@@ -15,7 +15,6 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from langchain_core.documents import Document
-from pydantic import ValidationError
 
 from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.config import settings
@@ -127,13 +126,13 @@ class Researcher(
         standalone_prompt = ResearchPrompts.interpret_research_topic(self.messages)
 
         async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
-                schema=ResearchTopicSchema,
-                messages=[UserMessage(content=standalone_prompt)],
+            response = await self.chat_model.run(
+                [UserMessage(content=standalone_prompt)],
+                response_format=ResearchTopicSchema,
                 max_retries=settings.MAX_RETRIES,
             )
-        topic = ResearchTopicSchema(**response.object)
-        return topic.research_topic
+        assert isinstance(response.output_structured, ResearchTopicSchema)
+        return response.output_structured.research_topic
 
     async def _generate_research_context(self) -> str:
         """
@@ -151,8 +150,8 @@ class Researcher(
         ]
 
         async with chat_pool.throttle():
-            output = await self.chat_model.create(
-                messages=search_messages,
+            output = await self.chat_model.run(
+                search_messages,
                 max_retries=settings.MAX_RETRIES,
                 max_tokens=settings.RESEARCH_PRELIM_MAX_TOKENS,
             )
@@ -197,13 +196,14 @@ class Researcher(
     async def _get_language(self) -> str:
         recent_user_message = self._get_most_recent_user_message()
         async with chat_pool.throttle():
-            response = await self.structured_chat_model.create_structure(
-                schema=LanguageIdentificationSchema,
-                messages=[UserMessage(content=ResearchPrompts.language_identification(recent_user_message.text))],
+            response = await self.structured_chat_model.run(
+                [UserMessage(content=ResearchPrompts.language_identification(recent_user_message.text))],
+                response_format=LanguageIdentificationSchema,
                 max_retries=settings.MAX_RETRIES,
             )
             try:
-                identified_language = LanguageIdentificationSchema(**response.object).language.title()
+                assert isinstance(response.output_structured, LanguageIdentificationSchema)
+                identified_language = response.output_structured.language.title()
                 self.logger.info(
                     f"Writing report in {identified_language} based on the most recent user message: {recent_user_message.text}"  # noqa: E501
                 )
@@ -236,8 +236,8 @@ class Researcher(
         if settings.STREAMING is True:
             # Final report is streamed
             async with chat_pool.throttle():
-                async for event, _ in self.chat_model.create(
-                    messages=[UserMessage(content=prompt)], stream=True, max_retries=settings.MAX_RETRIES
+                async for event, _ in self.chat_model.run(
+                    [UserMessage(content=prompt)], stream=True, max_retries=settings.MAX_RETRIES
                 ):
                     if isinstance(event, ChatModelNewTokenEvent):
                         content = event.value.get_text_content()
@@ -246,9 +246,7 @@ class Researcher(
                     elif isinstance(event, ChatModelSuccessEvent):
                         await self._emit(PassThroughEvent(event=event))
         else:
-            output = await self.chat_model.create(
-                messages=[UserMessage(content=prompt)], max_retries=settings.MAX_RETRIES
-            )
+            output = await self.chat_model.run([UserMessage(content=prompt)], max_retries=settings.MAX_RETRIES)
             response.append(output.get_text_content())
             await self._emit(TextEvent(text="".join(response)))
             await self._emit(PassThroughEvent(event=ChatModelSuccessEvent(value=output)))
@@ -264,17 +262,13 @@ class Researcher(
         )
 
         async with chat_pool.throttle():
-            response = await self.structured_chat_model.create_structure(
-                schema=ResearchPlanSchema,
-                messages=[UserMessage(content=prompt)],
+            response = await self.structured_chat_model.run(
+                [UserMessage(content=prompt)],
+                response_format=ResearchPlanSchema,
                 max_retries=settings.MAX_RETRIES,
             )
-
-        try:
-            plan = ResearchPlanSchema(**response.object)
-            return plan.questions
-        except ValidationError as e:
-            raise ValueError("Failed to generate a valid research plan!") from e
+            assert isinstance(response.output_structured, ResearchPlanSchema)
+            return response.output_structured.questions
 
     async def _perform_research(self) -> None:
         if self.research_plan is None or len(self.research_plan) == 0:
@@ -297,8 +291,8 @@ class Researcher(
 
         research_report_prompt = ResearchPrompts.research_report_prompt(query=query, docs=docs)
         async with chat_pool.throttle():
-            response = await self.chat_model.create(
-                messages=[UserMessage(content=research_report_prompt)],
+            response = await self.chat_model.run(
+                [UserMessage(content=research_report_prompt)],
                 max_retries=settings.MAX_RETRIES,
                 max_tokens=settings.RESEARCH_FINDINGS_MAX_TOKENS,
             )

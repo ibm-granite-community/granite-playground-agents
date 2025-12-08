@@ -71,26 +71,27 @@ class SearchTool(SearchResultsMixin, ScrapedSearchResultsMixin):
         )
 
         async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
-                schema=SearchQueriesSchema,
-                messages=[UserMessage(content=search_query_prompt)],
+            response = await self.chat_model.run(
+                [UserMessage(content=search_query_prompt)],
+                response_format=SearchQueriesSchema,
                 max_retries=settings.MAX_RETRIES,
             )
 
-        result = SearchQueriesSchema(**response.object)
-        return result.search_queries[: settings.SEARCH_MAX_SEARCH_QUERIES_PER_STEP]
+        assert isinstance(response.output_structured, SearchQueriesSchema)
+        return response.output_structured.search_queries[: settings.SEARCH_MAX_SEARCH_QUERIES_PER_STEP]
 
     async def _generate_standalone(self, messages: list[Message]) -> str:
         standalone_prompt = SearchPrompts.generate_standalone_query(messages)
 
         async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
-                schema=StandaloneQuerySchema,
-                messages=[UserMessage(content=standalone_prompt)],
+            response = await self.chat_model.run(
+                [UserMessage(content=standalone_prompt)],
+                response_format=StandaloneQuerySchema,
                 max_retries=settings.MAX_RETRIES,
             )
-        standalone_query = StandaloneQuerySchema(**response.object)
-        return standalone_query.query
+
+        assert isinstance(response.output_structured, StandaloneQuerySchema)
+        return response.output_structured.query
 
     async def _perform_web_search(self, queries: list[str], max_results: int = 3) -> None:
         await asyncio.gather(*(self._search_query(q, max_results) for q in queries))

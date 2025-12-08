@@ -28,13 +28,14 @@ class SearchResultsFilter:
         prompt = SearchPrompts.filter_search_result_prompt(query=query, search_result=result)
 
         async with chat_pool.throttle():
-            response = await self.chat_model.create_structure(
-                schema=SearchResultRelevanceSchema,
-                messages=[UserMessage(content=prompt)],
+            response = await self.chat_model.run(
+                [UserMessage(content=prompt)],
+                response_format=SearchResultRelevanceSchema,
                 max_retries=settings.MAX_RETRIES,
             )
 
-        relevance = SearchResultRelevanceSchema(**response.object)
+        assert isinstance(response.output_structured, SearchResultRelevanceSchema)
+        relevance = response.output_structured
 
         if relevance.is_relevant:
             return result
