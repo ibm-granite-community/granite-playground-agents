@@ -26,7 +26,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentstack-sdk", specifier = ">=0.4.0" },
+    { name = "agentstack-sdk", specifier = ">=0.4.2" },
     { name = "granite-core", editable = "../granite_core" },
 ]
 
@@ -66,7 +66,7 @@ wheels = [
 
 [[package]]
 name = "agentstack-sdk"
-version = "0.4.0"
+version = "0.4.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -86,9 +86,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/b5/01a649665e76c2e53106a96f4f82c182776cc6eb2f83944c08233d04e7ad/agentstack_sdk-0.4.0.tar.gz", hash = "sha256:a151931e37909e77019987ab979af0b0faa1e179053e8bdf025eb90860f92212", size = 37795, upload-time = "2025-10-30T16:18:52.379Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/57/9a33c7b4f063540e3af34d4171eacfaa426399bd7716a14c0061ee6a8dd1/agentstack_sdk-0.4.3.tar.gz", hash = "sha256:d27fdfe728ddaedcea93db416b022e48a4309a9e11384ae3a962ccd2e9ea0707", size = 42184, upload-time = "2025-12-05T10:20:46.992Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/fd/6b2f8c90fee012a066dfc18a712d0742b97c434868be6a3fc2d6ed64a790/agentstack_sdk-0.4.0-py3-none-any.whl", hash = "sha256:247c8235755a86518abd0c056668bb96bfe8549140831f56d9d203ef1cefccc8", size = 67149, upload-time = "2025-10-30T16:18:50.943Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/97/2cc71e013e9d4c378f1b48d99fc3f0f98531cdc477183b2586bc38629f12/agentstack_sdk-0.4.3-py3-none-any.whl", hash = "sha256:ffd45d8a759a8436291f9b140d4299d332ac1ddd988a056f0a2c92af8c93bdfe", size = 76188, upload-time = "2025-12-05T10:20:45.572Z" },
 ]
 
 [[package]]
