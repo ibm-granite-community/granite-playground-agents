@@ -98,7 +98,7 @@ async def search(
         structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         # trajectory message: search start
-        await trajectory_handler.yield_trajectory(title="Searching the web", content="starting")
+        await trajectory_handler.yield_trajectory(title="Searching the web", content="* Starting", group_id="search")
 
         # run the search
         search_tool = SearchTool(chat_model=structured_chat_model, session_id=context.context_id)
@@ -112,7 +112,9 @@ async def search(
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         # trajectory message: search complete
-        await trajectory_handler.yield_trajectory(title="Searching the web", content="complete")
+        await trajectory_handler.yield_trajectory(
+            title="Searching the web", content="* Starting\n* Complete", group_id="search"
+        )
 
         # yield response
         async with chat_pool.throttle():
@@ -126,7 +128,9 @@ async def search(
 
         # Yield citations
         if len(docs) > 0:
-            await trajectory_handler.yield_trajectory(title="Generating citations", content="starting")
+            await trajectory_handler.yield_trajectory(
+                title="Generating citations", content="* Starting", group_id="citations"
+            )
 
             # generate citations
             async def citation_handler(event: Event) -> None:
@@ -147,7 +151,9 @@ async def search(
             generator = CitationGeneratorFactory.create()
             generator.subscribe(handler=citation_handler)
             await generator.generate(docs=docs, response="".join(final_agent_response_text))
-            await trajectory_handler.yield_trajectory(title="Generating citations", content="complete")
+            await trajectory_handler.yield_trajectory(
+                title="Generating citations", content="* Starting\n* Complete", group_id="citations"
+            )
 
         await trajectory_handler.store()
         await context.store(
