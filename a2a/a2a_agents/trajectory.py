@@ -28,9 +28,21 @@ class TrajectoryHandler:
         log_msg = f"{title}: {content}"
         formatted_log_msg = log_msg[:77] + "..." if len(log_msg) > 77 else log_msg
         logger.debug(formatted_log_msg)
+
+        # search the log for previous entries with the same group_id and append content
+        if group_id is not None and content is not None:
+            for log_entry in self.log:
+                if log_entry[self.trajectory.spec.URI]["group_id"] == group_id:
+                    logged_content = str(log_entry[self.trajectory.spec.URI]["content"])
+                    if logged_content.startswith("* "):
+                        content = f"{logged_content}\n* {content}"
+                    else:
+                        content = f"* {logged_content}\n* {content}"
+                    break
+
         trajectory_metadata = self.trajectory.trajectory_metadata(title=title, content=content, group_id=group_id)
-        await self.context.yield_async(trajectory_metadata)
         self.log.append(trajectory_metadata)
+        await self.context.yield_async(trajectory_metadata)
 
     async def store(self) -> None:
         for metadata in self.log:

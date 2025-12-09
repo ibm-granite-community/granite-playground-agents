@@ -105,7 +105,9 @@ async def research(
                 if event.content is None:
                     await trajectory_handler.yield_trajectory(title=event.title)
                 elif isinstance(event.content, str):
-                    await trajectory_handler.yield_trajectory(title=event.title, content=event.content)
+                    await trajectory_handler.yield_trajectory(
+                        title=event.title, content=event.content, group_id=event.title
+                    )
                 elif isinstance(event.content, list):
                     await trajectory_handler.yield_trajectory(
                         title=event.title, content="\n".join(f"* {c}" for c in event.content)
@@ -133,7 +135,7 @@ async def research(
 
             elif isinstance(event, GeneratingCitationsCompleteEvent):
                 await trajectory_handler.yield_trajectory(
-                    title="Generating citations", content="* Starting\n* Complete", group_id="citations"
+                    title="Generating citations", content="Complete", group_id="citations"
                 )
 
         # create and run the researcher
