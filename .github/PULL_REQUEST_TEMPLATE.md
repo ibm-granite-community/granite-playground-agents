@@ -12,4 +12,5 @@ Closes: #
 - [ ] I have [signed off](https://github.com/ibm-granite-community/granite-playground-agents?tab=contributing-ov-file#developer-certificate-of-origin-1) on my commits
 - [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
 - [ ] Pre-commit passes
+- [ ] All test cases pass
 - [ ] Documentation is updated
