@@ -112,7 +112,9 @@ async def research(
                     )
 
             elif isinstance(event, GeneratingCitationsEvent):
-                await trajectory_handler.yield_trajectory(title="Generating citations", content="starting")
+                await trajectory_handler.yield_trajectory(
+                    title="Generating citations", content="* Starting", group_id="citations"
+                )
             elif isinstance(event, CitationEvent):
                 logger.info(f"[granite_research:{context.context_id}] Citation: {event.citation.url}")
 
@@ -128,7 +130,9 @@ async def research(
                 final_citations.append(cite)
 
             elif isinstance(event, GeneratingCitationsCompleteEvent):
-                await trajectory_handler.yield_trajectory(title="Generating citations", content="complete")
+                await trajectory_handler.yield_trajectory(
+                    title="Generating citations", content="* Starting\n* Complete", group_id="citations"
+                )
 
         # create and run the researcher
         researcher = Researcher(
