@@ -110,6 +110,8 @@ async def research(
                     await trajectory_handler.yield_trajectory(
                         title=event.title, content="\n".join(f"* {c}" for c in event.content)
                     )
+                else:
+                    logger.warning(f"Unknown trajectory content type: {type(event.content)}")
 
             elif isinstance(event, GeneratingCitationsEvent):
                 await trajectory_handler.yield_trajectory(
