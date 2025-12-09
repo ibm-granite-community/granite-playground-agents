@@ -112,9 +112,7 @@ async def search(
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         # trajectory message: search complete
-        await trajectory_handler.yield_trajectory(
-            title="Searching the web", content="* Starting\n* Complete", group_id="search"
-        )
+        await trajectory_handler.yield_trajectory(title="Searching the web", content="Complete", group_id="search")
 
         # yield response
         async with chat_pool.throttle():
@@ -152,7 +150,7 @@ async def search(
             generator.subscribe(handler=citation_handler)
             await generator.generate(docs=docs, response="".join(final_agent_response_text))
             await trajectory_handler.yield_trajectory(
-                title="Generating citations", content="* Starting\n* Complete", group_id="citations"
+                title="Generating citations", content="Complete", group_id="citations"
             )
 
         await trajectory_handler.store()
