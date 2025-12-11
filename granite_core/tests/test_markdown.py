@@ -7,8 +7,7 @@ import pytest
 from granite_core.markdown import get_markdown_sections, get_markdown_tokens_with_content
 
 
-@pytest.mark.asyncio
-async def test_markdown_sectioning() -> None:
+def test_markdown_sectioning() -> None:
     """Test markdown processing"""
 
     section_text = [
@@ -37,8 +36,7 @@ async def test_markdown_sectioning() -> None:
         assert extracted_sections[i].content == section_text[i]
 
 
-@pytest.mark.asyncio
-async def test_markdown_tokenization() -> None:
+def test_markdown_tokenization() -> None:
     """Test inline token extraction"""
 
     section_text = [

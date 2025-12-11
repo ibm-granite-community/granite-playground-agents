@@ -8,8 +8,7 @@ from granite_core.thinking.response_parser import ThinkingResponseParser
 from granite_core.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 
 
-@pytest.mark.asyncio
-async def test_streaming() -> None:
+def test_streaming() -> None:
     """Test thinking stream"""
 
     thinking_text = "The user asked for me to think. I should think. I will also include a <tag></tag>"
@@ -36,8 +35,7 @@ async def test_streaming() -> None:
     assert "".join(response) == response_text
 
 
-@pytest.mark.asyncio
-async def test_weird_streaming() -> None:
+def test_weird_streaming() -> None:
     """Test thinking stream with noise"""
 
     thinking_text = "The user asked for me to think. I should think. I will also include a <tag></tag>"
@@ -64,8 +62,7 @@ async def test_weird_streaming() -> None:
     assert "".join(response) == response_text
 
 
-@pytest.mark.asyncio
-async def test_parsing() -> None:
+def test_parsing() -> None:
     """Test thinking parse"""
     thinking_text = "The user asked for me to think. I should think. I will also include a <tag></tag>"
     response_text = "I am done thinking!"
