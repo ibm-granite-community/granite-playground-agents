@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 from granite_core.config import settings
 from granite_core.gurardrails.base import Guardrail, GuardrailResult
+from granite_core.logging import get_logger
 from granite_core.work import chat_pool
+
+logger = get_logger(__name__)
 
 
 class CopyrightViolationSchema(BaseModel):
@@ -31,6 +34,7 @@ When evaluating an input, treat it as a copyright risk if the user is requesting
 """  # noqa: E501, RUF001
 
     async def evaluate(self, messages: list[AnyMessage]) -> GuardrailResult:
+        logger.info("Evaluating messages for copyright violation guardrail")
         async with chat_pool.throttle():
             response = await self.chat_model.run(
                 [SystemMessage(self.system_prompt()), *messages],
@@ -40,5 +44,10 @@ When evaluating an input, treat it as a copyright risk if the user is requesting
 
         assert isinstance(response.output_structured, CopyrightViolationSchema)
         guardrail = response.output_structured
+
+        if guardrail.is_copyright_violation:
+            logger.warning(f"Copyright violation detected: {guardrail.reason}")
+        else:
+            logger.info(f"No copyright violation detected: {guardrail.reason}")
 
         return GuardrailResult(is_harmful=guardrail.is_copyright_violation, reason=guardrail.reason)
