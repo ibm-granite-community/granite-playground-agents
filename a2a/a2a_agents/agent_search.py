@@ -27,6 +27,8 @@ from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.citations.events import CitationEvent
 from granite_core.config import settings as core_settings
 from granite_core.emitter import Event
+from granite_core.gurardrails.base import GuardrailResult
+from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.search.prompts import SearchPrompts
 from granite_core.search.tool import SearchTool
@@ -96,6 +98,36 @@ async def search(
         # set up chat models
         chat_model = ChatModelFactory.create()
         structured_chat_model = ChatModelFactory.create(model_type="structured")
+
+        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
+        result: GuardrailResult = await guardrail.evaluate(messages)
+
+        if result.is_harmful:
+            messages.insert(
+                0,
+                SystemMessage(
+                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                ),
+            )
+
+            # yield response
+            async with chat_pool.throttle():
+                async for event, _ in chat_model.run(messages, stream=True):
+                    if isinstance(event, ChatModelNewTokenEvent):
+                        agent_response_text = event.value.get_text_content()
+                        yield AgentMessage(text=agent_response_text)
+                        final_agent_response_text.append(agent_response_text)
+
+            logger.info(f"Agent: {''.join(final_agent_response_text)}")
+
+            await context.store(
+                AgentMessage(
+                    text="".join(final_agent_response_text),
+                    metadata=citation.citation_metadata(citations=final_citations),
+                )
+            )
+
+            return
 
         # trajectory message: search start
         await trajectory_handler.yield_trajectory(title="Searching the web", content="* Starting", group_id="search")
