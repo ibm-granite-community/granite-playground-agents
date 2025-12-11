@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import pytest
-
 from granite_core.thinking.response_parser import ThinkingResponseParser
 from granite_core.thinking.stream_handler import TagStartEvent, ThinkingStreamHandler, TokenEvent
 

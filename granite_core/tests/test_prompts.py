@@ -1,3 +1,6 @@
+# © Copyright IBM Corporation 2025
+# SPDX-License-Identifier: Apache-2.0
+
 import inspect
 
 from granite_core.chat.prompts import ChatPrompts

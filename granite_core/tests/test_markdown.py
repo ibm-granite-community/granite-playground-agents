@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-import pytest
-
 from granite_core.markdown import get_markdown_sections, get_markdown_tokens_with_content
 
 
