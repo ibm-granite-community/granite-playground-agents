@@ -27,7 +27,6 @@ from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.citations.events import CitationEvent
 from granite_core.config import settings as core_settings
 from granite_core.emitter import Event
-from granite_core.gurardrails.base import GuardrailResult
 from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.search.prompts import SearchPrompts
@@ -100,13 +99,13 @@ async def search(
         structured_chat_model = ChatModelFactory.create(model_type="structured")
 
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
-        result: GuardrailResult = await guardrail.evaluate(messages)
+        guardrail_result = await guardrail.evaluate(messages)
 
-        if result.is_harmful:
+        if guardrail_result.is_harmful:
             messages.insert(
                 0,
                 SystemMessage(
-                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
                 ),
             )
 

@@ -14,7 +14,6 @@ from agentstack_sdk.server.store.platform_context_store import PlatformContextSt
 from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings as core_settings
-from granite_core.gurardrails.base import GuardrailResult
 from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.utils import log_settings
@@ -73,13 +72,13 @@ async def chat(
         chat_model = ChatModelFactory.create()
 
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
-        result: GuardrailResult = await guardrail.evaluate(messages)
+        guardrail_result = await guardrail.evaluate(messages)
 
-        if result.is_harmful:
+        if guardrail_result.is_harmful:
             messages.insert(
                 0,
                 SystemMessage(
-                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
                 ),
             )
 
