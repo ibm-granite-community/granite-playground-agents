@@ -11,9 +11,11 @@ from agentstack_sdk.a2a.types import AgentMessage, RunYield
 from agentstack_sdk.server import Server
 from agentstack_sdk.server.context import RunContext
 from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
-from beeai_framework.backend import ChatModelNewTokenEvent, UserMessage
+from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings as core_settings
+from granite_core.gurardrails.base import GuardrailResult
+from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.utils import log_settings
 from granite_core.work import chat_pool
@@ -69,6 +71,18 @@ async def chat(
     try:
         final_agent_response_text: list[str] = []
         chat_model = ChatModelFactory.create()
+
+        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
+        result: GuardrailResult = await guardrail.evaluate(messages)
+
+        if result.is_harmful:
+            messages.insert(
+                0,
+                SystemMessage(
+                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                ),
+            )
+
         async with chat_pool.throttle():
             async for event, _ in chat_model.run(messages, stream=True):
                 if isinstance(event, ChatModelNewTokenEvent):
