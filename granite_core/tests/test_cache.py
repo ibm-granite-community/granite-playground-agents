@@ -35,3 +35,6 @@ async def test_async_cache() -> None:
     await cache.set("f", 6)
 
     assert not await cache.exists("d")
+
+    # get Z, does not exist
+    assert await cache.get("z") is None
