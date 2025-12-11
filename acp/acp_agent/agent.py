@@ -29,6 +29,7 @@ from granite_core.events import (
     ThinkEvent,
     TrajectoryEvent,
 )
+from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.memory import estimate_tokens, exceeds_token_limit, token_limit_response
 from granite_core.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
@@ -94,14 +95,26 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
-        messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
+
+        chat_model = ChatModelFactory.create()
+
+        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
+        guardrail_result = await guardrail.evaluate(messages)
+
+        if guardrail_result.is_harmful:
+            messages = [
+                SystemMessage(
+                    content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                ),
+                *messages,
+            ]
+        else:
+            messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         token_count = estimate_tokens(messages=messages)
         if exceeds_token_limit(token_count):
             yield token_limit_response(token_count)
             return
-
-        chat_model = ChatModelFactory.create()
 
         if core_settings.STREAMING is True:
             async with chat_pool.throttle():
@@ -157,12 +170,23 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
+        chat_model = ChatModelFactory.create()
+
+        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
+        guardrail_result = await guardrail.evaluate(messages)
+
+        if guardrail_result.is_harmful:
+            messages = [
+                SystemMessage(
+                    content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                ),
+                *messages,
+            ]
+
         token_count = estimate_tokens(messages=messages)
         if exceeds_token_limit(token_count):
             yield token_limit_response(token_count)
             return
-
-        chat_model = ChatModelFactory.create()
 
         if settings.TWO_STEP_THINKING is True:
 
@@ -263,13 +287,46 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
 
+        chat_model = ChatModelFactory.create()
+        structured_chat_model = ChatModelFactory.create(model_type="structured")
+
+        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
+        guardrail_result = await guardrail.evaluate(messages)
+
+        if guardrail_result.is_harmful:
+            messages = [
+                SystemMessage(
+                    content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
+                ),
+                *messages,
+            ]
+
         token_count = estimate_tokens(messages=messages)
         if exceeds_token_limit(token_count):
             yield token_limit_response(token_count)
             return
 
-        chat_model = ChatModelFactory.create()
-        structured_chat_model = ChatModelFactory.create(model_type="structured")
+        response: list[str] = []
+
+        if guardrail_result.is_harmful:
+            if core_settings.STREAMING is True:
+                async with chat_pool.throttle():
+                    async for event, _ in chat_model.run(messages, stream=True, max_retries=core_settings.MAX_RETRIES):
+                        if isinstance(event, ChatModelNewTokenEvent):
+                            content = event.value.get_text_content()
+                            response.append(content)
+                            yield MessagePart(content=content)
+                        elif isinstance(event, ChatModelSuccessEvent):
+                            yield create_usage_info(event.value.usage, chat_model.model_id)
+            else:
+                async with chat_pool.throttle():
+                    output = await chat_model.run(messages, max_retries=core_settings.MAX_RETRIES)
+
+                response.append(output.get_text_content())
+                yield MessagePart(content="".join(response))
+                yield create_usage_info(output.usage, chat_model.model_id)
+
+            return
 
         await context.yield_async(SearchingWebPhase(status=Status.active).wrapped)
 
@@ -284,8 +341,6 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
 
         await context.yield_async(SearchingWebPhase(status=Status.completed).wrapped)
-
-        response: list[str] = []
 
         if core_settings.STREAMING is True:
             async with chat_pool.throttle():
