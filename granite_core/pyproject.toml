@@ -85,6 +85,7 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report term --cov-report html -n auto"
 filterwarnings = [
+    "ignore::UserWarning:pydantic",                   # remove when https://github.com/BerriAI/litellm/issues/11759 is fixed
     "ignore::DeprecationWarning:pydantic",
     "ignore::DeprecationWarning:litellm",
     "ignore::DeprecationWarning:langchain_community",
