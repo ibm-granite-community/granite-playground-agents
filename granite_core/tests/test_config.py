@@ -27,7 +27,7 @@ def clean_env() -> Generator[None, Any, None]:
 def test_defaults(clean_env) -> None:  # noqa: ANN001
     """Test that the settings load with default values correctly."""
 
-    settings = Settings()  # type: ignore[call-arg]
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
     assert settings.STREAMING is True  # boolean
     assert settings.LLM_PROVIDER == "ollama"  # literal
@@ -65,7 +65,7 @@ def test_retriever_google_missing_keys(clean_env) -> None:  # noqa: ANN001
     """Test failure when Google retriever is selected but keys are missing."""
 
     with pytest.raises(ValidationError) as excinfo:
-        Settings(RETRIEVER="google")  # type: ignore[call-arg]
+        Settings(RETRIEVER="google", GOOGLE_API_KEY=None, GOOGLE_CX_KEY=None)  # type: ignore[call-arg]
 
     assert "Google retriever requires GOOGLE_API_KEY and GOOGLE_CX_KEY" in str(excinfo.value)
 
