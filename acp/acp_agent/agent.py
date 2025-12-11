@@ -32,7 +32,6 @@ from granite_core.events import (
 from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
 from granite_core.logging import get_logger
 from granite_core.memory import estimate_tokens, exceeds_token_limit, token_limit_response
-from granite_core.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
 from granite_core.research.researcher import Researcher
 from granite_core.search.embeddings.tokenizer import EmbeddingsTokenizer
 from granite_core.search.prompts import SearchPrompts
@@ -50,6 +49,7 @@ from redis.asyncio import Redis
 from acp_agent import utils
 from acp_agent.config import settings
 from acp_agent.heartbeat import Heartbeat
+from acp_agent.phases import GeneratingCitationsPhase, SearchingWebPhase, Status
 from acp_agent.resources import AsyncCachingResourceLoader, ResourceStoreFactory
 from acp_agent.store import PrefixRouterMemoryStore
 
