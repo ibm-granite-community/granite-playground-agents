@@ -21,7 +21,7 @@ async def test_basic_chat() -> None:
 
 @pytest.mark.asyncio
 async def test_structured() -> None:
-    """Test basic chat infrastructure"""
+    """Test structured chat infrastructure"""
 
     class ProfileSchema(BaseModel):
         first_name: str = Field(..., min_length=1)

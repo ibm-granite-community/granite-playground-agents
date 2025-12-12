@@ -75,6 +75,7 @@ dev = [
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.11.10",
     "types-aiofiles>=24.1.0.20250801",
     "types-cachetools>=6.1.0.20250717",
@@ -82,8 +83,9 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-report term --cov-report html"
+addopts = "--cov=. --cov-report term --cov-report html -n auto"
 filterwarnings = [
+    "ignore::UserWarning:pydantic",                   # remove when https://github.com/BerriAI/litellm/issues/11759 is fixed
     "ignore::DeprecationWarning:pydantic",
     "ignore::DeprecationWarning:litellm",
     "ignore::DeprecationWarning:langchain_community",
