@@ -12,6 +12,10 @@ from agentstack_sdk.a2a.extensions import (
     Citation,
     CitationExtensionServer,
     CitationExtensionSpec,
+    EmbeddingServiceExtensionServer,
+    EmbeddingServiceExtensionSpec,
+    LLMServiceExtensionServer,
+    LLMServiceExtensionSpec,
     TrajectoryExtensionServer,
     TrajectoryExtensionSpec,
 )
@@ -38,7 +42,7 @@ from langchain_core.documents import Document
 from a2a_agents import __version__
 from a2a_agents.config import agent_detail, settings
 from a2a_agents.trajectory import TrajectoryHandler
-from a2a_agents.utils import to_framework_messages
+from a2a_agents.utils import configure_models, to_framework_messages
 
 logger = get_logger(__name__)
 server = Server()
@@ -66,20 +70,38 @@ search_skill = AgentSkill(
 async def agent(
     input: A2AMessage,
     context: RunContext,
+    llm_ext: Annotated[
+        LLMServiceExtensionServer,
+        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+    ],
+    embedding_ext: Annotated[
+        EmbeddingServiceExtensionServer,
+        EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+    ],
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     # this allows provision of an undecorated search function that can be imported elsewhere
-    async for response in search(input, context, trajectory, citation):
+    async for response in search(input, context, llm_ext, embedding_ext, trajectory, citation):
         yield response
 
 
 async def search(
     input: A2AMessage,
     context: RunContext,
+    llm_ext: Annotated[
+        LLMServiceExtensionServer,
+        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+    ],
+    embedding_ext: Annotated[
+        EmbeddingServiceExtensionServer,
+        EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+    ],
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
 ) -> AsyncGenerator[RunYield, A2AMessage]:
+    await configure_models(llm_ext, embedding_ext)
+
     user_message = get_message_text(input)
     logger.info(f"User: {user_message}")
 

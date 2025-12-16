@@ -14,6 +14,16 @@ class Settings(BaseSettings):
     HOST: str = Field(default="127.0.0.1", description="Network address the agent will bind to")
     ACCESS_LOG: bool = Field(default=False, description="Whether the agent logs HTTP access requests")
 
+    USE_AGENTSTACK_LLM: bool = Field(
+        default=True, description="Uses the AgentStack LLM extension when True or env vars when False"
+    )
+    SUGGESTED_LLM_MODEL: str = Field(
+        default="ibm-granite/granite-4.0-h-small", description="Suggested LLM model for the agent"
+    )
+    SUGGETED_EMBEDDING_MODEL: str = Field(
+        default="ibm/slate-125m-english-rtrvr-v2", description="Suggested embedding model for the agent"
+    )
+
 
 agent_detail = AgentDetail(
     interaction_mode="multi-turn",
