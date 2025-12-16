@@ -22,9 +22,9 @@ Implemented using [beeai-framework](github.com/i-am-bee/beeai-framework/), the a
 
 This guide will get you started with the out-of-the-box agent configuration. This may not be optimally configured for your desired use case and as such, we recommend looking at the [configuration](#configuration) _after_ you have successfully run the agents using the defaults. The configuration options can be overridden with environment variables (including via a `.env` file).
 
-## Setup Ollama
+## Setup Ollama (optional)
 
-The default LLM provider is a local Ollama server. You need to have Ollama downloaded and running on your machine with the Granite 4 model. Follow these steps:
+You can use Agent Stack with a variety of LLM services. If you don't have access to one, you can run an LLM locally using Ollama on your machine. You need to have Ollama downloaded and running with the Granite 4 model. Follow these steps:
 
 1. Go to [Ollama](https://ollama.com/) and download the installer for your system
 1. Start the Ollama server
@@ -38,15 +38,20 @@ The default LLM provider is a local Ollama server. You need to have Ollama downl
 
 An A2A client is required to use the agents. The agents are designed to work with the Agent Stack Platform and take advantage of several A2A extensions offered by the platform. Follow these steps:
 
-1. Refer to the [Agent Stack quick start guide](https://agentstack.beeai.dev/introduction/quickstart) to download and install the platform
-1. Run the platform
+1. Refer to the [Agent Stack quick start guide](https://agentstack.beeai.dev/stable/introduction/quickstart) to download and install and run the platform
+1. If you didn't opt to start the platform when installing, you can run it like this:
 
    ```sh
    agentstack platform start
-   # wait for the platform to fully start before moving on
    ```
 
-There is a [agentstack-cli](https://agentstack.beeai.dev/how-to/cli-reference) reference you can use for further commands but the above is sufficient to get started.
+1. Wait for the platform to fully - it takes a few minutes the first time
+1. Configure LLM provider(s) - connect to your local Ollama server or add credentials for other LLM services you have access to.
+
+There is a [agentstack-cli](https://agentstack.beeai.dev/stable/reference/cli-reference) reference you can use for further commands but the above is sufficient to get started.
+
+> [!IMPORTANT]
+> You must configure access to an LLM and an Embedding model
 
 ## Run the agents
 
@@ -75,10 +80,7 @@ agentstack ui
 The UI will start in your web browser. Select the ☰ hamburger menu (top left) and click on the Granite agent that you are running. Once selected, you can type your prompt into the input box to run the agent.
 
 > [!TIP]
-> The first time you start the Agent Stack Platform UI, you will need to select an LLM back end. Ensure your local Ollama server is running. Use the arrow keys on your keyboard to select `Ollama`. Use the default settings that you're presented with when the platform checks the Ollama connection.
-
-> [!NOTE]
-> Agent Stack Platform provides agents with an A2A extension that allows them access to the LLM models provided via the platform. The agents in this repository do not use this functionality since they make their own direct connection to an LLM via their [configuration](#configuration).
+> If you did not configure one during Agent Stack installation, the first time you start the Agent Stack Platform UI, you will need to select an LLM back end and embedding model.
 
 <details>
 <summary>Run the ACP agent</summary>
@@ -125,6 +127,7 @@ The following table illustrates some of the main options:
 
 | Option              | Default                  | Notes                                                                    |
 | ------------------- | ------------------------ | ------------------------------------------------------------------------ |
+| USE_AGENTSTACK_LLM  | `True`                   | Automatically configures LLM and Embedding model access via Agent Stack  |
 | OLLAMA_BASE_URL     | `http://localhost:11434` | Update this if running Ollama on a non standard port or alternate host   |
 | LLM_PROVIDER        | `ollama`                 | Alternate providers are `watsonx` or `openai`.                           |
 | LLM_MODEL           | `ibm/granite4`           | Update to the ID required by the LLM_PROVIDER. Granite 3 also supported. |
@@ -181,8 +184,9 @@ uv --directory granite_core run pytest
 ```
 
 Guidelines
+
 - Place all core library test files under granite_core/tests/.
-- Name test files as test_*.py.
+- Name test files as test\_\*.py.
 - Use clear, isolated test cases with minimal dependencies.
 - Run tests regularly before commits to maintain code quality.
 
