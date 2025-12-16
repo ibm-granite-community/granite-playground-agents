@@ -59,45 +59,67 @@ research_skill = AgentSkill(
 )
 
 
-@server.agent(
-    name="Granite Research",
-    description="This agent leverages the IBM Granite models and Internet connected deep research.",
-    version=__version__,
-    detail=agent_detail,
-    skills=[research_skill],
-)
-async def agent(
-    input: A2AMessage,
-    context: RunContext,
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ],
-    embedding_ext: Annotated[
-        EmbeddingServiceExtensionServer,
-        EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-    ],
-    trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
-    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-) -> AsyncGenerator[RunYield, A2AMessage]:
-    # this allows provision of an undecorated research function that can be imported elsewhere
-    async for response in research(input, context, llm_ext, embedding_ext, trajectory, citation):
-        yield response
+if settings.USE_AGENTSTACK_LLM:
+    # agent with LLM extensions
+    @server.agent(
+        name="Granite Research",
+        description="This agent leverages the IBM Granite models and Internet connected deep research.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[research_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        llm_ext: Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ],
+        embedding_ext: Annotated[
+            EmbeddingServiceExtensionServer,
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+        ],
+        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated research function that can be imported elsewhere
+        async for response in research(input, context, trajectory, citation, llm_ext, embedding_ext):
+            yield response
+else:
+    # agent without LLM extensions
+    @server.agent(
+        name="Granite Research",
+        description="This agent leverages the IBM Granite models and Internet connected deep research.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[research_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated research function that can be imported elsewhere
+        async for response in research(input, context, trajectory, citation):
+            yield response
 
 
 async def research(
     input: A2AMessage,
     context: RunContext,
+    trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
     llm_ext: Annotated[
         LLMServiceExtensionServer,
         LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ],
+    ]
+    | None = None,
     embedding_ext: Annotated[
         EmbeddingServiceExtensionServer,
         EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-    ],
-    trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
-    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
+    ]
+    | None = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext, embedding_ext)
 

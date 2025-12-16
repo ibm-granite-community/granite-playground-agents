@@ -75,12 +75,13 @@ async def configure_models(
     llm_ext: Annotated[
         LLMServiceExtensionServer,
         LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ],
+    ]
+    | None = None,
     embedding_ext: Annotated[
-        EmbeddingServiceExtensionServer | None,
+        EmbeddingServiceExtensionServer,
         EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-        None,
-    ] = None,
+    ]
+    | None = None,
 ) -> None:
     if settings.USE_AGENTSTACK_LLM and llm_ext and llm_ext.data and llm_ext.data.llm_fulfillments:
         [llm_config] = llm_ext.data.llm_fulfillments.values()

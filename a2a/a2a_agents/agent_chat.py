@@ -43,25 +43,42 @@ chat_skill = AgentSkill(
     ],
 )
 
-
-@server.agent(
-    name="Granite Chat",
-    description="This agent leverages the IBM Granite models for general chat.",
-    version=__version__,
-    detail=agent_detail,
-    skills=[chat_skill],
-)
-async def agent(
-    input: A2AMessage,
-    context: RunContext,
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ],
-) -> AsyncGenerator[RunYield, A2AMessage]:
-    # this allows provision of an undecorated chat function that can be imported elsewhere
-    async for response in chat(input, context, llm_ext):
-        yield response
+if settings.USE_AGENTSTACK_LLM:
+    # agent with LLM extensions
+    @server.agent(
+        name="Granite Chat",
+        description="This agent leverages the IBM Granite models for general chat.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        llm_ext: Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated chat function that can be imported elsewhere
+        async for response in chat(input, context, llm_ext):
+            yield response
+else:
+    # agent without LLM extensions
+    @server.agent(
+        name="Granite Chat",
+        description="This agent leverages the IBM Granite models for general chat.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated chat function that can be imported elsewhere
+        async for response in chat(input, context):
+            yield response
 
 
 async def chat(
@@ -70,7 +87,8 @@ async def chat(
     llm_ext: Annotated[
         LLMServiceExtensionServer,
         LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ],
+    ]
+    | None = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext)
 
