@@ -9,6 +9,10 @@ from a2a.types import Message as A2AMessage
 from agentstack_sdk.a2a.extensions import (
     CitationExtensionServer,
     CitationExtensionSpec,
+    EmbeddingServiceExtensionServer,
+    EmbeddingServiceExtensionSpec,
+    LLMServiceExtensionServer,
+    LLMServiceExtensionSpec,
     OptionItem,
     SettingsExtensionServer,
     SettingsExtensionSpec,
@@ -36,57 +40,121 @@ logger = get_logger(__name__)
 server = Server()
 
 
-@server.agent(
-    name="Granite Playground",
-    description="This agent leverages the IBM Granite models for general chat, search and research.",
-    version=__version__,
-    detail=agent_detail,
-    skills=[chat_skill, search_skill, research_skill],
-)
-async def agent(
-    input: A2AMessage,
-    context: RunContext,
-    trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
-    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    settings: Annotated[
-        SettingsExtensionServer,
-        SettingsExtensionSpec(
-            params=SettingsRender(
-                fields=[
-                    SingleSelectField(
-                        id="agent_type",
-                        label="type",
-                        options=[
-                            OptionItem(value="chat", label="Chat"),
-                            OptionItem(value="search", label="Search"),
-                            OptionItem(value="research", label="Research"),
-                        ],
-                        default_value="chat",
-                    )
-                ],
+if settings.USE_AGENTSTACK_LLM:
+    # agent with LLM extensions
+    @server.agent(
+        name="Granite Playground",
+        description="This agent leverages the IBM Granite models for general chat, search and research.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill, search_skill, research_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        llm_ext: Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ],
+        embedding_ext: Annotated[
+            EmbeddingServiceExtensionServer,
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+        ],
+        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
+        settings: Annotated[
+            SettingsExtensionServer,
+            SettingsExtensionSpec(
+                params=SettingsRender(
+                    fields=[
+                        SingleSelectField(
+                            id="agent_type",
+                            label="type",
+                            options=[
+                                OptionItem(value="chat", label="Chat"),
+                                OptionItem(value="search", label="Search"),
+                                OptionItem(value="research", label="Research"),
+                            ],
+                            default_value="chat",
+                        )
+                    ],
+                ),
             ),
-        ),
-    ],
-) -> AsyncGenerator[RunYield, A2AMessage]:
-    # parse options
-    agent_type = "chat"
-    if settings:
-        agent_type_settings = settings.parse_settings_response().values["agent_type"]
-        if isinstance(agent_type_settings, SingleSelectFieldValue):
-            agent_type = agent_type_settings.value if agent_type_settings.value else "chat"
-    logger.info(f"Running {agent_type} agent")
+        ],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # parse options
+        agent_type = "chat"
+        if settings:
+            agent_type_settings = settings.parse_settings_response().values["agent_type"]
+            if isinstance(agent_type_settings, SingleSelectFieldValue):
+                agent_type = agent_type_settings.value if agent_type_settings.value else "chat"
+        logger.info(f"Running {agent_type} agent")
 
-    # run the agent
-    match agent_type:
-        case "chat":
-            async for response in chat(input, context):
-                yield response
-        case "search":
-            async for response in search(input, context, trajectory, citation):
-                yield response
-        case "research":
-            async for response in research(input, context, trajectory, citation):
-                yield response
+        # run the agent
+        match agent_type:
+            case "chat":
+                async for response in chat(input, context, llm_ext):
+                    yield response
+            case "search":
+                async for response in search(input, context, trajectory, citation, llm_ext, embedding_ext):
+                    yield response
+            case "research":
+                async for response in research(input, context, trajectory, citation, llm_ext, embedding_ext):
+                    yield response
+
+else:
+    # agent without LLM extensions
+    @server.agent(
+        name="Granite Playground",
+        description="This agent leverages the IBM Granite models for general chat, search and research.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill, search_skill, research_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
+        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
+        settings: Annotated[
+            SettingsExtensionServer,
+            SettingsExtensionSpec(
+                params=SettingsRender(
+                    fields=[
+                        SingleSelectField(
+                            id="agent_type",
+                            label="type",
+                            options=[
+                                OptionItem(value="chat", label="Chat"),
+                                OptionItem(value="search", label="Search"),
+                                OptionItem(value="research", label="Research"),
+                            ],
+                            default_value="chat",
+                        )
+                    ],
+                ),
+            ),
+        ],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # parse options
+        agent_type = "chat"
+        if settings:
+            agent_type_settings = settings.parse_settings_response().values["agent_type"]
+            if isinstance(agent_type_settings, SingleSelectFieldValue):
+                agent_type = agent_type_settings.value if agent_type_settings.value else "chat"
+        logger.info(f"Running {agent_type} agent")
+
+        # run the agent
+        match agent_type:
+            case "chat":
+                async for response in chat(input, context):
+                    yield response
+            case "search":
+                async for response in search(input, context, trajectory, citation):
+                    yield response
+            case "research":
+                async for response in research(input, context, trajectory, citation):
+                    yield response
 
 
 if __name__ == "__main__":

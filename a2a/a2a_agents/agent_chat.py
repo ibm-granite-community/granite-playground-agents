@@ -3,10 +3,15 @@
 
 
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from a2a.types import AgentSkill
 from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
+from agentstack_sdk.a2a.extensions import (
+    LLMServiceExtensionServer,
+    LLMServiceExtensionSpec,
+)
 from agentstack_sdk.a2a.types import AgentMessage, RunYield
 from agentstack_sdk.server import Server
 from agentstack_sdk.server.context import RunContext
@@ -21,7 +26,7 @@ from granite_core.work import chat_pool
 
 from a2a_agents import __version__
 from a2a_agents.config import agent_detail, settings
-from a2a_agents.utils import to_framework_messages
+from a2a_agents.utils import configure_models, to_framework_messages
 
 logger = get_logger(__name__)
 server = Server()
@@ -38,27 +43,55 @@ chat_skill = AgentSkill(
     ],
 )
 
-
-@server.agent(
-    name="Granite Chat",
-    description="This agent leverages the IBM Granite models for general chat.",
-    version=__version__,
-    detail=agent_detail,
-    skills=[chat_skill],
-)
-async def agent(
-    input: A2AMessage,
-    context: RunContext,
-) -> AsyncGenerator[RunYield, A2AMessage]:
-    # this allows provision of an undecorated chat function that can be imported elsewhere
-    async for response in chat(input, context):
-        yield response
+if settings.USE_AGENTSTACK_LLM:
+    # agent with LLM extensions
+    @server.agent(
+        name="Granite Chat",
+        description="This agent leverages the IBM Granite models for general chat.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+        llm_ext: Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ],
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated chat function that can be imported elsewhere
+        async for response in chat(input, context, llm_ext):
+            yield response
+else:
+    # agent without LLM extensions
+    @server.agent(
+        name="Granite Chat",
+        description="This agent leverages the IBM Granite models for general chat.",
+        version=__version__,
+        detail=agent_detail,
+        skills=[chat_skill],
+    )
+    async def agent(
+        input: A2AMessage,
+        context: RunContext,
+    ) -> AsyncGenerator[RunYield, A2AMessage]:
+        # this allows provision of an undecorated chat function that can be imported elsewhere
+        async for response in chat(input, context):
+            yield response
 
 
 async def chat(
     input: A2AMessage,
     context: RunContext,
+    llm_ext: Annotated[
+        LLMServiceExtensionServer,
+        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+    ]
+    | None = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
+    await configure_models(llm_ext)
+
     user_message = get_message_text(input)
     logger.info(f"User: {user_message}")
 
