@@ -26,4 +26,4 @@ USER 1001
 
 COPY --from=builder --chown=1001:1001 /app/a2a /app
 
-CMD ["uv", "run", "--no-sync", "-m", "a2a_agents.agent_search"]
+CMD ["uv", "run", "--no-sync", "-m", "a2a_agents.agents.chat.agent_search"]

@@ -31,9 +31,9 @@ from granite_core.logging import get_logger
 from granite_core.utils import log_settings
 
 from a2a_agents import __version__
-from a2a_agents.agent_chat import chat, chat_skill
-from a2a_agents.agent_research import research, research_skill
-from a2a_agents.agent_search import search, search_skill
+from a2a_agents.agents.chat.agent_chat import chat, chat_skill
+from a2a_agents.agents.research.agent_research import research, research_skill
+from a2a_agents.agents.search.agent_search import search, search_skill
 from a2a_agents.config import agent_detail, settings
 
 logger = get_logger(__name__)
