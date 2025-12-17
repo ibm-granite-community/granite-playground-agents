@@ -195,7 +195,7 @@ Guidelines
 ### Build
 
 ```bash
-podman build -t granite-playground-agents:latest -f a2a/Dockerfile .
+podman build -t granite-playground-agents:latest -f a2a/Dockerfiles/agent/Dockerfile .
 ```
 
 ### Run
