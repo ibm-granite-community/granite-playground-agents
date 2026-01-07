@@ -159,7 +159,7 @@ class Settings(BaseSettings):
 
     # Search configuration
     SEARCH_MAX_SEARCH_RESULTS_PER_STEP: int = Field(
-        default=6, description="Controls how man search results are considered for each search query", ge=1
+        default=6, description="Controls how many search results are considered for each search query", ge=1
     )
 
     SEARCH_MAX_DOCS_PER_STEP: int = Field(

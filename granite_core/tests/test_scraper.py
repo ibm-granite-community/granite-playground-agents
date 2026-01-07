@@ -11,9 +11,9 @@ from granite_core.search.types import SearchResult
 @pytest.mark.asyncio
 async def test_scraper() -> None:
     """Test scraping infra"""
-    search_result = SearchResult(title="IBM", body="", href="https://www.ibm.com/about")
+    search_result = SearchResult(title="IBM", snippet="", url="https://www.ibm.com/about")
 
-    results, _ = await scrape_search_results(
+    results = await scrape_search_results(
         search_results=[search_result], scraper_key="bs", session_id="", max_scraped_content=1
     )
 

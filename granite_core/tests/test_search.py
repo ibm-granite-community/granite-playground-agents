@@ -16,7 +16,7 @@ async def test_basic_search() -> None:
     engine = SearchEngineFactory.create()
     results = await engine.search(query="IBM", max_results=3)
     assert len(results) == 3
-    assert results[0].title and results[0].body and results[0].url
+    assert results[0].title and results[0].snippet and results[0].url
 
 
 @pytest.mark.asyncio
@@ -29,16 +29,16 @@ async def test_search_filter() -> None:
         [
             SearchResult(
                 title="Gardening digest",
-                body="The following gardening strategies boost plant nutrition, ensure healthy growing habits, deter pests, and have numerous other beneficial effects in gardens of various sizes.",  # noqa: E501
-                href="https://www.gardeningdigest.com/",
+                snippet="The following gardening strategies boost plant nutrition, ensure healthy growing habits, deter pests, and have numerous other beneficial effects in gardens of various sizes.",  # noqa: E501
+                url="https://www.gardeningdigest.com/",
             ),
             SearchResult(
                 title="IBM Wikipedia Article",
-                body="International Business Machines Corporation (using the trademark IBM), nicknamed Big Blue, is an American multinational technology company headquartered in Armonk, New York, and present in over 175 countries.",  # noqa: E501
-                href="https://en.wikipedia.org/wiki/IBM",
+                snippet="International Business Machines Corporation (using the trademark IBM), nicknamed Big Blue, is an American multinational technology company headquartered in Armonk, New York, and present in over 175 countries.",  # noqa: E501
+                url="https://en.wikipedia.org/wiki/IBM",
             ),
         ],
     )
 
     assert len(filtered_results) == 1
-    assert filtered_results[0].href == "https://en.wikipedia.org/wiki/IBM"
+    assert filtered_results[0].url == "https://en.wikipedia.org/wiki/IBM"

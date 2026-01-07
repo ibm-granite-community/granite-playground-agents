@@ -33,20 +33,10 @@ class GoogleSearch(SearchEngine):
     """
 
     def __init__(self) -> None:
-        """
-        Initializes the GoogleSearch object
-        Args:
-            query:
-        """
         self.api_key = utils.get_secret_value(settings.GOOGLE_API_KEY)
         self.cx_key = utils.get_secret_value(settings.GOOGLE_CX_KEY)
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[SearchResult]:
-        """
-        Searches the query using Google Custom Search API, optionally restricting to specific domains
-        Returns:
-            list: List of search results with title, href and body
-        """
         # Build query with domain restrictions if specified
         if domains and len(domains) > 0:
             domain_query = " OR ".join([f"site:{domain}" for domain in domains])
@@ -84,8 +74,8 @@ class GoogleSearch(SearchEngine):
                 try:
                     search_result = SearchResult(
                         title=result["title"],
-                        href=result["link"],
-                        body=result["snippet"],
+                        url=result["link"],
+                        snippet=result["snippet"],
                     )
                 except Exception:
                     continue

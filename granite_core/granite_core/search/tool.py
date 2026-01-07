@@ -57,7 +57,7 @@ class SearchTool(SearchResultsMixin, ScrapedSearchResultsMixin):
         return docs
 
     async def _browse_urls(self, search_results: list[SearchResult]) -> None:
-        scraped_results, _ = await scrape_search_results(
+        scraped_results = await scrape_search_results(
             search_results=search_results,
             scraper_key="bs",
             session_id=self.session_id,

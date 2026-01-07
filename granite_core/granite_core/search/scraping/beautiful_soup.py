@@ -55,7 +55,7 @@ class BeautifulSoupScraper(AsyncScraper):
             # Extract the title using the utility function
             title = extract_title(soup)
 
-            return ScrapedContent(content=content, title=title)
+            return ScrapedContent(url=link, content=content, title=title)
 
         except Exception as e:
             logger.exception(f"Error! : {e!s} scraping link {link}")

@@ -1,0 +1,1 @@
+npx @modelcontextprotocol/inspector uv run mcp_servers/web.py

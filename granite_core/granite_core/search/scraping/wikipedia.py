@@ -42,4 +42,4 @@ class WikipediaScraper(AsyncScraper):
 
         data = response.json()
         page = next(iter(data["query"]["pages"].values()))
-        return ScrapedContent(content=page.get("extract", ""), title=page.get("title", ""))
+        return ScrapedContent(url=link, content=page.get("extract", ""), title=page.get("title", ""))
