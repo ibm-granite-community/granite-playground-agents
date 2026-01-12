@@ -14,7 +14,7 @@
             "name": "Debug A2A Agent",
             "type": "debugpy",
             "request": "launch",
-            "module": "a2a_agents.agent",
+            "module": "a2a_agents.agents.agent",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/a2a",
             "python": "${workspaceFolder}/a2a/.venv/bin/python"
@@ -23,7 +23,7 @@
             "name": "Debug A2A Chat Agent",
             "type": "debugpy",
             "request": "launch",
-            "module": "a2a_agents.agent_chat",
+            "module": "a2a_agents.agents.chat.agent_chat",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/a2a",
             "python": "${workspaceFolder}/a2a/.venv/bin/python"
@@ -32,7 +32,7 @@
             "name": "Debug A2A Search Agent",
             "type": "debugpy",
             "request": "launch",
-            "module": "a2a_agents.agent_search",
+            "module": "a2a_agents.agents.search.agent_search",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/a2a",
             "python": "${workspaceFolder}/a2a/.venv/bin/python"
@@ -41,7 +41,7 @@
             "name": "Debug A2A Research Agent",
             "type": "debugpy",
             "request": "launch",
-            "module": "a2a_agents.agent_research",
+            "module": "a2a_agents.agents.research.agent_research",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/a2a",
             "python": "${workspaceFolder}/a2a/.venv/bin/python"

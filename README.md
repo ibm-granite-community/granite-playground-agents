@@ -61,8 +61,8 @@ Select which agent you would like to run and start the agent:
 # pick one of these
 uv --directory a2a run -m a2a_agents.agents.agent
 uv --directory a2a run -m a2a_agents.agents.chat.agent_chat
-uv --directory a2a run -m a2a_agents.agents.chat.agent_search
-uv --directory a2a run -m a2a_agents.agents.chat.agent_research
+uv --directory a2a run -m a2a_agents.agents.search.agent_search
+uv --directory a2a run -m a2a_agents.agents.research.agent_research
 ```
 
 After starting the agent, you will see lots of log output. If you're running the Agent Stack Platform then the agent will register itself with the platform and you will see the following log message that indicates success:
