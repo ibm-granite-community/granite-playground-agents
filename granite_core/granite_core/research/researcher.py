@@ -178,8 +178,7 @@ class Researcher(
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
-
-        filtered_search_results = [s for s in self.search_results if self.contains_scraped_search_result(s.url)]
+        filtered_search_results = [s for s in self.search_results if not self.contains_scraped_search_result(s.url)]
         scraped_search_results, _ = await scrape_search_results(
             search_results=filtered_search_results,
             scraper_key="bs",
