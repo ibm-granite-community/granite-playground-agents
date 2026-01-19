@@ -99,3 +99,6 @@ exclude_lines = [
     "pragma: no cover", # re-enable the standard pragma
     "pass",             # Skip any pass lines such as may be used for @abstractmethod
 ]
+
+[tool.bandit]
+skips = ["B101", "B112"]
