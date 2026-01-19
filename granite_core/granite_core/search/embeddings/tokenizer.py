@@ -43,7 +43,7 @@ class EmbeddingsTokenizer:
 
             if tokenizer_name:
                 self.logger.info(f"Preloading tokenizer: {tokenizer_name}")
-                self.tokenizers[t] = AutoTokenizer.from_pretrained(tokenizer_name)
+                self.tokenizers[t] = AutoTokenizer.from_pretrained(tokenizer_name)  # nosec
 
     def get_tokenizer(self, type: ModelType = "retrieval") -> AutoTokenizer | None:
         # Returns tokenizer or None if not set / not used

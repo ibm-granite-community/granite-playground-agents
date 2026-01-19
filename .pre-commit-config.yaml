@@ -11,26 +11,11 @@ repos:
       - id: check-toml
       - id: check-yaml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.3
+    rev: v0.14.13
     hooks:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.18.2
-  #   hooks:
-  #   - id: mypy
-  #     name: mypy for granite_core
-  #     args: [--ignore-missing-imports]
-  #     files: granite_core
-  #   - id: mypy
-  #     name: mypy for acp
-  #     args: [--ignore-missing-imports, --python-executable, acp/.venv/bin/python]
-  #     files: acp
-  #   - id: mypy
-  #     name: mypy for a2a
-  #     args: [--ignore-missing-imports, --python-executable, a2a/.venv/bin/python]
-  #     files: a2a
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1
     hooks:
@@ -47,8 +32,32 @@ repos:
         additional_dependencies:
         - boxsdk~=3.0
         args: [--baseline, .secrets.baseline, --use-all-plugins, --fail-on-unaudited]
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
+    hooks:
+      - id: bandit
+        name: granite_core security
+        args: ["-c", "granite_core/pyproject.toml", "-r", "granite_core/granite_core"]
+        pass_filenames: false
+        additional_dependencies: ['bandit[toml]']
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
+    hooks:
+      - id: bandit
+        name: acp security
+        args: ["-c", "acp/pyproject.toml", "-r", "acp/acp_agent"]
+        pass_filenames: false
+        additional_dependencies: ['bandit[toml]']
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
+    hooks:
+      - id: bandit
+        name: a2a security
+        args: ["-c", "a2a/pyproject.toml", "-r", "a2a/a2a_agents"]
+        pass_filenames: false
+        additional_dependencies: ['bandit[toml]']
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.7
+    rev: 0.9.26
     hooks:
       - id: uv-lock
         name: uv lock granite core

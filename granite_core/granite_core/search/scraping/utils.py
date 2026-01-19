@@ -103,7 +103,7 @@ def get_image_hash(image_url: str) -> str | None:
         image_identifier = filename + "".join(essential_params)
 
         # Calculate hash
-        return hashlib.md5(image_identifier.encode()).hexdigest()
+        return hashlib.md5(image_identifier.encode(), usedforsecurity=False).hexdigest()
     except Exception:
         logger.exception(f"Error calculating image hash for {image_url}")
         return None
