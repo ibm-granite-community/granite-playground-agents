@@ -6,7 +6,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
  "agentstack-sdk>=0.4.2",
+ "deepagents>=0.2.8",
  "granite-core",
+ "langchain-ollama>=1.0.0",
+ "langchain-openai>=1.0.2",
 ]
 
 [tool.ruff]
@@ -56,3 +59,6 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "--maxfail=1"
+
+[tool.setuptools]
+packages = ["a2a_agents"]

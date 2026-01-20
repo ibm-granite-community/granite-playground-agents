@@ -1,0 +1,20 @@
+{
+  "extraPaths": [
+    "./granite_core"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "a2a",
+      "extraPaths": ["./granite_core"]
+    },
+    {
+      "root": "acp",
+      "extraPaths": ["./granite_core"]
+    },
+    {
+      "root": "granite_core"
+    }
+  ],
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false
+}
