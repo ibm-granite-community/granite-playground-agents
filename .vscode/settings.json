@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./granite_core"
+        "./granite_core",
+        "./granite_core_mcp"
     ]
 }

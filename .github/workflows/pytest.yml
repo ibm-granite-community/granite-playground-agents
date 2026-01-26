@@ -21,6 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
            uv --directory granite_core sync --frozen
+           uv --directory granite_core_mcp sync --frozen
           # uv --directory a2a sync --frozen --no-editable
           # uv --directory acp sync --frozen --no-editable
     - name: Test with pytest
@@ -40,3 +41,4 @@ jobs:
         WATSONX_REGION: ${{ vars.WATSONX_REGION }}
       run: |
         uv --directory granite_core run pytest
+        uv --directory granite_core_mcp run pytest

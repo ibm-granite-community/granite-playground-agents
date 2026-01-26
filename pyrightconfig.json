@@ -1,0 +1,13 @@
+{
+  "include": [
+    "granite_core",
+    "granite_core_mcp",
+    "a2a",
+    "acp"
+  ],
+  "extraPaths": [
+    "./granite_core"
+  ],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic"
+}
