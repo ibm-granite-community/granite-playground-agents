@@ -18,8 +18,8 @@ async def test_vector_store() -> None:
     scraped_search_result = ScrapedSearchResult(
         search_result=SearchResult(
             title="IBM Wikipedia Article",
-            body="International Business Machines Corporation (using the trademark IBM), nicknamed Big Blue, is an American multinational technology company headquartered in Armonk, New York, and present in over 175 countries.",  # noqa: E501
-            href="https://en.wikipedia.org/wiki/IBM",
+            snippet="International Business Machines Corporation (using the trademark IBM), nicknamed Big Blue, is an American multinational technology company headquartered in Armonk, New York, and present in over 175 countries.",  # noqa: E501
+            url="https://en.wikipedia.org/wiki/IBM",
         ),
         url="https://en.wikipedia.org/wiki/IBM",
         title="IBM Wikipedia Article",

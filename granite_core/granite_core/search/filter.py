@@ -44,7 +44,7 @@ class SearchResultsFilter:
         self.logger.info(f"Rejected search result: {result.url}")
         self.logger.info(f"Query: {query}")
         self.logger.info(f"Title: {result.title}")
-        self.logger.info(f"Body: {result.body}")
+        self.logger.info(f"Snippet: {result.snippet}")
         # self.logger.info(f"Rationale: {relevance.rationale}")
 
         return None

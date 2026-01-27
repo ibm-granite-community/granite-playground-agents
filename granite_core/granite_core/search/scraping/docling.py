@@ -66,7 +66,7 @@ class DoclingPDFScraper(AsyncScraper):
                 await asyncio.sleep(0)
 
             content = "\n".join(lines)
-            return ScrapedContent(content=content, title=lines[0] if lines else "")
+            return ScrapedContent(url=link, content=content, title=lines[0] if lines else "")
 
         except TimeoutException:
             logger.exception(f"Download timed out. Please check the link: {link}")

@@ -63,7 +63,7 @@ class VectorStoreWrapper:
                     "index": i,
                     "url": item.search_result.url,
                     "title": item.search_result.title,
-                    "snippet": item.search_result.body,
+                    "snippet": item.search_result.snippet,
                 },
             )
             for i, item in enumerate(scraped_content)

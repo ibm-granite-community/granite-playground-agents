@@ -6,13 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SearchResult(BaseModel):
+    url: str
     title: str
-    href: str
-    body: str
-
-    @property
-    def url(self) -> str:
-        return self.href
+    snippet: str
 
 
 class Source(BaseModel):

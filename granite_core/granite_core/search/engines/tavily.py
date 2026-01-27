@@ -26,20 +26,10 @@ class TavilySearch(SearchEngine):
     """
 
     def __init__(self) -> None:
-        """
-        Initializes the TavilySearch object
-        Args:
-            query:
-        """
         self.api_key = utils.get_secret_value(settings.TAVILY_API_KEY)
         self.tavily_client = AsyncTavilyClient(self.api_key)
 
     async def search(self, query: str, domains: list[str] | None = None, max_results: int = 7) -> list[SearchResult]:
-        """
-        Searches the query using Tavily Search API, optionally restricting to specific domains
-        Returns:
-            list: List of search results with title, href and body
-        """
         results = await self.tavily_client.search(query=query, max_results=max_results, domains=domains)
         search_results = []
 
@@ -51,8 +41,8 @@ class TavilySearch(SearchEngine):
             try:
                 search_result = SearchResult(
                     title=result["title"],
-                    href=result["link"],
-                    body=result["snippet"],
+                    url=result["link"],
+                    snippet=result["snippet"],
                 )
             except Exception:
                 continue

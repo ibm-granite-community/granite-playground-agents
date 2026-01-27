@@ -40,6 +40,7 @@ from granite_core.search.filter import SearchResultsFilter
 from granite_core.search.mixins import ScrapedSearchResultsMixin, SearchResultsMixin
 from granite_core.search.prompts import SearchPrompts
 from granite_core.search.scraping import scrape_search_results
+from granite_core.search.scraping.types import ScrapedSearchResult
 from granite_core.search.tool import SearchTool
 from granite_core.search.types import SearchResult
 from granite_core.search.vector_store.factory import VectorStoreWrapperFactory
@@ -178,8 +179,10 @@ class Researcher(
 
     async def _extract_sources(self) -> None:
         """Extract all gathered sources"""
-        filtered_search_results = [s for s in self.search_results if not self.contains_scraped_search_result(s.url)]
-        scraped_search_results, _ = await scrape_search_results(
+        filtered_search_results: list[SearchResult] = [
+            s for s in self.search_results if not self.contains_scraped_search_result(url=s.url)
+        ]
+        scraped_search_results: list[ScrapedSearchResult] = await scrape_search_results(
             search_results=filtered_search_results,
             scraper_key="bs",
             session_id=self.session_id,

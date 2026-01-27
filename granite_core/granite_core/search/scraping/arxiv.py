@@ -41,6 +41,6 @@ class ArxivScraper(AsyncScraper):
             # Include the published date and author to provide additional context,
             # aligning with APA-style formatting in the report.
             context = f"Published: {docs[0].metadata['Published']}; Author: {docs[0].metadata['Authors']}; Content: {docs[0].page_content}"  # noqa: E501
-            return ScrapedContent(content=context, title=docs[0].metadata["Title"])
+            return ScrapedContent(url=link, content=context, title=docs[0].metadata["Title"])
 
         return None

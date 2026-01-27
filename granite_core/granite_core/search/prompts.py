@@ -145,7 +145,7 @@ Here is the topic: {query}
 Here is the search result:
 - URL: {search_result.url}
 - Title: {search_result.title}
-- A snippet from the page: {search_result.body}
+- A snippet from the page: {search_result.snippet}
 
 Return True if the result is likely relevant to the topic; otherwise, return False.
 

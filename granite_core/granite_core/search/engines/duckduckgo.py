@@ -35,8 +35,8 @@ class DuckDuckGoSearch(SearchEngine):
             try:
                 search_result = SearchResult(
                     title=result.get("title", ""),
-                    href=result.get("href", ""),
-                    body=result.get("body", ""),
+                    url=result.get("href", ""),
+                    snippet=result.get("body", ""),
                 )
             except Exception:
                 continue

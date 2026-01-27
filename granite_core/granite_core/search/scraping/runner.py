@@ -25,9 +25,8 @@ from granite_core.search.scraping.arxiv import ArxivScraper
 from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.beautiful_soup import BeautifulSoupScraper
 from granite_core.search.scraping.docling import DoclingPDFScraper
-from granite_core.search.scraping.types import ScrapedSearchResult
+from granite_core.search.scraping.types import ScrapedContent
 from granite_core.search.scraping.wikipedia import WikipediaScraper
-from granite_core.search.types import SearchResult
 from granite_core.search.user_agent import UserAgent
 from granite_core.work import task_pool
 
@@ -39,9 +38,9 @@ class ScraperRunner(EventEmitter):
 
     def __init__(
         self,
-        search_results: list[SearchResult],
-        scraper_key: str,
-        session_id: str,
+        urls: list[str],
+        scraper_key: str = "bs",
+        session_id: str = "",
         max_scraped_content: int = 10,
     ) -> None:
         """
@@ -50,7 +49,7 @@ class ScraperRunner(EventEmitter):
             urls:
         """
         super().__init__()
-        self.search_results = search_results
+        self.urls = urls
         self.async_client = AsyncClient()
         self.async_client.headers.update({"User-Agent": UserAgent().user_agent})
         self._counter_lock = asyncio.Lock()
@@ -59,15 +58,15 @@ class ScraperRunner(EventEmitter):
         self.scraper_key = scraper_key
         self.logger = get_logger_with_prefix(__name__, tool_name=__name__, session_id=session_id)
 
-    async def run(self) -> list[ScrapedSearchResult]:
+    async def run(self) -> list[ScrapedContent]:
         """
         Extracts the content from the links
         """
-        contents = await asyncio.gather(*(self.scrape_data_from_url(s) for s in self.search_results))
+        contents = await asyncio.gather(*(self.scrape_data_from_url(url) for url in self.urls))
         res = [content for content in contents if content is not None]
         return res
 
-    async def scrape_data_from_url(self, search_result: SearchResult) -> ScrapedSearchResult | None:
+    async def scrape_data_from_url(self, url: str) -> ScrapedContent | None:
         """
         Extracts the data from the link with logging
         """
@@ -76,9 +75,7 @@ class ScraperRunner(EventEmitter):
             return None
 
         try:
-            link = search_result.url
-
-            scraper_cls: type[AsyncScraper] = self.get_scraper(link)
+            scraper_cls: type[AsyncScraper] = self.get_scraper(url)
             scraper = scraper_cls()
 
             # Get scraper name
@@ -87,45 +84,39 @@ class ScraperRunner(EventEmitter):
 
             # Get content
             async with task_pool.throttle():
-                scraped_result = await asyncio.wait_for(
-                    cast(AsyncScraper, scraper).ascrape(link=link, client=self.async_client),
+                scraped_content = await asyncio.wait_for(
+                    cast(AsyncScraper, scraper).ascrape(link=url, client=self.async_client),
                     timeout=settings.SCRAPER_TIMEOUT,
                 )
 
-            if scraped_result is None:
-                self.logger.warning(f"No scraped result for {link}")
+            if scraped_content is None:
+                self.logger.warning(f"No scraped result for {url}")
                 return None
 
-            if scraped_result.content is None or len(scraped_result.content) < 200:
-                self.logger.warning(f"Content too short or empty for {link}")
+            if scraped_content.content is None or len(scraped_content.content) < 200:
+                self.logger.warning(f"Content too short or empty for {url}")
                 return None
 
             # Log results
-            self.logger.info(f"Title: {scraped_result.title}")
-            self.logger.info(f"Content length: {len(scraped_result.content)} characters")
+            self.logger.info(f"Title: {scraped_content.title}")
+            self.logger.info(f"Content length: {len(scraped_content.content)} characters")
             # self.logger.info(f"Number of images: {len(image_urls)}")
-            self.logger.info(f"URL: {link}")
+            self.logger.info(f"URL: {url}")
             self.logger.info("=" * 50)
 
-            await self._emit(TrajectoryEvent(title="Added source", content=link))
+            await self._emit(TrajectoryEvent(title="Added source", content=url))
 
             async with self._counter_lock:
                 self._content_count += 1
 
-            return ScrapedSearchResult(
-                search_result=search_result,
-                url=link,
-                raw_content=scraped_result.content[: settings.SCRAPER_MAX_CONTENT_LENGTH],
-                # image_urls=image_urls,
-                title=scraped_result.title or "",
-            )
+            return scraped_content
 
         except TimeoutError as e:
-            self.logger.error(f"Timed out scraping {link}: {e!s}")
+            self.logger.error(f"Timed out scraping {url}: {e!s}")
             return None
 
         except Exception as e:
-            self.logger.error(f"Error processing {link}: {e!s}")
+            self.logger.error(f"Error processing {url}: {e!s}")
             return None
 
     def get_scraper(

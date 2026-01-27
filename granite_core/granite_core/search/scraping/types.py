@@ -8,6 +8,7 @@ from granite_core.search.types import SearchResult
 
 
 class ScrapedContent(BaseModel):
+    url: str
     content: str
     title: str
     images: list[str] = []
