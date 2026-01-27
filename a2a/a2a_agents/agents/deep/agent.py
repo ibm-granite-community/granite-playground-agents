@@ -1,6 +1,7 @@
 # © Copyright IBM Corporation 2025
 # SPDX-License-Identifier: Apache-2.0
 
+import ast
 import json
 from collections.abc import AsyncGenerator
 from logging import Logger
@@ -12,10 +13,6 @@ from a2a.utils.message import get_message_text
 from agentstack_sdk.a2a.extensions import (
     CitationExtensionServer,
     CitationExtensionSpec,
-    EmbeddingServiceExtensionServer,
-    EmbeddingServiceExtensionSpec,
-    LLMServiceExtensionServer,
-    LLMServiceExtensionSpec,
     TrajectoryExtensionServer,
     TrajectoryExtensionSpec,
 )
@@ -38,7 +35,6 @@ from a2a_agents.agents.deep.middleware import PatchInvalidToolCallsMiddleware
 from a2a_agents.agents.deep.prompts import system_prompt
 from a2a_agents.agents.deep.util import to_langchain_messages
 from a2a_agents.config import agent_detail, settings
-from a2a_agents.utils import configure_models
 
 RITS_MODEL = ""
 RITS_BASE_URL = ""
@@ -48,7 +44,7 @@ logger: Logger = get_logger(logger_name=__name__)
 server: Server = Server()
 
 
-research_skill = AgentSkill(
+research_skill: AgentSkill = AgentSkill(
     id="research",
     name="Research",
     description="Chat with the model that's enabled with Internet connected deep research",
@@ -61,74 +57,20 @@ research_skill = AgentSkill(
 )
 
 
-if settings.USE_AGENTSTACK_LLM:
-    # agent with LLM extensions
-    @server.agent(
-        name="Granite",
-        description="This agent leverages the IBM Granite models and Internet connected deep research.",
-        version=__version__,
-        detail=agent_detail,
-        skills=[research_skill],
-    )
-    async def agent(
-        input: A2AMessage,
-        context: RunContext,
-        llm_ext: Annotated[
-            LLMServiceExtensionServer,
-            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-        ],
-        embedding_ext: Annotated[
-            EmbeddingServiceExtensionServer,
-            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-        ],
-        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
-        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    ) -> AsyncGenerator[RunYield, A2AMessage]:
-        # this allows provision of an undecorated research function that can be imported elsewhere
-        async for response in _agent(input, context, trajectory, citation, llm_ext, embedding_ext):
-            yield response
-
-else:
-    # agent without LLM extensions
-    @server.agent(
-        name="Granite",
-        description="This agent leverages the IBM Granite models and Internet connected deep research.",
-        version=__version__,
-        detail=agent_detail,
-        skills=[research_skill],
-    )
-    async def agent(
-        input: A2AMessage,
-        context: RunContext,
-        trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
-        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    ) -> AsyncGenerator[RunYield, A2AMessage]:
-        # this allows provision of an undecorated research function that can be imported elsewhere
-        async for response in _agent(input, context, trajectory, citation):
-            yield response
-
-
-async def _agent(
+# agent without LLM extensions
+@server.agent(
+    name="Granite",
+    description="This agent leverages the IBM Granite models and Internet connected deep research.",
+    version=__version__,
+    detail=agent_detail,
+    skills=[research_skill],
+)
+async def agent(
     input: A2AMessage,
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    llm_ext: (
-        Annotated[
-            LLMServiceExtensionServer,
-            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-        ]
-        | None
-    ) = None,
-    embedding_ext: (
-        Annotated[
-            EmbeddingServiceExtensionServer,
-            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-        ]
-        | None
-    ) = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
-    await configure_models(llm_ext, embedding_ext)
     user_message: str = get_message_text(message=input)
     logger.info(msg=f"User: {user_message}")
 
@@ -148,6 +90,7 @@ async def _agent(
     )
 
     # model = init_chat_model(model="ollama:ibm/granite4", streaming=True)
+
     mcp_client: MultiServerMCPClient = MultiServerMCPClient(
         connections={
             "internet_search": {
@@ -163,28 +106,32 @@ async def _agent(
         tools=mcp_tools,
         system_prompt=system_prompt(),
         middleware=[PatchInvalidToolCallsMiddleware()],
-        # debug=True,
+        debug=True,
     )
 
     tool_call: dict[str, str] = {"name": "", "args": ""}
 
-    async for stream_mode, chunk in agent.astream(input={"messages": messages}, stream_mode=["messages", "values"]):
-        # event is a tuple: (node_name, messages_list)
-        if stream_mode == "values":
-            print(chunk)
-
-        elif stream_mode == "messages":
+    async for stream_mode, chunk in agent.astream(input={"messages": messages}, stream_mode=["messages"]):
+        if stream_mode == "messages":
             msg, _ = tuple(chunk)
 
             if isinstance(msg, AIMessageChunk):
                 if "finish_reason" in msg.response_metadata and msg.response_metadata["finish_reason"] == "tool_calls":
+                    # Convert tool args to json
+                    args: str = tool_call["args"]
+                    if args.startswith('"') and args.endswith('"'):
+                        args = tool_call["args"][1:-1].encode().decode(encoding="unicode_escape")
+                    try:
+                        parsed = json.loads(s=args)
+                    except json.JSONDecodeError:
+                        parsed = ast.literal_eval(node_or_string=args)
+
                     tool_call_metadata: Metadata[str, Any] = trajectory.trajectory_metadata(
-                        title=tool_call["name"], content=json.dumps(obj=tool_call["args"])
+                        title=tool_call["name"], content=json.dumps(obj=parsed, indent=4)
                     )
                     yield tool_call_metadata
                     await context.store(data=AgentMessage(metadata=tool_call_metadata))
                     tool_call = {"name": "", "args": ""}
-
                 elif msg.tool_call_chunks:
                     # print(event)
                     for tc in msg.tool_call_chunks:
@@ -194,7 +141,6 @@ async def _agent(
                     yield AgentMessage(text=msg.text)
                     await context.store(AgentMessage(text=msg.text))
 
-            # Tool call response
             elif isinstance(msg, ToolMessage):
                 tool_message_metadata: Metadata[str, Any] = trajectory.trajectory_metadata(
                     title=msg.name, content=msg.text

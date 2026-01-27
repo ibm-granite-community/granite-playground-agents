@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 def system_prompt() -> str:
     # Get current UTC time
-    now_utc = datetime.now(UTC)
+    now_utc: datetime = datetime.now(UTC)
 
     # Format in human-readable form
     human_readable = now_utc.strftime("%A, %B %d, %Y, %I:%M %p UTC")
@@ -18,19 +18,18 @@ def system_prompt() -> str:
 
     Current date and time: {human_readable}
 
-    Tools:
-    - internet_search
-        - You have access to an internet search tool as a way to look up information that you do not know.
-        - Use internet search only when the task requires information that cannot be reliably answered from general knowledge.
-        - You should not perform a search when the question is conceptual, explanatory, or educational (definitions, theory, how something works).
-        - Before searching, ask yourself:
-            - “Would a knowledgeable person reasonably need to look this up right now to be confident in the answer?”
-                - If yes, search.
-                - If no, answer directly.
-        - Always use search if the user explicitly requests i.e. "Search the web for ..."
-        - Avoid specifying dates in search queries unless explicitly requested.
-        - Do not regurgitate search results. Instead you should objectively incorporate the results into your answer.
-        - If you cannot find a satisfactory answer, say so.
+    Internet Search Guidelines
+    - Use search only when the answer cannot be confidently given from general knowledge.
+    - Before searching, ask: “Would a knowledgeable person need to look this up right now?”
+        - Yes → Search
+        - No → Answer directly
+    - Search when:
+        - The user explicitly requests it (e.g., “Search the web for…”)
+        - The task requires current, specific, or verifiable facts
+    - Do not search for conceptual, explanatory, or educational questions (definitions, theory, how things work) or questions answerable from general knowledge.
+    - Avoid dates in queries unless explicitly requested.
+    - Do not regurgitate results; synthesize and incorporate objectively.
+    - If no satisfactory answer is found, state that clearly.
 
     Citations:
     - If you want to cite a source, provide a markdown link to the corresponding url i.e. [xyx](https://www.xyz.com).]
