@@ -3,73 +3,45 @@
 
 import ast
 import json
+from collections.abc import Awaitable, Callable
 from typing import Any
 
-from langchain.agents.middleware import AgentMiddleware, AgentState
-from langchain.messages import ToolCall
-from langgraph.graph.message import REMOVE_ALL_MESSAGES, RemoveMessage
-from langgraph.runtime import Runtime
+from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
+from langchain.agents.middleware.types import ModelCallResult
+from langchain.messages import AIMessage, ToolCall
+from langchain_core.messages.base import BaseMessage
 
 
 class PatchInvalidToolCallsMiddleware(AgentMiddleware):
-    def after_model(self, state: AgentState, runtime: Runtime[Any]) -> dict[str, Any] | None:
-        """After the agent runs, handle dangling tool calls from any AIMessage."""
-        messages = state["messages"]
-        if not messages or len(messages) == 0:
-            return None
+    # Fixes broken granite tool calling
+    # See https://github.com/langchain-ai/langchain-ibm/pull/117
+    async def awrap_model_call(
+        self,
+        request: ModelRequest,
+        handler: Callable[[ModelRequest], Awaitable[ModelResponse]],
+    ) -> ModelCallResult:
+        response: ModelResponse = await handler(request)
+        ai_msg: BaseMessage = response.result[0]
 
-        patched_messages = []
+        if isinstance(ai_msg, AIMessage):
+            fixed_tool_call_ids: list[Any] = []
+            for tool_call in ai_msg.invalid_tool_calls:
+                if tool_call["name"] and tool_call["args"]:
+                    args: str = tool_call["args"]
+                    if args.startswith('"') and args.endswith('"'):
+                        args = tool_call["args"][1:-1].encode().decode(encoding="unicode_escape")
+                    try:
+                        parsed = json.loads(s=args)
+                    except json.JSONDecodeError:
+                        parsed = ast.literal_eval(node_or_string=args)
 
-        for _, msg in enumerate(messages):
-            patched_messages.append(msg)
-            if msg.type == "ai" and msg.invalid_tool_calls:
-                for tool_call in msg.invalid_tool_calls:
-                    if tool_call["name"] and tool_call["id"] and tool_call["args"] and tool_call["error"] is None:
-                        args = str_to_dict(tool_call["args"] or "")
-                        msg.tool_calls.append(ToolCall(name=tool_call["name"], id=tool_call["id"], args=args))
-        return {
-            "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *patched_messages],
-        }
+                    ai_msg.tool_calls.append(ToolCall(name=tool_call["name"], args=parsed, id=tool_call["id"]))
+                    fixed_tool_call_ids.append(tool_call["id"])
 
+            # Remove only the invalid_tool_calls that were successfully fixed
+            ai_msg.invalid_tool_calls = [tc for tc in ai_msg.invalid_tool_calls if tc["id"] not in fixed_tool_call_ids]
 
-def str_to_dict(s: str) -> dict:
-    """
-    Convert a string to a dictionary.
-    Handles:
-    - JSON strings
-    - Python-style dict strings
-    - Double-encoded JSON strings
-    Raises ValueError if conversion fails.
-    """
-    if not isinstance(s, str):
-        raise ValueError("Input must be a string")
-
-    s = s.strip()  # remove whitespace
-
-    # Helper to attempt json.loads safely
-    def try_json_load(x: str) -> Any:
-        try:
-            return json.loads(x)
-        except (json.JSONDecodeError, TypeError):
-            return None
-
-    # Step 1: Try JSON
-    d = try_json_load(s)
-    if isinstance(d, dict):
-        return d
-
-    # Step 2: Handle double-encoded JSON (string inside JSON)
-    if isinstance(d, str):
-        inner = try_json_load(d)
-        if isinstance(inner, dict):
-            return inner
-
-    # Step 3: Fallback to Python-style dict
-    try:
-        d = ast.literal_eval(s)
-        if isinstance(d, dict):
-            return d
-    except (ValueError, SyntaxError):
-        pass
-
-    raise ValueError("String could not be converted to a dictionary")
+        return ModelResponse(
+            result=[ai_msg],
+            structured_response=response.structured_response,
+        )
