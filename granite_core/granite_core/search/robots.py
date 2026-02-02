@@ -23,7 +23,7 @@ async def can_fetch(client: AsyncClient, url: str, user_agent: str = "*") -> boo
 
         try:
             async with AsyncClient(timeout=5.0) as client:
-                response: Response = await client.get(url=robots_url)
+                response: Response = await client.get(url=robots_url, follow_redirects=True)
                 rp.parse(lines=response.text.splitlines())
         except Exception:
             logger.info(msg=f"Robots.txt for {robots_url} is unavailable! Assuming allowed.")
