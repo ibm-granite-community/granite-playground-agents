@@ -58,6 +58,13 @@ class ScraperRunner(EventEmitter):
         self.scraper_key = scraper_key
         self.logger = get_logger_with_prefix(__name__, tool_name=__name__, session_id=session_id)
 
+    async def close(self) -> None:
+        """
+        Close the async client
+        """
+        if self.async_client is not None:
+            await self.async_client.aclose()
+
     async def run(self) -> list[ScrapedContent]:
         """
         Extracts the content from the links
