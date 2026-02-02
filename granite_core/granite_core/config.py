@@ -53,7 +53,7 @@ class Settings(BaseSettings):
         description="Max size of scraped content in characters, anything larger will be truncated.", default=15000
     )
 
-    SCRAPER_TIMEOUT: int = Field(description="Seconds elapsed before scraper task times out.", default=15)
+    SCRAPER_TIMEOUT: int = Field(description="Seconds elapsed before scraper task times out.", default=20)
 
     OLLAMA_BASE_URL: Annotated[
         HttpUrl,

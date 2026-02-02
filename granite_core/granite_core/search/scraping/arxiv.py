@@ -14,13 +14,14 @@
 
 from httpx import AsyncClient
 from langchain_community.retrievers import ArxivRetriever
+from langchain_core.documents.base import Document
 
 from granite_core.search.scraping.base import AsyncScraper
 from granite_core.search.scraping.types import ScrapedContent
 
 
 class ArxivScraper(AsyncScraper):
-    async def ascrape(self, link: str, _: AsyncClient) -> ScrapedContent | None:
+    async def ascrape(self, link: str, client: AsyncClient) -> ScrapedContent | None:
         """
         The function scrapes relevant documents from Arxiv based on a given link and returns the content
         of the first document.
@@ -30,17 +31,17 @@ class ArxivScraper(AsyncScraper):
         for a given query extracted from the link.
         """
 
-        if not await self.can_scrape(link):
+        if not await self.can_scrape(client=client, link=link):
             return None
 
-        query = link.split("/")[-1]
-        retriever = ArxivRetriever(load_max_docs=2, doc_content_chars_max=None)  # type: ignore[call-arg]
-        docs = await retriever.ainvoke(query)
+        query: str = link.split(sep="/")[-1]
+        retriever: ArxivRetriever = ArxivRetriever(load_max_docs=2, doc_content_chars_max=None)  # type: ignore[call-arg]
+        docs: list[Document] = await retriever.ainvoke(query)
 
         if docs:
             # Include the published date and author to provide additional context,
             # aligning with APA-style formatting in the report.
-            context = f"Published: {docs[0].metadata['Published']}; Author: {docs[0].metadata['Authors']}; Content: {docs[0].page_content}"  # noqa: E501
+            context: str = f"Published: {docs[0].metadata['Published']}; Author: {docs[0].metadata['Authors']}; Content: {docs[0].page_content}"  # noqa: E501
             return ScrapedContent(url=link, content=context, title=docs[0].metadata["Title"])
 
         return None
