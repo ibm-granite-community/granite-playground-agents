@@ -33,5 +33,5 @@ async def can_fetch(client: AsyncClient, url: str, user_agent: str = "*") -> boo
 
     cached_rp: RobotFileParser | None = await _robot_cache.get(key=robots_url)
     allow_fetch: bool = cached_rp.can_fetch(useragent=user_agent, url=url) if cached_rp else True
-    logger.info(msg=f"Robots.txt for {robots_url} allows fetching {url}: {allow_fetch}")
+    logger.info(msg=f"Robots.txt for {robots_url} {'allows' if allow_fetch else 'disallows'} fetching {url}")
     return allow_fetch
