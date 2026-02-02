@@ -16,6 +16,12 @@ async def test_robots_allowed() -> None:
     async with httpx.AsyncClient(timeout=5.0) as client:
         assert await can_fetch(client=client, url="https://www.ibm.com/about", user_agent=UserAgent().user_agent)
         assert await can_fetch(client=client, url="https://www.wikipedia.com", user_agent=UserAgent().user_agent)
+        assert await can_fetch(client=client, url="https://www.netwes.com/", user_agent=UserAgent().user_agent)
+        assert await can_fetch(
+            client=client,
+            url="https://dataplatform.cloud.ibm.com/docs/content/wsj/getting-started/whats-new-wx.html?context=wx",
+            user_agent=UserAgent().user_agent,
+        )
 
 
 @pytest.mark.asyncio
@@ -24,3 +30,8 @@ async def test_robots_forbidden() -> None:
     async with httpx.AsyncClient(timeout=5.0) as client:
         assert not await can_fetch(client=client, url="https://facebook.com", user_agent=UserAgent().user_agent)
         assert not await can_fetch(client=client, url="https://instagram.com", user_agent=UserAgent().user_agent)
+        assert not await can_fetch(
+            client=client,
+            url="https://www.reddit.com/r/IBM/comments/1dpl799/your_opinionview_on_granite_models/",
+            user_agent=UserAgent().user_agent,
+        )
