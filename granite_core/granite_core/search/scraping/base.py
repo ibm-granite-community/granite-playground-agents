@@ -21,9 +21,9 @@ class AsyncScraper(ABC):
         """Do scrape"""
         pass
 
-    async def can_scrape(self, link: str) -> bool:
+    async def can_scrape(self, client: AsyncClient, link: str) -> bool:
         if settings.CHECK_ROBOTS_TXT:
-            allowed = await can_fetch(user_agent=UserAgent().user_agent, url=link)
+            allowed = await can_fetch(client=client, url=link, user_agent=UserAgent().user_agent)
 
             if not allowed:
                 logger.info(f"Not allowed to scrape {link} due to robots.txt")

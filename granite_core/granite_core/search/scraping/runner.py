@@ -15,7 +15,7 @@
 import asyncio
 from typing import cast
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Timeout
 
 from granite_core.config import settings
 from granite_core.emitter import EventEmitter
@@ -50,8 +50,8 @@ class ScraperRunner(EventEmitter):
         """
         super().__init__()
         self.urls = urls
-        self.async_client = AsyncClient()
-        self.async_client.headers.update({"User-Agent": UserAgent().user_agent})
+        self.async_client = AsyncClient(timeout=Timeout(connect=5, read=8, write=5, pool=5))
+        self.async_client.headers.update(headers={"User-Agent": UserAgent().user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
         self._max_scraped_content = max_scraped_content
@@ -84,8 +84,8 @@ class ScraperRunner(EventEmitter):
 
             # Get content
             async with task_pool.throttle():
-                scraped_content = await asyncio.wait_for(
-                    cast(AsyncScraper, scraper).ascrape(link=url, client=self.async_client),
+                scraped_content: ScrapedContent | None = await asyncio.wait_for(
+                    fut=cast(AsyncScraper, scraper).ascrape(link=url, client=self.async_client),
                     timeout=settings.SCRAPER_TIMEOUT,
                 )
 

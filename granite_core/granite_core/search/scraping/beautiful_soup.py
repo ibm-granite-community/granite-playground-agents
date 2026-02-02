@@ -37,10 +37,10 @@ class BeautifulSoupScraper(AsyncScraper):
         occurs during the process, an error message is printed and an empty string is returned.
         """
         try:
-            if not await self.can_scrape(link):
+            if not await self.can_scrape(client, link):
                 return None
 
-            response = await client.get(link, timeout=5)
+            response = await client.get(link)
 
             if response.status_code == 403:
                 logger.exception(f"Error 403 when scraping link {link}")
