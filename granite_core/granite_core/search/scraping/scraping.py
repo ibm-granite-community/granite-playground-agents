@@ -34,15 +34,19 @@ async def scrape_search_results(
 ) -> list[ScrapedSearchResult]:
     url_map = {s.url: s for s in search_results}
 
+    scraped_contents: list[ScrapedContent] = []
+
     try:
         scraper = ScraperRunner(list(url_map.keys()), scraper_key, session_id, max_scraped_content)
         if emitter is not None:
             emitter.forward_events_from(scraper)
 
-        scraped_contents: list[ScrapedContent] = await scraper.run()
+        scraped_contents = await scraper.run()
 
     except Exception:
         logger.exception(f"{Fore.RED}Error in scrape_urls: {Style.RESET_ALL}")
+    finally:
+        await scraper.close()
 
     return [
         ScrapedSearchResult(
