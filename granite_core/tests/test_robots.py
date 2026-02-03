@@ -11,7 +11,6 @@ from granite_core.search.user_agent import UserAgent
 
 @pytest.mark.asyncio
 async def test_robots_allowed() -> None:
-    print("IMPORT TIME PRINT")
     """Test basic chat infrastructure"""
     async with httpx.AsyncClient(timeout=5.0) as client:
         assert await can_fetch(client=client, url="https://www.ibm.com/about", user_agent=UserAgent().user_agent)
