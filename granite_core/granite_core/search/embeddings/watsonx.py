@@ -31,9 +31,11 @@ class WatsonxEmbeddings(Embeddings):
         return list(chain.from_iterable(results))
 
     async def _embed_doc_batch(self, texts: list[str]) -> list[list[float]]:
+        safe_texts: list[str] = [sanitize_for_embedding(t) for t in texts]
+
         async with self.worker_pool.throttle():
             response: EmbeddingModelOutput = await self.embedding_model.create(
-                [sanitize_for_embedding(t) for t in texts], max_retries=settings.MAX_RETRIES
+                values=safe_texts, max_retries=settings.MAX_RETRIES
             )
             return response.embeddings
 
