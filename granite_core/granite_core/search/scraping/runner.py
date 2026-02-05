@@ -50,7 +50,7 @@ class ScraperRunner(EventEmitter):
         """
         super().__init__()
         self.urls = urls
-        self.async_client = AsyncClient(timeout=Timeout(connect=5, read=8, write=5, pool=5))
+        self.async_client = AsyncClient(timeout=Timeout(connect=5, read=10, write=5, pool=5))
         self.async_client.headers.update(headers={"User-Agent": UserAgent().user_agent})
         self._counter_lock = asyncio.Lock()
         self._content_count: int = 0
