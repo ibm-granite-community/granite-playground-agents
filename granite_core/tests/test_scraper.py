@@ -21,9 +21,9 @@ async def test_scraper() -> None:
     assert len(results) == 1
 
     search_result = SearchResult(
-        title="Bestbuy",
+        title="Instagram",
         snippet="",
-        url="https://www.bestbuy.com/product/panasonic-streaming-4k-ultra-hd-hi-res-audio-with-dolby-vision-7-1-channel-dvd-cd-3d-wi-fi-built-in-blu-ray-player-dp-ub820-k-black/J3Z7HSJPYW",
+        url="https://instagram.com/",
     )
 
     results = await scrape_search_results(
