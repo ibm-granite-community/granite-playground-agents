@@ -20,10 +20,11 @@ async def test_scraper() -> None:
 
     assert len(results) == 1
 
+    # Reddit blocks all scrapers
     search_result = SearchResult(
-        title="Instagram",
+        title="Reddit",
         snippet="",
-        url="https://instagram.com/",
+        url="https://reddit.com/",
     )
 
     results = await scrape_search_results(
