@@ -211,7 +211,7 @@ class Settings(BaseSettings):
         description="The max. number of source statements per response statement",
     )
     CITATIONS_SIM_THRESHOLD: float = Field(
-        default=0.8,
+        default=0.75,
         description="The similarity threshold under which citation statements are ignored.",
     )
 
