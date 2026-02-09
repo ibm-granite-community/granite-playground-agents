@@ -8,6 +8,7 @@ dependencies = [
  "agentstack-sdk>=0.4.2",
  "deepagents>=0.2.8",
  "granite-core",
+ "langchain-ibm>=1.0.3",
  "langchain-mcp-adapters>=0.2.1",
 ]
 

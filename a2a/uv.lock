@@ -14,6 +14,7 @@ dependencies = [
     { name = "agentstack-sdk" },
     { name = "deepagents" },
     { name = "granite-core" },
+    { name = "langchain-ibm" },
     { name = "langchain-mcp-adapters" },
 ]
 
@@ -31,6 +32,7 @@ requires-dist = [
     { name = "agentstack-sdk", specifier = ">=0.4.2" },
     { name = "deepagents", specifier = ">=0.2.8" },
     { name = "granite-core", editable = "../granite_core" },
+    { name = "langchain-ibm", specifier = ">=1.0.3" },
     { name = "langchain-mcp-adapters", specifier = ">=0.2.1" },
 ]
 
@@ -1493,6 +1495,59 @@ wheels = [
 ]
 
 [[package]]
+name = "ibm-cos-sdk"
+version = "2.14.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ibm-cos-sdk-core" },
+    { name = "ibm-cos-sdk-s3transfer" },
+    { name = "jmespath" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/98/b8/b99f17ece72d4bccd7e75539b9a294d0f73ace5c6c475d8f2631afd6f65b/ibm_cos_sdk-2.14.3.tar.gz", hash = "sha256:643b6f2aa1683adad7f432df23407d11ae5adb9d9ad01214115bee77dc64364a", size = 58831, upload-time = "2025-08-01T06:35:51.722Z" }
+
+[[package]]
+name = "ibm-cos-sdk-core"
+version = "2.14.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jmespath" },
+    { name = "python-dateutil" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7e/45/80c23aa1e13175a9deefe43cbf8e853a3d3bfc8dfa8b6d6fe83e5785fe21/ibm_cos_sdk_core-2.14.3.tar.gz", hash = "sha256:85dee7790c92e8db69bf39dae4c02cac211e3c1d81bb86e64fa2d1e929674623", size = 1103637, upload-time = "2025-08-01T06:35:41.645Z" }
+
+[[package]]
+name = "ibm-cos-sdk-s3transfer"
+version = "2.14.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ibm-cos-sdk-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f3/ff/c9baf0997266d398ae08347951a2970e5e96ed6232ed0252f649f2b9a7eb/ibm_cos_sdk_s3transfer-2.14.3.tar.gz", hash = "sha256:2251ebfc4a46144401e431f4a5d9f04c262a0d6f95c88a8e71071da056e55f72", size = 139594, upload-time = "2025-08-01T06:35:46.403Z" }
+
+[[package]]
+name = "ibm-watsonx-ai"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cachetools" },
+    { name = "certifi" },
+    { name = "httpx" },
+    { name = "ibm-cos-sdk" },
+    { name = "lomond" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "requests" },
+    { name = "tabulate" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/b4/5d9d54ffd2bfadd35d5f5e1bd25bf94eb33a3b2972cad2449ca1fb6ed4b8/ibm_watsonx_ai-1.5.1.tar.gz", hash = "sha256:b03948afee418c94151c8146c0d8b7b1808c80359dbc58befe12355fffbb4c0d", size = 707589, upload-time = "2026-01-29T09:15:03.531Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/fd/556a4229348bd2e8159d565c461b02e93485901eb5f8bc210325ce6a1d53/ibm_watsonx_ai-1.5.1-py3-none-any.whl", hash = "sha256:82072cf542fec58d338ab88c6c2e59564e6258d4eadf3d82d2e83f916dcfc99e", size = 1077190, upload-time = "2026-01-29T09:15:01.973Z" },
+]
+
+[[package]]
 name = "identify"
 version = "2.6.15"
 source = { registry = "https://pypi.org/simple" }
@@ -1635,6 +1690,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/85/15/d6eb3b770f6a0d332675141ab3962fd4a7c270ede3515d9f3583e1d28276/jiter-0.12.0-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl", hash = "sha256:89163163c0934854a668ed783a2546a0617f71706a2551a4a0666d91ab365d6b", size = 304233, upload-time = "2025-11-09T20:49:18.734Z" },
     { url = "https://files.pythonhosted.org/packages/8c/3e/e7e06743294eea2cf02ced6aa0ff2ad237367394e37a0e2b4a1108c67a36/jiter-0.12.0-graalpy312-graalpy250_312_native-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d96b264ab7d34bbb2312dedc47ce07cd53f06835eacbc16dde3761f47c3a9e7f", size = 338537, upload-time = "2025-11-09T20:49:20.317Z" },
     { url = "https://files.pythonhosted.org/packages/2f/9c/6753e6522b8d0ef07d3a3d239426669e984fb0eba15a315cdbc1253904e4/jiter-0.12.0-graalpy312-graalpy250_312_native-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c24e864cb30ab82311c6425655b0cdab0a98c5d973b065c66a3f020740c2324c", size = 346110, upload-time = "2025-11-09T20:49:21.817Z" },
+]
+
+[[package]]
+name = "jmespath"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b41201936b7fa7ba7b5702dbef42922193f05c8976cd6/jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe", size = 25843, upload-time = "2022-06-17T18:00:12.224Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/b4/b9b800c45527aadd64d5b442f9b932b00648617eb5d63d2c7a6587b7cafc/jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980", size = 20256, upload-time = "2022-06-17T18:00:10.251Z" },
 ]
 
 [[package]]
@@ -1797,6 +1861,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/93/35/147544d3422464d13a8ef88f9e25cff25e02c985eb44f8c106503f56ad50/langchain_core-1.0.4.tar.gz", hash = "sha256:086d408bcbeedecb0b152201e0163b85e7a6d9b26e11a75cc577b7371291df4e", size = 776329, upload-time = "2025-11-07T22:30:45.669Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/ac/7032e5eb1c147a3d8e0a21a70e77d7efbd6295c8ce4833b90f6ff1750da9/langchain_core-1.0.4-py3-none-any.whl", hash = "sha256:53caa351d9d73b56f5d9628980f36851cfa725977508098869fdc2d246da43b3", size = 471198, upload-time = "2025-11-07T22:30:44.003Z" },
+]
+
+[[package]]
+name = "langchain-ibm"
+version = "1.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ibm-watsonx-ai" },
+    { name = "langchain-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1f/58/0d4de305a232fd2f37e4b05c2405cda110c3db979efa17219e5c93a47e86/langchain_ibm-1.0.3.tar.gz", hash = "sha256:5531eba2b098dd2f56ae985a3c8c0b42f9333a98dd1e880894e608ee6fba4a3f", size = 60881, upload-time = "2026-02-04T10:59:45.988Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/34/49eae5280917249a4b4516afde1c441dde738abe21cadce5edd18b66f8f8/langchain_ibm-1.0.3-py3-none-any.whl", hash = "sha256:8e204cd21d2ec4bd3026f2695d76e12a84e59815867a82ddd9f655bb935b596a", size = 50149, upload-time = "2026-02-04T10:59:44.496Z" },
 ]
 
 [[package]]
@@ -2021,6 +2098,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/74/a0/0a6d6992120077fe47dc1432b69071a0a6030bc4f68c01be561382d65521/litellm-1.80.9.tar.gz", hash = "sha256:768b62f26086efbaed40f4dfd353ff66302474bbfb0adf5862066acdb0727df6", size = 12348545, upload-time = "2025-12-08T21:05:00.688Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/02/85f4b50d39d82dcf39bf1fbf2648cb01311866eb2ef2462666348b5ef1fe/litellm-1.80.9-py3-none-any.whl", hash = "sha256:bad02b96ee3d83702639553ffc5961c605f4f937be8167181bc4c80394a1cdd1", size = 11075736, upload-time = "2025-12-08T21:04:57.493Z" },
+]
+
+[[package]]
+name = "lomond"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/9e/ef7813c910d4a893f2bc763ce9246269f55cc68db21dc1327e376d6a2d02/lomond-0.3.3.tar.gz", hash = "sha256:427936596b144b4ec387ead99aac1560b77c8a78107d3d49415d3abbe79acbd3", size = 28789, upload-time = "2018-09-21T15:17:43.297Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/b1/02eebed49c754b01b17de7705caa8c4ceecfb4f926cdafc220c863584360/lomond-0.3.3-py2.py3-none-any.whl", hash = "sha256:df1dd4dd7b802a12b71907ab1abb08b8ce9950195311207579379eb3b1553de7", size = 35512, upload-time = "2018-09-21T15:17:38.686Z" },
 ]
 
 [[package]]
