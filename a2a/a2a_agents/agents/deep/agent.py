@@ -23,22 +23,19 @@ from agentstack_sdk.server.store.platform_context_store import PlatformContextSt
 from granite_core.config import settings as core_settings
 from granite_core.logging import get_logger
 from granite_core.utils import log_settings
-from langchain.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
+from langchain.messages import AIMessageChunk, AnyMessage, ToolMessage
+from langchain_core.language_models import BaseChatModel
 from langchain_core.tools.base import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_openai import ChatOpenAI
-from pydantic import SecretStr
+from langgraph.graph.state import CompiledStateGraph
 
 from a2a_agents import __version__
-from a2a_agents.agents.deep.factory import create_deep_agent
+from a2a_agents.agents.deep.agent_factory import create_deep_agent
 from a2a_agents.agents.deep.middleware import PatchInvalidToolCallsMiddleware
+from a2a_agents.agents.deep.model_factory import ChatModelFactory
 from a2a_agents.agents.deep.prompts import system_prompt
 from a2a_agents.agents.deep.util import to_langchain_messages
 from a2a_agents.config import agent_detail, settings
-
-RITS_MODEL = ""
-RITS_BASE_URL = ""
-RITS_API_KEY = ""
 
 logger: Logger = get_logger(logger_name=__name__)
 server: Server = Server()
@@ -78,19 +75,10 @@ async def agent(
     history: list[Message] = [
         message async for message in context.load_history() if isinstance(message, A2AMessage) and message.parts
     ]
-    messages: list[AIMessage | HumanMessage] = to_langchain_messages(history)
+    messages: list[AnyMessage] = to_langchain_messages(history)
+    model: BaseChatModel = ChatModelFactory.create(streaming=True)
 
-    model: ChatOpenAI = ChatOpenAI(
-        model=RITS_MODEL,
-        stream_usage=True,
-        temperature=0,
-        api_key=SecretStr(secret_value=RITS_API_KEY),
-        base_url=RITS_BASE_URL + "/v1",
-        default_headers={"RITS_API_KEY": RITS_API_KEY},
-    )
-
-    # model = init_chat_model(model="ollama:ibm/granite4", streaming=True)
-
+    # MCP tool client
     mcp_client: MultiServerMCPClient = MultiServerMCPClient(
         connections={
             "internet_search": {
@@ -101,7 +89,8 @@ async def agent(
     )
 
     mcp_tools: list[BaseTool] = await mcp_client.get_tools()
-    agent = create_deep_agent(
+    model.bind_tools(tools=mcp_tools)
+    agent: CompiledStateGraph[Any, None, Any, Any] = create_deep_agent(
         model=model,
         tools=mcp_tools,
         system_prompt=system_prompt(),

@@ -6,7 +6,7 @@ import itertools
 
 from a2a.types import Message as A2AMessage
 from a2a.types import Role
-from langchain.messages import AIMessage, HumanMessage
+from langchain.messages import AIMessage, AnyMessage, HumanMessage
 
 ROLE_TO_MESSAGE: dict[Role, type[HumanMessage] | type[AIMessage]] = {
     Role.user: HumanMessage,
@@ -14,7 +14,7 @@ ROLE_TO_MESSAGE: dict[Role, type[HumanMessage] | type[AIMessage]] = {
 }
 
 
-def to_langchain_messages(history: list[A2AMessage]) -> list[AIMessage | HumanMessage]:
+def to_langchain_messages(history: list[A2AMessage]) -> list[AnyMessage]:
     """
     Converts a list of messages into a list of langchain messages, separating user and agent turns.
 
@@ -28,7 +28,7 @@ def to_langchain_messages(history: list[A2AMessage]) -> list[AIMessage | HumanMe
     if not history:
         return []
 
-    langchain_messages: list[AIMessage | HumanMessage] = []
+    langchain_messages: list[AnyMessage] = []
 
     for role, group in itertools.groupby(history, key=lambda msg: msg.role):
         # Collect all text parts from consecutive messages with the same role
