@@ -40,10 +40,10 @@ The Internet Search service provides a tool to search the internet.
 
 ```bash
 # Run with default settings (port 8001, streamable-http transport)
-uv --directory granite_core -m granite_core_mcp.internet_search
+uv --directory granite_core_mcp run -m granite_core_mcp.internet_search
 
 # Run with custom settings
-uv --directory granite_core -m granite_core_mcp.internet_search --transport stdio
+uv --directory granite_core_mcp run -m granite_core_mcp.internet_search --transport stdio
 ```
 
 **Command-line options:**
