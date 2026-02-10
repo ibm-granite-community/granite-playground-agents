@@ -155,7 +155,7 @@ def ensure_punkt() -> None:
     try:
         find("tokenizers/punkt/english.pickle")
     except LookupError:
-        nltk.download("punkt", quiet=True)
+        nltk.download("punkt_tab", quiet=True)
 
 
 class DefaultCitationGenerator(CitationGenerator):

@@ -21,7 +21,7 @@ RUN microdnf -y install git && \
     uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
 
 # Pre-download NLTK punkt resource
-RUN python -m nltk.downloader punkt -d /app/acp/nltk_data
+RUN python -m nltk.downloader punkt_tab -d /app/acp/nltk_data
 
 # Run
 FROM base AS runner
