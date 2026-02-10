@@ -22,7 +22,7 @@ The agent supports multiple LLM providers and is ideally run using an OpenAI-com
 LLM_PROVIDER=openai
 LLM_MODEL=<your-model-name>
 LLM_API_BASE=<your-openai-compatible-endpoint>
-LLM_API_KEY=<your-api-key>
+LLM_API_KEY=
 
 # Optional: Custom headers (JSON format)
 # LLM_API_HEADERS='{"Authorization": "Bearer token"}'
