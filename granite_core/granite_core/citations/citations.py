@@ -6,7 +6,6 @@ import asyncio
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from itertools import count
-from typing import cast
 
 import nltk
 import numpy as np
@@ -153,9 +152,9 @@ class GraniteIOCitationGenerator(CitationGenerator):
 
 def ensure_punkt() -> None:
     try:
-        find("tokenizers/punkt/english.pickle")
+        find(resource_name="tokenizers/punkt_tab")
     except LookupError:
-        nltk.download("punkt_tab", quiet=True)
+        nltk.download(info_or_id="punkt_tab", quiet=True)
 
 
 class DefaultCitationGenerator(CitationGenerator):
@@ -235,9 +234,7 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
         ensure_punkt()
         self.chat_model = ChatModelFactory.create(model_type="structured")
         self.embeddingsModel = EmbeddingsFactory.create(model_type="similarity")
-        self.sentence_splitter: PunktSentenceTokenizer = cast(
-            PunktSentenceTokenizer, nltk.data.load("tokenizers/punkt/english.pickle")
-        )
+        self.sentence_splitter: PunktSentenceTokenizer = nltk.tokenize.punkt.PunktSentenceTokenizer()
 
     async def generate(self, docs: list[Document], response: str) -> None:
         try:
