@@ -9,6 +9,6 @@ Closes: #
 ### Checklist
 
 - [ ] I have read and agree to the [contributor guide](https://github.com/ibm-granite-community/granite-playground-agents?tab=contributing-ov-file)
-- [ ] I have [signed off](https://github.com/ibm-granite-community/granite-playground-agents?tab=contributing-ov-file#developer-certificate-of-origin-1) on my commits
-- [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
-- [ ] Documentation is updated
+- [ ] I have run pre-commit and all checks pass <!-- See README for instructions -->
+- [ ] Tests written and pass <!-- New code should include tests, code changes should update tests -->
+- [ ] Documentation is updated <!-- If this PR does not require documentation updates, please explain why -->
