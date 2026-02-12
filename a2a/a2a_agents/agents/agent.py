@@ -58,7 +58,7 @@ if settings.USE_AGENTSTACK_LLM:
         ],
         embedding_ext: Annotated[
             EmbeddingServiceExtensionServer,
-            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_EMBEDDING_MODEL,)),
         ],
         trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
         citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],

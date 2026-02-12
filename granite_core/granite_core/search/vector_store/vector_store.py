@@ -112,7 +112,7 @@ class VectorStoreWrapper:
                 search_type="mmr", search_kwargs={"k": k, "lambda_mult": settings.MMR_LAMBDA_MULT}
             )
 
-            embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.5)
+            embeddings_filter = EmbeddingsFilter(embeddings=self.vector_store.embeddings, similarity_threshold=0.65)
             compression_retriever = ContextualCompressionRetriever(
                 base_compressor=embeddings_filter, base_retriever=retriever
             )
