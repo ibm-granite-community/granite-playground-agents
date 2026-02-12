@@ -18,14 +18,15 @@ COPY granite_core /app/granite_core
 COPY acp /app/acp
 
 RUN microdnf -y install git && \
-    uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
+    uv --directory acp --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable && \
+    uv --directory acp run --no-sync python -m nltk.downloader punkt_tab -d /app/acp/nltk_data
 
 # Run
 FROM base AS runner
 
 USER 1001
+ENV NLTK_DATA=/app/nltk_data
 
 COPY --from=builder --chown=1001:1001 /app/acp /app
-
 
 CMD ["uv", "run", "--no-sync", "-m", "acp_agent.agent"]

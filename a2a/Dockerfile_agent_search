@@ -17,13 +17,15 @@ FROM base AS builder
 COPY granite_core /app/granite_core
 COPY a2a /app/a2a
 
-RUN uv --directory a2a --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable
+RUN uv --directory a2a --no-managed-python sync --no-dev --no-cache --locked --link-mode copy --no-editable && \
+    uv --directory a2a run --no-sync python -m nltk.downloader punkt_tab -d /app/a2a/nltk_data
 
 # Run
 FROM base AS runner
 
 USER 1001
+ENV NLTK_DATA=/app/nltk_data
 
 COPY --from=builder --chown=1001:1001 /app/a2a /app
 
-CMD ["uv", "run", "--no-sync", "-m", "a2a_agents.agents.research.agent_research"]
+CMD ["uv", "run", "--no-sync", "-m", "a2a_agents.agents.search.agent_search"]

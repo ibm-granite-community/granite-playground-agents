@@ -16,7 +16,8 @@ from granite_io.types import AssistantMessage as GraniteIOAssistantMessage
 from granite_io.types import ChatCompletionInputs, GenerateInputs
 from granite_io.types import Document as GraniteIODocument
 from langchain_core.documents import Document
-from nltk.tokenize import sent_tokenize
+from nltk.data import find
+from nltk.tokenize import PunktSentenceTokenizer, sent_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
 from granite_core import utils
@@ -35,8 +36,6 @@ from granite_core.logging import get_logger
 from granite_core.markdown import MarkdownSection, get_markdown_sections, get_markdown_tokens_with_content
 from granite_core.search.embeddings.factory import EmbeddingsFactory
 from granite_core.work import chat_pool, task_pool
-
-nltk.download("punkt_tab")
 
 logger = get_logger(__name__)
 
@@ -151,11 +150,19 @@ class GraniteIOCitationGenerator(CitationGenerator):
             logger.exception(repr(e))
 
 
+def ensure_punkt() -> None:
+    try:
+        find(resource_name="tokenizers/punkt_tab")
+    except LookupError:
+        nltk.download(info_or_id="punkt_tab", quiet=True)
+
+
 class DefaultCitationGenerator(CitationGenerator):
     """Simple sources listed in markdown."""
 
     def __init__(self) -> None:
         super().__init__()
+        ensure_punkt()
         self.chat_model = ChatModelFactory.create("structured")
 
     async def generate(self, docs: list[Document], response: str) -> None:
@@ -224,9 +231,10 @@ class ReferencingMatchingCitationGenerator(CitationGenerator):
 
     def __init__(self) -> None:
         super().__init__()
+        ensure_punkt()
         self.chat_model = ChatModelFactory.create(model_type="structured")
         self.embeddingsModel = EmbeddingsFactory.create(model_type="similarity")
-        self.sentence_splitter = nltk.tokenize.punkt.PunktSentenceTokenizer()
+        self.sentence_splitter: PunktSentenceTokenizer = nltk.tokenize.punkt.PunktSentenceTokenizer()
 
     async def generate(self, docs: list[Document], response: str) -> None:
         try:
