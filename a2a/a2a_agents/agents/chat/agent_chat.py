@@ -17,6 +17,7 @@ from agentstack_sdk.server import Server
 from agentstack_sdk.server.context import RunContext
 from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
 from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
+from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings as core_settings
 from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
@@ -63,6 +64,7 @@ if settings.USE_AGENTSTACK_LLM:
         # this allows provision of an undecorated chat function that can be imported elsewhere
         async for response in chat(input, context, llm_ext):
             yield response
+
 else:
     # agent without LLM extensions
     @server.agent(
@@ -84,11 +86,13 @@ else:
 async def chat(
     input: A2AMessage,
     context: RunContext,
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ]
-    | None = None,
+    llm_ext: (
+        Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ]
+        | None
+    ) = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext)
 
@@ -113,6 +117,11 @@ async def chat(
                 SystemMessage(
                     f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
                 ),
+            )
+        else:
+            messages.insert(
+                0,
+                SystemMessage(ChatPrompts.chat_system_prompt()),
             )
 
         async with chat_pool.throttle():

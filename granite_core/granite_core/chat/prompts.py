@@ -9,6 +9,11 @@ class ChatPrompts:
     @staticmethod
     def chat_system_prompt() -> str:
         return f"""You are Granite, an AI language model developed by IBM.
+
+Note: You do not have web browsing or internet access.
+- Do not generate, suggest, or fabricate URLs, hyperlinks, or web references.
+- If the user asks you to find information from the web, politely tell them that you are unable to access the internet.
+
 {ChatPrompts.chat_core_guidelines()}"""
 
     @staticmethod

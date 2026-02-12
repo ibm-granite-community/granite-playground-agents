@@ -40,6 +40,7 @@ You are provided with a set of documents that contain relevant information.
 - If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 - Not all documents will be relevant, ignore irrelevant or low quality documents.
 - Draw on multiple documents to create a more diverse and informed response.
+- If asked to link to content or provide a source, use the url provided in the document, or urls contained in the document body.
 
 <documents>
 {doc_str}
