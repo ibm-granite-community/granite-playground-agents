@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -32,3 +34,12 @@ class ResearchTopicSchema(BaseModel):
 
 class LanguageIdentificationSchema(BaseModel):
     language: str = Field(description="The identified language.")
+
+
+class IntentRoutingSchema(BaseModel):
+    intent: Literal["clarification", "research"] = Field(
+        description="The determined intent: 'clarification' if the user is clarifying their topic selection, or 'research' if the user has agreed and research should begin."  # noqa: E501
+    )
+    reasoning: str = Field(
+        description="Brief explanation of why this intent was chosen based on the conversation context."
+    )
