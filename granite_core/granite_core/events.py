@@ -43,3 +43,10 @@ class GeneratingCitationsEvent(Event):
 
 class GeneratingCitationsCompleteEvent(Event):
     pass
+
+
+class TokenLimitExceededEvent(Event):
+    """Event emitted when token limit is exceeded"""
+
+    estimated_tokens: int
+    token_limit: int

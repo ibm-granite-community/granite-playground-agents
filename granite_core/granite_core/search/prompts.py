@@ -22,7 +22,8 @@ class SearchPrompts:
     @staticmethod
     def search_system_prompt(docs: list[Document], include_core_chat: bool = True) -> str:
         json_docs = [
-            {"doc_id": str(i), "title": d.metadata["title"], "content": d.page_content} for i, d in enumerate(docs)
+            {"doc_id": str(i), "url": d.metadata["url"], "title": d.metadata["title"], "content": d.page_content}
+            for i, d in enumerate(docs)
         ]
 
         doc_str = json.dumps(json_docs, indent=4)
@@ -39,6 +40,7 @@ You are provided with a set of documents that contain relevant information.
 - If the information needed is not available, inform the user that the question cannot be answered based on the available data.
 - Not all documents will be relevant, ignore irrelevant or low quality documents.
 - Draw on multiple documents to create a more diverse and informed response.
+- If asked to link to content or provide a source, use the url provided in the document, or urls contained in the document body.
 
 <documents>
 {doc_str}
@@ -49,6 +51,22 @@ The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
 Make sure that your response is accurate given the current date and time i.e. dont say that something in the future has already happened!
 Assume that the user's question is framed in the context of the current date.
 You have access to realtime data, you do not have a knowledge cutoff.
+
+{core_chat}"""  # noqa: E501
+
+    @staticmethod
+    def no_docs_search_system_prompt(include_core_chat: bool = True) -> str:
+        core_chat = ChatPrompts.chat_core_guidelines() if include_core_chat else ""
+
+        return f"""You are Granite, developed by IBM.
+The user enabled the search mode but you were unable to find good quality information on the web to satisfy the request.
+You should inform the user and mention that that they can try again with a different question.
+You can also provide a general response with the caveat that its not based on web derived data.
+
+Avoid referencing or mentioning "documents" or "the documents", or alluding to their existence in any way when formulating your response.
+The current date is {datetime.now(UTC).strftime("%B %d, %Y")}.
+Make sure that your response is accurate given the current date and time i.e. dont say that something in the future has already happened!
+Assume that the user's question is framed in the context of the current date.
 
 {core_chat}"""  # noqa: E501
 

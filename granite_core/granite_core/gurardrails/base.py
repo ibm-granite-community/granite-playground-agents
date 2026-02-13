@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 
 class GuardrailResult(BaseModel):
-    is_harmful: bool
+    violated: bool
     reason: str | None = None
 
 

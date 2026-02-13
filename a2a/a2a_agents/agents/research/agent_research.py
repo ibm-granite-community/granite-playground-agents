@@ -77,7 +77,7 @@ if settings.USE_AGENTSTACK_LLM:
         ],
         embedding_ext: Annotated[
             EmbeddingServiceExtensionServer,
-            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_EMBEDDING_MODEL,)),
         ],
         trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
         citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
@@ -85,6 +85,7 @@ if settings.USE_AGENTSTACK_LLM:
         # this allows provision of an undecorated research function that can be imported elsewhere
         async for response in research(input, context, trajectory, citation, llm_ext, embedding_ext):
             yield response
+
 else:
     # agent without LLM extensions
     @server.agent(
@@ -110,16 +111,20 @@ async def research(
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ]
-    | None = None,
-    embedding_ext: Annotated[
-        EmbeddingServiceExtensionServer,
-        EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-    ]
-    | None = None,
+    llm_ext: (
+        Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ]
+        | None
+    ) = None,
+    embedding_ext: (
+        Annotated[
+            EmbeddingServiceExtensionServer,
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_EMBEDDING_MODEL,)),
+        ]
+        | None
+    ) = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext, embedding_ext)
 
