@@ -15,6 +15,8 @@ from beeai_framework.backend import (
     SystemMessage,
 )
 from beeai_framework.backend import Message as FrameworkMessage
+from beeai_framework.backend.chat import ChatModel
+from granite_core.chat.handler import ChatHandler
 from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
@@ -27,6 +29,7 @@ from granite_core.events import (
     PassThroughEvent,
     TextEvent,
     ThinkEvent,
+    TokenLimitExceededEvent,
     TrajectoryEvent,
 )
 from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
@@ -95,39 +98,32 @@ async def granite_chat(input: list[Message], context: Context) -> AsyncGenerator
 
         history = [message async for message in context.session.load_history()]
         messages = utils.to_beeai_framework_messages(messages=history + input)
+        chat_model: ChatModel = ChatModelFactory.create()
 
-        chat_model = ChatModelFactory.create()
+        chat_handler: ChatHandler = ChatHandler(
+            chat_model=chat_model, session_id=str(context.session.id), token_limit=core_settings.CHAT_TOKEN_LIMIT
+        )
+        agent_response_text: list[str] = []
 
-        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
-        guardrail_result = await guardrail.evaluate(messages)
+        # output chat events
+        async def chat_listener(event: Event) -> None:
+            if isinstance(event, TextEvent):
+                await context.yield_async(MessagePart(content=event.text))
+                agent_response_text.append(event.text)
+            elif isinstance(event, TokenLimitExceededEvent):
+                await context.yield_async(token_limit_response(tokens_used=event.estimated_tokens))
+            elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+                await context.yield_async(
+                    create_usage_info(
+                        usage=cast(ChatModelSuccessEvent, event.event).value.usage, model_id=chat_model.model_id
+                    )
+                )
 
-        if guardrail_result.is_harmful:
-            messages = [
-                SystemMessage(
-                    content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
-                ),
-                *messages,
-            ]
-        else:
-            messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
+        chat_handler.subscribe(handler=chat_listener)
+        await chat_handler.run(messages, stream=core_settings.STREAMING)
 
-        token_count = estimate_tokens(messages=messages)
-        if exceeds_token_limit(token_count):
-            yield token_limit_response(token_count)
-            return
-
-        if core_settings.STREAMING is True:
-            async with chat_pool.throttle():
-                async for event, _ in chat_model.run(messages, max_retries=core_settings.MAX_RETRIES, stream=True):
-                    if isinstance(event, ChatModelNewTokenEvent):
-                        yield MessagePart(content=event.value.get_text_content())
-                    elif isinstance(event, ChatModelSuccessEvent):
-                        yield create_usage_info(event.value.usage, chat_model.model_id)
-        else:
-            async with chat_pool.throttle():
-                output = await chat_model.run(messages, max_retries=core_settings.MAX_RETRIES)
-            yield MessagePart(content=output.get_text_content())
-            yield create_usage_info(output.usage, chat_model.model_id)
+        logger.info(msg=f"Agent: {''.join(agent_response_text)}")
+        yield
 
     except Exception as e:
         logger.exception(repr(e))
@@ -175,7 +171,7 @@ async def granite_think(input: list[Message], context: Context) -> AsyncGenerato
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
         guardrail_result = await guardrail.evaluate(messages)
 
-        if guardrail_result.is_harmful:
+        if guardrail_result.violated:
             messages = [
                 SystemMessage(
                     content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
@@ -293,7 +289,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
         guardrail_result = await guardrail.evaluate(messages)
 
-        if guardrail_result.is_harmful:
+        if guardrail_result.violated:
             messages = [
                 SystemMessage(
                     content=f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
@@ -308,7 +304,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
 
         response: list[str] = []
 
-        if guardrail_result.is_harmful:
+        if guardrail_result.violated:
             if core_settings.STREAMING is True:
                 async with chat_pool.throttle():
                     async for event, _ in chat_model.run(messages, stream=True, max_retries=core_settings.MAX_RETRIES):

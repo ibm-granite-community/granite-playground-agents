@@ -148,7 +148,7 @@ async def search(
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
         guardrail_result = await guardrail.evaluate(messages)
 
-        if guardrail_result.is_harmful:
+        if guardrail_result.violated:
             messages.insert(
                 0,
                 SystemMessage(

@@ -51,4 +51,4 @@ Criteria:
         else:
             logger.info(f"No copyright violation detected: {guardrail.reason}")
 
-        return GuardrailResult(is_harmful=guardrail.is_copyright_violation, reason=guardrail.reason)
+        return GuardrailResult(violated=guardrail.is_copyright_violation, reason=guardrail.reason)
