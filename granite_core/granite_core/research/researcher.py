@@ -60,6 +60,7 @@ class Researcher(
         structured_chat_model: ChatModel,
         messages: list[Message],
         session_id: str,
+        interactive: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -68,6 +69,7 @@ class Researcher(
         self.structured_chat_model = structured_chat_model or chat_model
         self.messages = messages
         self.session_id = session_id
+        self.interactive = interactive
         self.logger = get_logger_with_prefix(__name__, tool_name="Researcher", session_id=session_id)
 
         self.research_topic: str | None = None
@@ -87,14 +89,15 @@ class Researcher(
         self.logger.info("Running Researcher")
 
         # Determine user intent first
-        intent: IntentRoutingSchema = await self._determine_intent()
-        self.logger.info(msg=f"Determined intent: {intent.intent} - {intent.reasoning}")
+        if self.interactive is True:
+            intent: IntentRoutingSchema = await self._determine_intent()
+            self.logger.info(msg=f"Determined intent: {intent.intent} - {intent.reasoning}")
 
-        if intent.intent == "clarification":
-            # User is still clarifying - help them clarify and don't proceed with research yet
-            self.logger.info(msg="User is still clarifying topic. Providing clarification assistance.")
-            await self._handle_clarification()
-            return
+            if intent.intent == "clarification":
+                # User is still clarifying - help them clarify and don't proceed with research yet
+                self.logger.info(msg="User is still clarifying topic. Providing clarification assistance.")
+                await self._handle_clarification()
+                return
 
         # Intent is "research" - proceed with full research workflow
         self.research_topic = await self._generate_research_topic()
