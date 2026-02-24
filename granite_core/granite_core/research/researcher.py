@@ -14,6 +14,7 @@ from beeai_framework.backend import (
     SystemMessage,
     UserMessage,
 )
+from beeai_framework.backend.types import ChatModelOutput
 from langchain_core.documents import Document
 
 from granite_core.citations.citations import CitationGeneratorFactory
@@ -29,6 +30,7 @@ from granite_core.events import (
 from granite_core.logging import get_logger_with_prefix
 from granite_core.research.prompts import ResearchPrompts
 from granite_core.research.types import (
+    IntentRoutingSchema,
     LanguageIdentificationSchema,
     ResearchPlanSchema,
     ResearchQuery,
@@ -84,6 +86,17 @@ class Researcher(
         """Perform research investigation"""
         self.logger.info("Running Researcher")
 
+        # Determine user intent first
+        intent: IntentRoutingSchema = await self._determine_intent()
+        self.logger.info(msg=f"Determined intent: {intent.intent} - {intent.reasoning}")
+
+        if intent.intent == "clarification":
+            # User is still clarifying - help them clarify and don't proceed with research yet
+            self.logger.info(msg="User is still clarifying topic. Providing clarification assistance.")
+            await self._handle_clarification()
+            return
+
+        # Intent is "research" - proceed with full research workflow
         self.research_topic = await self._generate_research_topic()
 
         await self._emit(TrajectoryEvent(title="Research topic", content=self.research_topic.strip()))
@@ -121,6 +134,52 @@ class Researcher(
         self.logger.info("Generating citations")
         await self._generate_citations()
         self.logger.info("Research run complete.")
+
+    async def _determine_intent(self) -> IntentRoutingSchema:
+        """Determine the user's intent from the conversation history"""
+        system_prompt = ResearchPrompts.intent_routing_system_prompt()
+
+        # Build messages with system prompt and conversation history
+        intent_messages: list[Message] = [SystemMessage(content=system_prompt)]
+        intent_messages.extend(self.messages)
+
+        async with chat_pool.throttle():
+            response = await self.structured_chat_model.run(
+                intent_messages,
+                response_format=IntentRoutingSchema,
+                max_retries=settings.MAX_RETRIES,
+            )
+        assert isinstance(response.output_structured, IntentRoutingSchema)
+        return response.output_structured
+
+    async def _handle_clarification(self) -> None:
+        """Handle clarification conversation with the user"""
+        system_prompt: str = ResearchPrompts.clarification_system_prompt()
+
+        # Build messages with system prompt and conversation history
+        clarification_messages: list[Message] = [SystemMessage(content=system_prompt)]
+        clarification_messages.extend(self.messages)
+
+        if settings.STREAMING is True:
+            # Stream the clarification response
+            async with chat_pool.throttle():
+                async for event, _ in self.chat_model.run(
+                    clarification_messages, stream=True, max_retries=settings.MAX_RETRIES
+                ):
+                    if isinstance(event, ChatModelNewTokenEvent):
+                        content: str = event.value.get_text_content()
+                        await self._emit(event=TextEvent(text=content))
+                    elif isinstance(event, ChatModelSuccessEvent):
+                        await self._emit(event=PassThroughEvent(event=event))
+        else:
+            # Non-streaming response
+            async with chat_pool.throttle():
+                output: ChatModelOutput = await self.chat_model.run(
+                    clarification_messages, max_retries=settings.MAX_RETRIES
+                )
+            response_text: str = output.get_text_content()
+            await self._emit(event=TextEvent(text=response_text))
+            await self._emit(event=PassThroughEvent(event=ChatModelSuccessEvent(value=output)))
 
     async def _generate_research_topic(self) -> str:
         """Generate/extract the research topic"""
