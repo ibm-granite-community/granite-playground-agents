@@ -5,7 +5,7 @@
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from a2a.types import AgentSkill
+from a2a.types import AgentSkill, Message
 from a2a.types import Message as A2AMessage
 from a2a.utils.message import get_message_text
 from agentstack_sdk.a2a.extensions import (
@@ -16,13 +16,16 @@ from agentstack_sdk.a2a.types import AgentMessage, RunYield
 from agentstack_sdk.server import Server
 from agentstack_sdk.server.context import RunContext
 from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
-from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
+from beeai_framework.backend import UserMessage
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import AnyMessage
+from granite_core.chat.handler import ChatHandler
 from granite_core.chat_model import ChatModelFactory
 from granite_core.config import settings as core_settings
-from granite_core.gurardrails.copyright import CopyrightViolationGuardrail
+from granite_core.emitter import Event
+from granite_core.events import TextEvent
 from granite_core.logging import get_logger
 from granite_core.utils import log_settings
-from granite_core.work import chat_pool
 
 from a2a_agents import __version__
 from a2a_agents.config import agent_detail, settings
@@ -63,6 +66,7 @@ if settings.USE_AGENTSTACK_LLM:
         # this allows provision of an undecorated chat function that can be imported elsewhere
         async for response in chat(input, context, llm_ext):
             yield response
+
 else:
     # agent without LLM extensions
     @server.agent(
@@ -84,50 +88,46 @@ else:
 async def chat(
     input: A2AMessage,
     context: RunContext,
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ]
-    | None = None,
+    llm_ext: (
+        Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ]
+        | None
+    ) = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext)
 
-    user_message = get_message_text(input)
-    logger.info(f"User: {user_message}")
+    user_message: str = get_message_text(message=input)
+    logger.info(msg=f"User: {user_message}")
 
-    await context.store(input)
-    history = [message async for message in context.load_history() if isinstance(message, A2AMessage) and message.parts]
-    messages = to_framework_messages(history)
+    await context.store(data=input)
+    history: list[Message] = [
+        message async for message in context.load_history() if isinstance(message, A2AMessage) and message.parts
+    ]
+    messages: list[AnyMessage] = to_framework_messages(history)
     messages.append(UserMessage(user_message))
 
     try:
-        final_agent_response_text: list[str] = []
-        chat_model = ChatModelFactory.create()
+        chat_model: ChatModel = ChatModelFactory.create()
+        chat_handler: ChatHandler = ChatHandler(chat_model=chat_model, session_id=context.context_id)
+        agent_response_text: list[str] = []
 
-        guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
-        guardrail_result = await guardrail.evaluate(messages)
+        # output chat events
+        async def chat_listener(event: Event) -> None:
+            if isinstance(event, TextEvent):
+                await context.yield_async(value=AgentMessage(text=event.text))
+                agent_response_text.append(event.text)
 
-        if guardrail_result.is_harmful:
-            messages.insert(
-                0,
-                SystemMessage(
-                    f"Providing an answer to the user would result in a potential copyright violation.\nReason: {guardrail_result.reason}\n\nInform the user and suggest alternatives."  # noqa: E501
-                ),
-            )
+        chat_handler.subscribe(handler=chat_listener)
+        await chat_handler.run(messages, stream=core_settings.STREAMING)
 
-        async with chat_pool.throttle():
-            async for event, _ in chat_model.run(messages, stream=True):
-                if isinstance(event, ChatModelNewTokenEvent):
-                    agent_response_text = event.value.get_text_content()
-                    yield AgentMessage(text=agent_response_text)
-                    final_agent_response_text.append(agent_response_text)
-
-        logger.info(f"Agent: {''.join(final_agent_response_text)}")
-        await context.store(AgentMessage(text="".join(final_agent_response_text)))
+        logger.info(msg=f"Agent: {''.join(agent_response_text)}")
+        await context.store(data=AgentMessage(text="".join(agent_response_text)))
 
     except BaseException as e:
-        logger.exception("Chat agent error, threw exception...")
-        error_msg = f"Error processing request: {e!s}"
+        logger.exception(msg="Chat agent error, threw exception...")
+        error_msg: str = f"Error processing request: {e!s}"
         yield error_msg
         await context.store(AgentMessage(text=error_msg))
 

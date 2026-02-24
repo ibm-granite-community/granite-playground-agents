@@ -20,7 +20,7 @@ async def test_violation() -> None:
     guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
     result: GuardrailResult = await guardrail.evaluate(messages)
 
-    assert result.is_harmful
+    assert result.violated
 
 
 @pytest.mark.asyncio
@@ -33,4 +33,4 @@ async def test_non_violation() -> None:
     guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
     result: GuardrailResult = await guardrail.evaluate(messages)
 
-    assert not result.is_harmful
+    assert not result.violated

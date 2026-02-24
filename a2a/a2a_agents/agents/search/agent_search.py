@@ -25,7 +25,6 @@ from agentstack_sdk.server.context import RunContext
 from agentstack_sdk.server.store.platform_context_store import PlatformContextStore
 from beeai_framework.backend import ChatModelNewTokenEvent, SystemMessage, UserMessage
 from beeai_framework.backend import Message as FrameworkMessage
-from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.citations.events import CitationEvent
@@ -79,12 +78,13 @@ if settings.USE_AGENTSTACK_LLM:
         ],
         embedding_ext: Annotated[
             EmbeddingServiceExtensionServer,
-            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_EMBEDDING_MODEL,)),
         ],
     ) -> AsyncGenerator[RunYield, A2AMessage]:
         # this allows provision of an undecorated search function that can be imported elsewhere
         async for response in search(input, context, trajectory, citation, llm_ext, embedding_ext):
             yield response
+
 else:
     # agent without LLM extensions
     @server.agent(
@@ -110,16 +110,20 @@ async def search(
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
     citation: Annotated[CitationExtensionServer, CitationExtensionSpec()],
-    llm_ext: Annotated[
-        LLMServiceExtensionServer,
-        LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
-    ]
-    | None = None,
-    embedding_ext: Annotated[
-        EmbeddingServiceExtensionServer,
-        EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGETED_EMBEDDING_MODEL,)),
-    ]
-    | None = None,
+    llm_ext: (
+        Annotated[
+            LLMServiceExtensionServer,
+            LLMServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_LLM_MODEL,)),
+        ]
+        | None
+    ) = None,
+    embedding_ext: (
+        Annotated[
+            EmbeddingServiceExtensionServer,
+            EmbeddingServiceExtensionSpec.single_demand(suggested=(settings.SUGGESTED_EMBEDDING_MODEL,)),
+        ]
+        | None
+    ) = None,
 ) -> AsyncGenerator[RunYield, A2AMessage]:
     await configure_models(llm_ext, embedding_ext)
 
@@ -144,7 +148,7 @@ async def search(
         guardrail = CopyrightViolationGuardrail(chat_model=chat_model)
         guardrail_result = await guardrail.evaluate(messages)
 
-        if guardrail_result.is_harmful:
+        if guardrail_result.violated:
             messages.insert(
                 0,
                 SystemMessage(
@@ -183,7 +187,7 @@ async def search(
             # Prepend document prompt
             messages = doc_messages + messages
         else:
-            messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
+            messages = [SystemMessage(content=SearchPrompts.no_docs_search_system_prompt()), *messages]
 
         # trajectory message: search complete
         await trajectory_handler.yield_trajectory(title="Searching the web", content="Complete", group_id="search")
