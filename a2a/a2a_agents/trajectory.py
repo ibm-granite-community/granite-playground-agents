@@ -2,13 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any
-
 from agentstack_sdk.a2a.extensions import (
     TrajectoryExtensionServer,
 )
 from agentstack_sdk.a2a.types import AgentMessage, Metadata
 from agentstack_sdk.server.context import RunContext
+from agentstack_sdk.types import JsonValue
 from granite_core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,7 +17,7 @@ class TrajectoryHandler:
     def __init__(self, trajectory: TrajectoryExtensionServer, context: RunContext) -> None:
         self.trajectory = trajectory
         self.context = context
-        self.log: list[Metadata[str, Any]] = []
+        self.log: list[Metadata] = []
 
     async def yield_trajectory(
         self, title: str | None = None, content: str | None = None, group_id: str | None = None
@@ -32,8 +31,15 @@ class TrajectoryHandler:
         # search the log for previous entries with the same group_id and append content
         if group_id is not None and content is not None:
             for log_entry in self.log:
-                if log_entry[self.trajectory.spec.URI]["group_id"] == group_id:
-                    logged_content = str(log_entry[self.trajectory.spec.URI]["content"])
+                extension_data = log_entry.get(self.trajectory.spec.URI)
+
+                if not isinstance(extension_data, dict):
+                    continue
+
+                group: JsonValue = extension_data.get("group_id")
+
+                if group == group_id:
+                    logged_content = str(extension_data.get("content", ""))
                     if logged_content.startswith("* "):
                         content = f"{logged_content}\n* {content}"
                     else:
