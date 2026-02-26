@@ -193,6 +193,7 @@ async def research(
             structured_chat_model=structured_chat_model,
             messages=messages,
             session_id=context.context_id,
+            interactive=True,
         )
         researcher.subscribe(handler=research_listener)
         await researcher.run()

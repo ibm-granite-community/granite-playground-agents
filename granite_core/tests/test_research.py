@@ -56,6 +56,40 @@ async def test_basic_researcher() -> None:
     assert "Geoffrey Hinton" in "".join(final_agent_response_text)
 
 
+@pytest.mark.asyncio
+async def test_interactive_researcher() -> None:
+    """Test basic research infrastructure"""
+    chat_model = ChatModelFactory.create()
+    structured_chat_model = ChatModelFactory.create(model_type="structured")
+    messages: list[AnyMessage] = [
+        UserMessage("In interested in binary star systems!"),
+    ]
+
+    researcher = Researcher(
+        chat_model=chat_model,
+        structured_chat_model=structured_chat_model,
+        messages=messages,
+        session_id="test_session",
+        interactive=True,
+    )
+
+    final_agent_response_text: list[str] = []
+
+    async def research_listener(event: Event) -> None:
+        if isinstance(event, TextEvent):
+            final_agent_response_text.append(event.text)
+        elif isinstance(
+            event, (TrajectoryEvent, GeneratingCitationsEvent, CitationEvent, GeneratingCitationsCompleteEvent)
+        ):
+            # Agent should not execute research flow
+            raise AssertionError()
+
+    researcher.subscribe(handler=research_listener)
+    await researcher.run()
+    # Agent should ask user for clarification
+    assert "?" in "".join(final_agent_response_text)
+
+
 def test_research_prompts() -> None:
     """
     Test research prompts
