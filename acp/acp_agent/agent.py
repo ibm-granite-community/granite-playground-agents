@@ -17,7 +17,6 @@ from beeai_framework.backend import (
 from beeai_framework.backend import Message as FrameworkMessage
 from beeai_framework.backend.chat import ChatModel
 from granite_core.chat.handler import ChatHandler
-from granite_core.chat.prompts import ChatPrompts
 from granite_core.chat_model import ChatModelFactory
 from granite_core.citations.citations import CitationGeneratorFactory
 from granite_core.citations.events import CitationEvent
@@ -334,7 +333,7 @@ async def granite_search(input: list[Message], context: Context) -> AsyncGenerat
             # Prepend document prompt
             messages = doc_messages + messages
         else:
-            messages = [SystemMessage(content=ChatPrompts.chat_system_prompt()), *messages]
+            messages = [SystemMessage(content=SearchPrompts.no_docs_search_system_prompt()), *messages]
 
         await context.yield_async(SearchingWebPhase(status=Status.completed).wrapped)
 
