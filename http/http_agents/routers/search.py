@@ -4,7 +4,7 @@
 
 from collections.abc import AsyncGenerator
 
-from beeai_framework.backend import ChatModelSuccessEvent, SystemMessage
+from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelSuccessEvent, SystemMessage
 from beeai_framework.backend import Message as FrameworkMessage
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -106,10 +106,11 @@ async def search(request: SearchRequest) -> StreamingResponse | SearchResponse:
                 # Generate response
                 async with chat_pool.throttle():
                     async for event, _ in chat_model.run(messages, stream=True, max_retries=core_settings.MAX_RETRIES):
-                        if isinstance(event, ChatModelSuccessEvent):
+                        if isinstance(event, ChatModelNewTokenEvent):
                             content = event.value.get_text_content()
                             response_text.append(content)
                             yield await send_sse_event("token", {"content": content})
+                        elif isinstance(event, ChatModelSuccessEvent):
                             usage_info = create_usage_info(event.value.usage, chat_model.model_id)
 
                 # Generate citations

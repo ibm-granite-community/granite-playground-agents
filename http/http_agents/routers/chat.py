@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import cast
 
@@ -23,6 +24,7 @@ from http_agents.models.requests import ChatRequest
 from http_agents.models.responses import ChatResponse, ErrorResponse
 from http_agents.services.session_manager import session_manager
 from http_agents.utils.converters import convert_usage_info
+from http_agents.utils.event_queue import EventStreamQueue
 from http_agents.utils.streaming import send_sse_event, stream_with_heartbeat
 
 logger = get_logger(__name__)
@@ -64,53 +66,62 @@ async def chat(request: ChatRequest) -> StreamingResponse | ChatResponse:
 
         # Create chat model
         chat_model = ChatModelFactory.create()
+        event_queue = EventStreamQueue()
 
         if request.stream:
             # Streaming response
             async def generate_stream() -> AsyncGenerator[str, None]:
                 agent_response_text: list[str] = []
-                usage_info = None
-                event_queue: list[str] = []
-
-                async def chat_listener(event: Event) -> None:
-                    nonlocal usage_info
-                    if isinstance(event, TextEvent):
-                        agent_response_text.append(event.text)
-                        event_queue.append(await send_sse_event("token", {"content": event.text}))
-                    elif isinstance(event, TokenLimitExceededEvent):
-                        event_queue.append(
-                            await send_sse_event(
-                                "error", {"message": f"Token limit exceeded: {event.estimated_tokens} tokens"}
-                            )
-                        )
-                    elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
-                        usage_info = create_usage_info(
-                            usage=cast(ChatModelSuccessEvent, event.event).value.usage, model_id=chat_model.model_id
-                        )
 
                 chat_handler = ChatHandler(
                     chat_model=chat_model, session_id=request.session_id, token_limit=core_settings.CHAT_TOKEN_LIMIT
                 )
-                chat_handler.subscribe(handler=chat_listener)
+                chat_handler.subscribe(handler=event_queue.handler)
 
-                async with chat_pool.throttle():
-                    await chat_handler.run(messages, stream=core_settings.STREAMING)
+                # Run chat in background
+                async def run_chat() -> None:
+                    async with chat_pool.throttle():
+                        await chat_handler.run(messages, stream=core_settings.STREAMING)
+                    await event_queue.stop()
 
-                # Yield all queued events
-                for event_data in event_queue:
-                    yield event_data
+                chat_task = asyncio.create_task(run_chat())
 
-                # Send usage info
-                if usage_info:
-                    yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
+                try:
+                    # Stream events from queue and convert to SSE
+                    async for event in event_queue.stream():
+                        if isinstance(event, TextEvent):
+                            agent_response_text.append(event.text)
+                            yield await send_sse_event("token", {"content": event.text})
+                        elif isinstance(event, TokenLimitExceededEvent):
+                            yield await send_sse_event(
+                                "error", {"message": f"Token limit exceeded: {event.estimated_tokens} tokens"}
+                            )
+                        elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+                            usage_info = create_usage_info(
+                                usage=cast(ChatModelSuccessEvent, event.event).value.usage, model_id=chat_model.model_id
+                            )
+                            yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
 
-                # Send done event
-                yield await send_sse_event("done", {"session_id": request.session_id})
+                    # Wait for chat to complete
+                    await chat_task
 
-                # Save assistant response to history
-                full_response = "".join(agent_response_text)
-                await session_manager.add_message(request.session_id, "assistant", full_response)
-                logger.info(f"Chat response for session {request.session_id}: {full_response[:100]}...")
+                    # Send done event
+                    yield await send_sse_event("done", {"session_id": request.session_id})
+
+                    # Save assistant response to history
+                    full_response = "".join(agent_response_text)
+                    await session_manager.add_message(request.session_id, "assistant", full_response)
+                    logger.info(f"Chat response for session {request.session_id}: {full_response[:100]}...")
+                except asyncio.CancelledError:
+                    # Client disconnected - cancel the background task
+                    logger.info(f"Client disconnected for session {request.session_id}")
+                    chat_task.cancel()
+                    raise
+                except Exception as e:
+                    # Error during streaming - cancel the background task
+                    logger.error(f"Error during chat streaming for session {request.session_id}: {e}")
+                    chat_task.cancel()
+                    raise
 
             return StreamingResponse(
                 stream_with_heartbeat(generate_stream(), settings.HEARTBEAT_INTERVAL), media_type="text/event-stream"
