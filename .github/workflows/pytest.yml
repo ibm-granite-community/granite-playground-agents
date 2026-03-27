@@ -39,6 +39,7 @@ jobs:
         RETRIEVER: ${{ vars.RETRIEVER }}
         WATSONX_API_BASE: ${{ vars.WATSONX_API_BASE }}
         WATSONX_REGION: ${{ vars.WATSONX_REGION }}
+        USER_AGENT_CONTACT: ${{ vars.USER_AGENT_CONTACT }}
       run: |
         uv --directory granite_core run pytest
         uv --directory granite_core_mcp run pytest

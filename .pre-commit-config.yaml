@@ -4,7 +4,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=800']
+        args: ['--maxkb=1024']
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-json
@@ -56,6 +56,14 @@ repos:
         args: ["-c", "a2a/pyproject.toml", "-r", "a2a/a2a_agents"]
         pass_filenames: false
         additional_dependencies: ['bandit[toml]']
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
+    hooks:
+      - id: bandit
+        name: http security
+        args: ["-c", "http/pyproject.toml", "-r", "http/http_agents"]
+        pass_filenames: false
+        additional_dependencies: ['bandit[toml]']
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.26
     hooks:
@@ -71,6 +79,10 @@ repos:
         name: uv lock a2a
         files: a2a/pyproject.toml
         args: [--directory, a2a]
+      - id: uv-lock
+        name: uv lock http
+        files: http/pyproject.toml
+        args: [--directory, http]
   - repo: local
     hooks:
       - id: check-header
@@ -101,4 +113,11 @@ repos:
         pass_filenames: false
         types: [python]
         files: a2a
+      - id: mypy-http
+        name: mypy http
+        entry: uv run --directory http --no-sync mypy --ignore-missing-imports http_agents
+        language: system
+        pass_filenames: false
+        types: [python]
+        files: http
 
