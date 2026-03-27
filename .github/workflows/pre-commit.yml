@@ -31,6 +31,7 @@ jobs:
            uv sync --directory granite_core --frozen --all-extras --group dev
            uv sync --directory acp --frozen --all-extras --group dev
            uv sync --directory a2a --frozen --all-extras --group dev
+           uv sync --directory http --frozen --all-extras --group dev
     - name: Pre-commit
       run: pre-commit run --all-files
     - name: Send failure message pre-commit
