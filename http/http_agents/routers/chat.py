@@ -7,6 +7,7 @@ from collections.abc import AsyncGenerator
 from typing import cast
 
 from beeai_framework.backend import ChatModelSuccessEvent
+from beeai_framework.backend.chat import ChatModel
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from granite_core.chat.handler import ChatHandler
@@ -29,6 +30,63 @@ from http_agents.utils.streaming import send_sse_event, stream_with_heartbeat
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+async def _process_stream_events(
+    event_queue: EventStreamQueue,
+    chat_model: ChatModel,
+    agent_response_text: list[str],
+) -> AsyncGenerator[str, None]:
+    """
+    Process events from queue and convert to SSE format.
+
+    Streams events as Server-Sent Events (SSE) including text tokens,
+    token limit errors, and usage information.
+
+    Args:
+        event_queue: Queue containing events from chat handler
+        chat_model: Chat model instance for usage info
+        agent_response_text: List to accumulate response text
+
+    Yields:
+        SSE formatted event strings
+    """
+    async for event in event_queue.stream():
+        if isinstance(event, TextEvent):
+            agent_response_text.append(event.text)
+            yield await send_sse_event("token", {"content": event.text})
+
+        elif isinstance(event, TokenLimitExceededEvent):
+            yield await send_sse_event("error", {"message": f"Token limit exceeded: {event.estimated_tokens} tokens"})
+
+        elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+            usage_info = create_usage_info(
+                usage=cast(ChatModelSuccessEvent, event.event).value.usage, model_id=chat_model.model_id
+            )
+            yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
+
+
+async def _execute_chat_with_events(
+    chat_handler: ChatHandler,
+    messages: list,
+    event_queue: EventStreamQueue,
+) -> None:
+    """
+    Execute chat handler and signal completion to event queue.
+
+    This helper function runs the chat handler with throttling and ensures
+    the event queue is properly stopped when chat completes or fails.
+
+    Args:
+        chat_handler: The chat handler to execute
+        messages: Conversation messages to process
+        event_queue: Event queue to signal completion
+    """
+    try:
+        async with chat_pool.throttle():
+            await chat_handler.run(messages, stream=core_settings.STREAMING)
+    finally:
+        await event_queue.stop()
 
 
 @router.post(
@@ -65,7 +123,8 @@ async def chat(request: ChatRequest) -> StreamingResponse | ChatResponse:
             )
 
         # Create chat model
-        chat_model = ChatModelFactory.create()
+        chat_model: ChatModel = ChatModelFactory.create()
+        # Utility to stream out events from the chat handler
         event_queue = EventStreamQueue()
 
         if request.stream:
@@ -79,28 +138,12 @@ async def chat(request: ChatRequest) -> StreamingResponse | ChatResponse:
                 chat_handler.subscribe(handler=event_queue.handler)
 
                 # Run chat in background
-                async def run_chat() -> None:
-                    async with chat_pool.throttle():
-                        await chat_handler.run(messages, stream=core_settings.STREAMING)
-                    await event_queue.stop()
-
-                chat_task = asyncio.create_task(run_chat())
+                chat_task = asyncio.create_task(_execute_chat_with_events(chat_handler, messages, event_queue))
 
                 try:
                     # Stream events from queue and convert to SSE
-                    async for event in event_queue.stream():
-                        if isinstance(event, TextEvent):
-                            agent_response_text.append(event.text)
-                            yield await send_sse_event("token", {"content": event.text})
-                        elif isinstance(event, TokenLimitExceededEvent):
-                            yield await send_sse_event(
-                                "error", {"message": f"Token limit exceeded: {event.estimated_tokens} tokens"}
-                            )
-                        elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
-                            usage_info = create_usage_info(
-                                usage=cast(ChatModelSuccessEvent, event.event).value.usage, model_id=chat_model.model_id
-                            )
-                            yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
+                    async for sse_event in _process_stream_events(event_queue, chat_model, agent_response_text):
+                        yield sse_event
 
                     # Wait for chat to complete
                     await chat_task
