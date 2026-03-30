@@ -11,6 +11,16 @@
             "python": "${workspaceFolder}/acp/.venv/bin/python"
         },
         {
+            "name": "Debug Deep Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "a2a_agents.agents.deep.agent",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/a2a",
+            "python": "${workspaceFolder}/a2a/.venv/bin/python",
+            "justMyCode": false
+        },
+        {
             "name": "Debug A2A Agent",
             "type": "debugpy",
             "request": "launch",
