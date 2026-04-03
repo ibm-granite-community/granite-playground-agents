@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import asyncio
 from collections.abc import AsyncGenerator
 
 from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelSuccessEvent, SystemMessage
@@ -28,6 +29,7 @@ from http_agents.models.requests import SearchRequest
 from http_agents.models.responses import Citation, Phase, SearchResponse
 from http_agents.services.session_manager import session_manager
 from http_agents.utils.converters import convert_citation, convert_usage_info
+from http_agents.utils.event_queue import EventStreamQueue
 from http_agents.utils.streaming import send_sse_event, stream_with_heartbeat
 
 logger = get_logger(__name__)
@@ -113,29 +115,43 @@ async def search(request: SearchRequest) -> StreamingResponse | SearchResponse:
                         elif isinstance(event, ChatModelSuccessEvent):
                             usage_info = create_usage_info(event.value.usage, chat_model.model_id)
 
-                # Generate citations
+                # Generate citations with real-time streaming
                 if not guardrail_result.violated and len(docs) > 0:
                     yield await send_sse_event("phase", {"name": "generating-citations", "status": "active"})
                     phases.append({"name": "generating-citations", "status": "active"})
 
-                    citation_events: list[str] = []
+                    # Use EventStreamQueue for real-time citation streaming
+                    citation_queue = EventStreamQueue()
 
-                    async def citation_handler(event: Event) -> None:
-                        if isinstance(event, CitationEvent):
-                            citation_dict = convert_citation(event.citation).model_dump()
-                            citations_list.append(citation_dict)
-                            citation_events.append(await send_sse_event("citation", citation_dict))
+                    async def run_citation_generation() -> None:
+                        """Run citation generation in background."""
+                        try:
+                            generator = CitationGeneratorFactory.create()
+                            generator.subscribe(handler=citation_queue.handler)
+                            await generator.generate(docs=docs, response="".join(response_text))
+                        finally:
+                            await citation_queue.stop()
 
-                    generator = CitationGeneratorFactory.create()
-                    generator.subscribe(handler=citation_handler)
-                    await generator.generate(docs=docs, response="".join(response_text))
+                    # Start citation generation in background
+                    citation_task = asyncio.create_task(run_citation_generation())
 
-                    # Yield citation events
-                    for citation_event in citation_events:
-                        yield citation_event
+                    try:
+                        # Stream citations as they're generated
+                        async for event in citation_queue.stream():
+                            if isinstance(event, CitationEvent):
+                                citation_dict = convert_citation(event.citation).model_dump()
+                                citations_list.append(citation_dict)
+                                yield await send_sse_event("citation", citation_dict)
 
-                    yield await send_sse_event("phase", {"name": "generating-citations", "status": "completed"})
-                    phases.append({"name": "generating-citations", "status": "completed"})
+                        # Wait for completion
+                        await citation_task
+
+                        yield await send_sse_event("phase", {"name": "generating-citations", "status": "completed"})
+                        phases.append({"name": "generating-citations", "status": "completed"})
+                    except Exception as e:
+                        logger.error(f"Error during citation generation: {e}")
+                        citation_task.cancel()
+                        raise
 
                 # Send usage info
                 if usage_info:

@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import cast
 
-from beeai_framework.backend import ChatModelSuccessEvent
+from beeai_framework.backend import ChatModel, ChatModelSuccessEvent
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from granite_core.chat_model import ChatModelFactory
@@ -28,10 +29,82 @@ from http_agents.models.requests import ResearchRequest
 from http_agents.models.responses import Citation, Phase, ResearchResponse
 from http_agents.services.session_manager import session_manager
 from http_agents.utils.converters import convert_citation, convert_usage_info
+from http_agents.utils.event_queue import EventStreamQueue
 from http_agents.utils.streaming import send_sse_event, stream_with_heartbeat
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/research", tags=["research"])
+
+
+async def _process_research_events(
+    event_queue: EventStreamQueue,
+    chat_model: ChatModel,
+) -> AsyncGenerator[str, None]:
+    """
+    Process events from queue and convert to SSE format.
+
+    Streams research events as Server-Sent Events (SSE) including text tokens,
+    trajectories, citations, phases, and usage information.
+
+    Args:
+        event_queue: Queue containing events from researcher
+        chat_model: Chat model instance for usage info
+        response_text: List to accumulate response text
+        citations_list: List to accumulate citations
+        trajectory_list: List to accumulate trajectory messages
+        phases: List to accumulate phase information
+
+    Yields:
+        SSE formatted event strings
+    """
+    usage_info = None
+
+    async for event in event_queue.stream():
+        if isinstance(event, TextEvent):
+            yield await send_sse_event("token", {"content": event.text})
+
+        elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
+            usage_info = create_granite_usage_info(
+                cast(ChatModelSuccessEvent, event.event).value.usage, chat_model.model_id
+            )
+
+        elif isinstance(event, TrajectoryEvent):
+            trajectory_md = event.to_markdown()
+            yield await send_sse_event("trajectory", {"message": trajectory_md})
+
+        elif isinstance(event, GeneratingCitationsEvent):
+            yield await send_sse_event("phase", {"name": "generating-citations", "status": "active"})
+
+        elif isinstance(event, CitationEvent):
+            citation_dict = convert_citation(event.citation).model_dump()
+            yield await send_sse_event("citation", citation_dict)
+
+        elif isinstance(event, GeneratingCitationsCompleteEvent):
+            yield await send_sse_event("phase", {"name": "generating-citations", "status": "completed"})
+
+    # Send usage info after all events processed
+    if usage_info:
+        yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
+
+
+async def _execute_research_with_events(
+    researcher: Researcher,
+    event_queue: EventStreamQueue,
+) -> None:
+    """
+    Execute researcher and signal completion to event queue.
+
+    This helper function runs the researcher and ensures
+    the event queue is properly stopped when research completes or fails.
+
+    Args:
+        researcher: The researcher to execute
+        event_queue: Event queue to signal completion
+    """
+    try:
+        await researcher.run()
+    finally:
+        await event_queue.stop()
 
 
 @router.post(
@@ -66,39 +139,9 @@ async def research(request: ResearchRequest) -> StreamingResponse | ResearchResp
             # Streaming response
             async def generate_stream() -> AsyncGenerator[str, None]:
                 response_text: list[str] = []
-                citations_list: list[dict] = []
-                trajectory_list: list[str] = []
-                phases: list[dict] = []
-                usage_info = None
-                event_queue: list[str] = []
 
-                async def queuing_listener(event: Event) -> None:
-                    nonlocal usage_info
-                    if isinstance(event, TextEvent):
-                        response_text.append(event.text)
-                        event_queue.append(await send_sse_event("token", {"content": event.text}))
-                    elif isinstance(event, PassThroughEvent) and isinstance(event.event, ChatModelSuccessEvent):
-                        usage_info = create_granite_usage_info(
-                            cast(ChatModelSuccessEvent, event.event).value.usage, chat_model.model_id
-                        )
-                    elif isinstance(event, TrajectoryEvent):
-                        trajectory_md = event.to_markdown()
-                        trajectory_list.append(trajectory_md)
-                        event_queue.append(await send_sse_event("trajectory", {"message": trajectory_md}))
-                    elif isinstance(event, GeneratingCitationsEvent):
-                        event_queue.append(
-                            await send_sse_event("phase", {"name": "generating-citations", "status": "active"})
-                        )
-                        phases.append({"name": "generating-citations", "status": "active"})
-                    elif isinstance(event, CitationEvent):
-                        citation_dict = convert_citation(event.citation).model_dump()
-                        citations_list.append(citation_dict)
-                        event_queue.append(await send_sse_event("citation", citation_dict))
-                    elif isinstance(event, GeneratingCitationsCompleteEvent):
-                        event_queue.append(
-                            await send_sse_event("phase", {"name": "generating-citations", "status": "completed"})
-                        )
-                        phases.append({"name": "generating-citations", "status": "completed"})
+                # Create event queue for real-time streaming
+                event_queue = EventStreamQueue()
 
                 researcher = Researcher(
                     chat_model=chat_model,
@@ -106,25 +149,36 @@ async def research(request: ResearchRequest) -> StreamingResponse | ResearchResp
                     messages=messages,
                     session_id=request.session_id,
                 )
+                researcher.subscribe(handler=event_queue.handler)
 
-                researcher.subscribe(handler=queuing_listener)
-                await researcher.run()
+                # Run research in background task
+                research_task = asyncio.create_task(_execute_research_with_events(researcher, event_queue))
 
-                # Yield all queued events
-                for event_data in event_queue:
-                    yield event_data
+                try:
+                    # Stream events from queue and convert to SSE
+                    async for sse_event in _process_research_events(event_queue, chat_model):
+                        yield sse_event
 
-                # Send usage info
-                if usage_info:
-                    yield await send_sse_event("usage", convert_usage_info(usage_info).model_dump())
+                    # Wait for research to complete
+                    await research_task
 
-                # Send done event
-                yield await send_sse_event("done", {"session_id": request.session_id})
+                    # Send done event
+                    yield await send_sse_event("done", {"session_id": request.session_id})
 
-                # Save assistant response
-                full_response = "".join(response_text)
-                await session_manager.add_message(request.session_id, "assistant", full_response)
-                logger.info(f"Research response for session {request.session_id}: {full_response[:100]}...")
+                    # Save assistant response
+                    full_response = "".join(response_text)
+                    await session_manager.add_message(request.session_id, "assistant", full_response)
+                    logger.info(f"Research response for session {request.session_id}: {full_response[:100]}...")
+                except asyncio.CancelledError:
+                    # Client disconnected - cancel the background task
+                    logger.info(f"Client disconnected for session {request.session_id}")
+                    research_task.cancel()
+                    raise
+                except Exception as e:
+                    # Error during streaming - cancel the background task
+                    logger.error(f"Error during research streaming for session {request.session_id}: {e}")
+                    research_task.cancel()
+                    raise
 
             return StreamingResponse(
                 stream_with_heartbeat(generate_stream(), settings.HEARTBEAT_INTERVAL), media_type="text/event-stream"

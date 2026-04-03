@@ -36,7 +36,7 @@ class Phase(BaseModel):
 class StreamEvent(BaseModel):
     """Server-Sent Event for streaming responses."""
 
-    type: Literal["token", "phase", "citation", "usage", "heartbeat", "error", "done"] = Field(
+    type: Literal["token", "phase", "citation", "trajectory", "usage", "heartbeat", "error", "done"] = Field(
         ..., description="Event type"
     )
     data: dict[str, Any] | str | None = Field(None, description="Event data")
