@@ -15,7 +15,7 @@ Implemented using [beeai-framework](github.com/i-am-bee/beeai-framework/), the a
 
 - Python (version range specified in individual `pyproject.toml` files)
 - UV package manager: https://docs.astral.sh/uv/
-- An A2A client e.g. [Agent Stack](https://github.com/i-am-bee/agentstack) recommended
+- An A2A client e.g. [Agent Stack](https://github.com/i-am-bee/agentstack) (recommended)
 - Access to an LLM e.g. [Ollama](https://ollama.com/)
 
 # Getting Started
@@ -81,6 +81,32 @@ The UI will start in your web browser. Select the ☰ hamburger menu (top left) 
 
 > [!TIP]
 > If you did not configure one during Agent Stack installation, the first time you start the Agent Stack Platform UI, you will need to select an LLM back end and embedding model.
+
+<details>
+<summary>Run the HTTP agent</summary>
+There is also a standalone HTTP agent that you can run without the need to deploy the agents through Agent Stack.  This version of the agent replicates the functionality of the ACP agent but using HTTP.
+
+Run the agents in development mode with auto reload:
+
+```sh
+uv --directory http run uvicorn http_agents.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Run the agents:
+
+```sh
+uv --directory http run -m http_agents.main
+```
+
+Use the agent via an HTTP GET request
+
+```sh
+curl -X POST \
+  --url http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello!", "session_id": "user-123", "stream": true}'
+```
+</details>
 
 <details>
 <summary>Run the ACP agent</summary>
